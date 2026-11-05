@@ -794,7 +794,8 @@ class AdaptiveSettingsUiTest {
     @Test fun geelyMonjaroA3OptionsAreOneAdvancedCardOnlyOnThatHeadUnit() {
         fun indexedTitles(screen: DiPlayActivity) =
             ReflectionHelpers.callInstanceMethod<List<DiPlayActivity.SettingsSearchResult>>(screen, "buildSettingsSearchIndex")
-        val options = listOf(R.string.settings_geely_monjaro_a3_support, R.string.settings_root_hotspot_details)
+        val options = listOf(R.string.settings_geely_monjaro_a3_support, R.string.settings_root_hotspot_details,
+            R.string.settings_disconnect_phone_bluetooth)
 
         val elsewhere = openSettings()
         val elsewhereIndex = indexedTitles(elsewhere)

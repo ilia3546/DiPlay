@@ -3,4 +3,6 @@
     <string name="settings_geely_monjaro_a3_support">Geely Monjaro A3 지원</string>
     <string name="settings_root_hotspot_details">차량 핫스팟 정확한 정보 (실험 기능)</string>
     <string name="settings_root_hotspot_details_description">Android가 차량 핫스팟의 채널을 숨기면 펌웨어의 핫스팟 설정에서 채널을 읽고, 핫스팟의 BSSID도 iPhone에 알려 줍니다. 루트(Magisk)가 필요합니다. 다음 연결부터 적용됩니다.</string>
+    <string name="settings_disconnect_phone_bluetooth">무선 CarPlay 중 iPhone Bluetooth 연결 해제 (실험 기능)</string>
+    <string name="settings_disconnect_phone_bluetooth_description">무선 CarPlay가 시작되면 차량 기본 CarPlay처럼 iPhone의 Bluetooth 통화, 음악, 연락처, 미디어 제어를 헤드 유닛에서 연결 해제합니다. Bluetooth로 CarPlay 음악을 일시 정지시키는 펌웨어용입니다. CarPlay는 Wi-Fi로 계속 작동하며, 이후 iPhone이 Bluetooth를 스스로 다시 연결하지 않습니다. 루트(Magisk)가 필요합니다. 다음 연결부터 적용됩니다.</string>
 </resources>

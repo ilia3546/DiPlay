@@ -3,4 +3,6 @@
     <string name="settings_geely_monjaro_a3_support">Supporto per Geely Monjaro A3</string>
     <string name="settings_root_hotspot_details">Dati esatti dell’hotspot dell’auto (sperimentale)</string>
     <string name="settings_root_hotspot_details_description">Quando Android nasconde il canale dell’hotspot dell’auto, lo legge dalla configurazione dell’hotspot del firmware e comunica anche all’iPhone il BSSID dell’hotspot. Richiede root (Magisk). Si applica alla prossima connessione.</string>
+    <string name="settings_disconnect_phone_bluetooth">Disconnetti il Bluetooth dell’iPhone durante CarPlay wireless (sperimentale)</string>
+    <string name="settings_disconnect_phone_bluetooth_description">All’avvio di CarPlay wireless, scollega dall’head unit chiamate, musica, contatti e controlli multimediali Bluetooth dell’iPhone, come fa il CarPlay originale dell’auto. Per firmware che mette in pausa la musica di CarPlay tramite Bluetooth. CarPlay continua a funzionare via Wi-Fi; in seguito l’iPhone non riconnette il Bluetooth da solo. Richiede root (Magisk). Si applica alla prossima connessione.</string>
 </resources>

@@ -3,4 +3,6 @@
     <string name="settings_geely_monjaro_a3_support">Geely Monjaro A3 サポート</string>
     <string name="settings_root_hotspot_details">車のホットスポットの正確な情報（実験的機能）</string>
     <string name="settings_root_hotspot_details_description">Android が車のホットスポットのチャンネルを公開しない場合、ファームウェアのホットスポット設定から読み取り、ホットスポットの BSSID も iPhone に伝えます。root（Magisk）が必要です。次回の接続から反映されます。</string>
+    <string name="settings_disconnect_phone_bluetooth">ワイヤレス CarPlay 中は iPhone の Bluetooth を切断（実験的機能）</string>
+    <string name="settings_disconnect_phone_bluetooth_description">ワイヤレス CarPlay が始まると、純正の CarPlay と同じように iPhone の Bluetooth の通話、音楽、連絡先、メディア操作をヘッドユニットから切断します。Bluetooth 経由で CarPlay の音楽を一時停止してしまうファームウェア向けです。CarPlay は Wi-Fi で動作し続けます。その後 iPhone が Bluetooth を自動で再接続することはありません。root（Magisk）が必要です。次回の接続から反映されます。</string>
 </resources>

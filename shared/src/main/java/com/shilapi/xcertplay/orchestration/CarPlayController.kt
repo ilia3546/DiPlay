@@ -48,6 +48,7 @@ import com.shilapi.xcertplay.network.diagnosticSummary
 import com.shilapi.xcertplay.network.CarPlayVpnService
 import com.shilapi.xcertplay.network.LocalOnlyHotspotManager
 import com.shilapi.xcertplay.network.ManualHotspotManager
+import com.shilapi.xcertplay.network.PhoneBluetoothProfiles
 import com.shilapi.xcertplay.network.ExistingWifiManager
 import com.shilapi.xcertplay.network.HotspotAddressPolicy
 import com.shilapi.xcertplay.network.HotspotAddressRecovery
@@ -311,6 +312,11 @@ class CarPlayController(
     private val wirelessHandoffFellBack = AtomicBoolean(false)
     private val wirelessGeneration = AtomicInteger(0)
     private val wirelessConnectionProof = WirelessConnectionProof<AirPlaySession>()
+    @Volatile private var wirelessBluetoothAddress: String? = null
+    private val phoneBluetoothProfilesSession = AtomicReference<AirPlaySession?>()
+    private val rootExecutor: ExecutorService = Executors.newSingleThreadExecutor { task ->
+        Thread(task, "diplay-root-shell").apply { isDaemon = true }
+    }
 
     private var permissionCloseable: Closeable? = null
     private var attachCloseable: Closeable? = null
@@ -387,6 +393,10 @@ class CarPlayController(
                     log = { debugLog(it) }) {
                     !closed && activeSession === session && !session.isClosed
                 }
+            }
+            if (config.transport == CarPlayTransport.WIRELESS && config.disconnectPhoneBluetoothDuringWirelessCarPlay &&
+                phoneBluetoothProfilesSession.getAndSet(session) !== session) {
+                disconnectPhoneBluetoothProfiles(session)
             }
             if (replacement) restoreDashboardContent(session)
             debugLog(
@@ -723,6 +733,7 @@ class CarPlayController(
         firstTcpWatchdog?.terminate()
         wiredStartWatchdog?.terminate()
         BydBluetoothSuspend.resume(appContext, this) { debugLog(it) }
+        rootExecutor.shutdown()
         startupTimer.shutdownNow()
         (hotspot as? ManualHotspotManager)?.close()
         val teardownStarted = System.nanoTime()
@@ -1433,6 +1444,7 @@ class CarPlayController(
             if (!adapter.isEnabled) throw IOException(BluetoothRadioCheck.RADIO_OFF)
             if (!bluetoothRecoveryComplete) throw IOException("Bluetooth recovery did not complete before the handshake")
             val device = selectWirelessBluetoothDevice(adapter)
+            wirelessBluetoothAddress = device.address
             val hostBluetoothMac = accessoryBluetoothMac(adapter)
             debugLog(
                 "wireless selected Bluetooth target name=${device.name ?: "unknown"} " +
@@ -2611,6 +2623,19 @@ class CarPlayController(
             return@synchronized
         }
         (wifiScanPause ?: WifiScanPause(appContext, ::debugLog).also { wifiScanPause = it }).pause()
+    }
+
+    private fun disconnectPhoneBluetoothProfiles(session: AirPlaySession) {
+        val address = wirelessBluetoothAddress
+        val apk = appContext.applicationInfo.sourceDir.orEmpty()
+        try {
+            rootExecutor.execute {
+                if (closed || activeSession !== session || session.isClosed) return@execute
+                debugLog("phone Bluetooth profiles disconnect ${PhoneBluetoothProfiles.disconnect(apk, address)}")
+            }
+        } catch (_: java.util.concurrent.RejectedExecutionException) {
+            // close() has already shut the root worker down.
+        }
     }
 
     private fun selectWirelessBluetoothDevice(adapter: BluetoothAdapter): BluetoothDevice {
