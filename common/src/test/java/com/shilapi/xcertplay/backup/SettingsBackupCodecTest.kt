@@ -34,9 +34,11 @@ class SettingsBackupCodecTest {
         AirPlayPersistence.saveRootHotspotDetails(context, true)
         AirPlayPersistence.saveDisconnectPhoneBluetooth(context, true)
         AirPlayPersistence.saveHotspotAudioFirewall(context, true)
+        AirPlayPersistence.saveDashboardMusic(context, true)
         val document = JSONObject(String(SettingsBackupCodec.export(context, "0.2.22")))
         val airplay = document.getJSONObject("settings").optJSONObject("xcertplay_airplay") ?: JSONObject()
-        for (key in listOf("root_hotspot_details", "disconnect_phone_bluetooth_wireless", "hotspot_audio_firewall")) {
+        for (key in listOf("root_hotspot_details", "disconnect_phone_bluetooth_wireless", "hotspot_audio_firewall",
+            "monjaro_dashboard_music")) {
             assertFalse(key, airplay.has(key))
         }
     }

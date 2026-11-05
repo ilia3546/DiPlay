@@ -12,4 +12,6 @@
     <string name="settings_microphone_input_auto">自动</string>
     <string name="settings_microphone_input_voice_assistant_bus">语音助手总线（bus14_vr_in）</string>
     <string name="settings_microphone_input_all_cabin">全部车内麦克风（混音）</string>
+    <string name="settings_dashboard_music">在仪表盘上显示 CarPlay 音乐（实验性）</string>
+    <string name="settings_dashboard_music_description">在原厂仪表盘的音乐组件中显示 CarPlay 的曲目、艺人、专辑和封面，CarPlay 结束时清除。只有车机拒绝 DiPlay 自身的请求时才使用 root（Magisk）。立即生效。</string>
 </resources>

@@ -20,6 +20,7 @@ class MonjaroA3OptionsTest {
         AirPlayPersistence.saveDisconnectPhoneBluetooth(context, true)
         AirPlayPersistence.saveHotspotAudioFirewall(context, true)
         AirPlayPersistence.saveMicrophoneInput(context, MicrophoneInput.ALL_CABIN_MICROPHONES)
+        AirPlayPersistence.saveDashboardMusic(context, true)
     }
 
     @Test fun everyOptionIsOffByDefault() {
@@ -37,6 +38,6 @@ class MonjaroA3OptionsTest {
         ShadowBuild.setProduct("geely_fx11")
         ShadowBuild.setModel("KX11-A3-L1")
         assertEquals(MonjaroA3Options(rootHotspotDetails = true, disconnectPhoneBluetooth = true, hotspotAudioFirewall = true,
-            microphoneInput = MicrophoneInput.ALL_CABIN_MICROPHONES), MonjaroA3Options.load(context))
+            microphoneInput = MicrophoneInput.ALL_CABIN_MICROPHONES, dashboardMusic = true), MonjaroA3Options.load(context))
     }
 }

@@ -12,4 +12,6 @@
     <string name="settings_microphone_input_auto">自動</string>
     <string name="settings_microphone_input_voice_assistant_bus">語音助理匯流排（bus14_vr_in）</string>
     <string name="settings_microphone_input_all_cabin">全部車內麥克風（混音）</string>
+    <string name="settings_dashboard_music">在儀表板上顯示 CarPlay 音樂（實驗性）</string>
+    <string name="settings_dashboard_music_description">在原廠儀表板的音樂元件中顯示 CarPlay 的曲目、演出者、專輯和封面，CarPlay 結束時清除。只有車機拒絕 DiPlay 自身的要求時才使用 root（Magisk）。立即生效。</string>
 </resources>
