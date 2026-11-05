@@ -30,6 +30,18 @@ class SettingsBackupCodecTest {
     }
 
     @Test
+    fun consentToRootStepsDoesNotTravel() {
+        AirPlayPersistence.saveRootHotspotDetails(context, true)
+        AirPlayPersistence.saveDisconnectPhoneBluetooth(context, true)
+        AirPlayPersistence.saveHotspotAudioFirewall(context, true)
+        val document = JSONObject(String(SettingsBackupCodec.export(context, "0.2.22")))
+        val airplay = document.getJSONObject("settings").optJSONObject("xcertplay_airplay") ?: JSONObject()
+        for (key in listOf("root_hotspot_details", "disconnect_phone_bluetooth_wireless", "hotspot_audio_firewall")) {
+            assertFalse(key, airplay.has(key))
+        }
+    }
+
+    @Test
     fun exportOmitsSensitiveAndNavigationKeys() {
         prefs("xcertplay_airplay").edit()
             .putInt("display_fps", 60)

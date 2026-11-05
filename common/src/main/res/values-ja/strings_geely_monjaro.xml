@@ -4,7 +4,7 @@
     <string name="settings_root_hotspot_details">車のホットスポットの正確な情報（実験的機能）</string>
     <string name="settings_root_hotspot_details_description">Android が車のホットスポットのチャンネルを公開しない場合、ファームウェアのホットスポット設定から読み取り、ホットスポットの BSSID も iPhone に伝えます。root（Magisk）が必要です。次回の接続から反映されます。</string>
     <string name="settings_disconnect_phone_bluetooth">ワイヤレス CarPlay 中は iPhone の Bluetooth を切断（実験的機能）</string>
-    <string name="settings_disconnect_phone_bluetooth_description">ワイヤレス CarPlay が始まると、純正の CarPlay と同じように iPhone の Bluetooth の通話、音楽、連絡先、メディア操作をヘッドユニットから切断します。Bluetooth 経由で CarPlay の音楽を一時停止してしまうファームウェア向けです。CarPlay は Wi-Fi で動作し続けます。その後 iPhone が Bluetooth を自動で再接続することはありません。root（Magisk）が必要です。次回の接続から反映されます。</string>
+    <string name="settings_disconnect_phone_bluetooth_description">ワイヤレス CarPlay が始まると、純正の CarPlay と同じように iPhone の Bluetooth の通話、音楽、連絡先、メディア操作をヘッドユニットから切断します。Bluetooth 経由で CarPlay の音楽を一時停止してしまうファームウェア向けです。CarPlay は Wi-Fi で動作し続けます。その後 iPhone が Bluetooth を自動で再接続することはありません。複数の iPhone をペアリングしている場合は、DiPlay で使う iPhone を選んでください。Bluetooth が切断されていると、次回 DiPlay は自動で選べません。root（Magisk）が必要です。次回の接続から反映されます。</string>
     <string name="settings_hotspot_audio_firewall">CarPlay の音声を車のファイアウォールに通す（実験的機能）</string>
     <string name="settings_hotspot_audio_firewall_description">車のホットスポットでワイヤレス CarPlay を使っている間、ホットスポット上の iPhone からの UDP を受け入れるファイアウォールのルールを追加し、セッション終了時に削除します。ファイアウォールが数秒後に CarPlay の音声を遮断してしまうファームウェア向けです。root（Magisk）が必要です。次回の接続から反映されます。</string>
 </resources>
