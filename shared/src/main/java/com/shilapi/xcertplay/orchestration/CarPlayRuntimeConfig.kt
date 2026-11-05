@@ -69,6 +69,8 @@ class CarPlayRuntimeConfig(
     val rootHotspotDetails: Boolean = false,
     /** Disconnects the iPhone's Bluetooth profiles through root once a wireless session is active. */
     val disconnectPhoneBluetoothDuringWirelessCarPlay: Boolean = false,
+    /** Adds a root firewall rule for UDP from the iPhone on the car hotspot while a session is active. */
+    val allowHotspotAudioThroughFirewall: Boolean = false,
     val wirelessBluetoothDeviceAddress: String? = null,
     val locationReportingEnabled: Boolean = false,
     val wifiP2pPreferredChannel: Int = WifiP2pChannels.AUTO,
