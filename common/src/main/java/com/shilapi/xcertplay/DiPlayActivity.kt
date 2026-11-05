@@ -2142,6 +2142,12 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 AirPlayPersistence.saveDisconnectPhoneBluetooth(this, it)
                 markReconnectNeeded()
             }
+            toggle(card, getString(R.string.settings_hotspot_audio_firewall),
+                getString(R.string.settings_hotspot_audio_firewall_description),
+                AirPlayPersistence.loadHotspotAudioFirewall(this)) {
+                AirPlayPersistence.saveHotspotAudioFirewall(this, it)
+                markReconnectNeeded()
+            }
         }
         filteredSection(content, SettingsSection.LOCATION,
             getString(R.string.location), R.drawable.ic_dp_navigation) { card ->

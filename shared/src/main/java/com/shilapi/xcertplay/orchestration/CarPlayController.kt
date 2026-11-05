@@ -52,6 +52,7 @@ import com.shilapi.xcertplay.network.PhoneBluetoothProfiles
 import com.shilapi.xcertplay.network.ExistingWifiManager
 import com.shilapi.xcertplay.network.HotspotAddressPolicy
 import com.shilapi.xcertplay.network.HotspotAddressRecovery
+import com.shilapi.xcertplay.network.HotspotAudioFirewall
 import com.shilapi.xcertplay.network.WifiP2pGroupManager
 import com.shilapi.xcertplay.network.WifiScanPause
 import com.shilapi.xcertplay.network.WirelessHotspotInfo
@@ -314,6 +315,9 @@ class CarPlayController(
     private val wirelessConnectionProof = WirelessConnectionProof<AirPlaySession>()
     @Volatile private var wirelessBluetoothAddress: String? = null
     private val phoneBluetoothProfilesSession = AtomicReference<AirPlaySession?>()
+    @Volatile private var wirelessHotspotInterface: String? = null
+    private val hotspotAudioSession = AtomicReference<AirPlaySession?>()
+    private val hotspotAudioFirewall = HotspotAudioFirewall(log = { debugLog(it) })
     private val rootExecutor: ExecutorService = Executors.newSingleThreadExecutor { task ->
         Thread(task, "diplay-root-shell").apply { isDaemon = true }
     }
@@ -398,6 +402,10 @@ class CarPlayController(
                 phoneBluetoothProfilesSession.getAndSet(session) !== session) {
                 disconnectPhoneBluetoothProfiles(session)
             }
+            if (config.transport == CarPlayTransport.WIRELESS && config.wirelessHotspotMode == WirelessHotspotMode.MANUAL &&
+                config.allowHotspotAudioThroughFirewall && hotspotAudioSession.getAndSet(session) !== session) {
+                allowHotspotAudio(session)
+            }
             if (replacement) restoreDashboardContent(session)
             debugLog(
                 "AirPlay session active controller=${session.controllerId ?: "unknown"} " +
@@ -413,6 +421,7 @@ class CarPlayController(
                 synchronized(albumReplayLock) { initialArtworkReplay = null }
                 BydNavigationOutputs.endNow(preserveTurnOverlay = !closed && config.transport == CarPlayTransport.WIRELESS)
                 BydBluetoothSuspend.resume(appContext, this@CarPlayController) { debugLog(it) }
+                submitRootWork { hotspotAudioFirewall.remove() }
                 com.shilapi.xcertplay.glance.CarPlayGlance.setConnected(false)
                 videoListener?.onVideoSessionEnded()
                 synchronized(playbackStatus) {
@@ -733,6 +742,7 @@ class CarPlayController(
         firstTcpWatchdog?.terminate()
         wiredStartWatchdog?.terminate()
         BydBluetoothSuspend.resume(appContext, this) { debugLog(it) }
+        submitRootWork { hotspotAudioFirewall.remove() }
         rootExecutor.shutdown()
         startupTimer.shutdownNow()
         (hotspot as? ManualHotspotManager)?.close()
@@ -1358,6 +1368,7 @@ class CarPlayController(
                 pausedByDiPlay = BydBluetoothSuspend.isSuspendedByUs(appContext),
             )?.let { throw BluetoothRadioCheck.failure(it) }
             val hotspotInfo = startWirelessHotspot(generation)
+            wirelessHotspotInterface = hotspotInfo.interfaceName
             if (isStaleWirelessRun(generation)) {
                 return
             }
@@ -2625,16 +2636,31 @@ class CarPlayController(
         (wifiScanPause ?: WifiScanPause(appContext, ::debugLog).also { wifiScanPause = it }).pause()
     }
 
+    private fun submitRootWork(work: () -> Unit) {
+        try {
+            rootExecutor.execute(work)
+        } catch (_: java.util.concurrent.RejectedExecutionException) {
+            // close() has already shut the root worker down, after queueing its own cleanup.
+        }
+    }
+
     private fun disconnectPhoneBluetoothProfiles(session: AirPlaySession) {
         val address = wirelessBluetoothAddress
         val apk = appContext.applicationInfo.sourceDir.orEmpty()
-        try {
-            rootExecutor.execute {
-                if (closed || activeSession !== session || session.isClosed) return@execute
-                debugLog("phone Bluetooth profiles disconnect ${PhoneBluetoothProfiles.disconnect(apk, address)}")
-            }
-        } catch (_: java.util.concurrent.RejectedExecutionException) {
-            // close() has already shut the root worker down.
+        submitRootWork {
+            if (closed || activeSession !== session || session.isClosed) return@submitRootWork
+            debugLog("phone Bluetooth profiles disconnect ${PhoneBluetoothProfiles.disconnect(apk, address)}")
+        }
+    }
+
+    private fun allowHotspotAudio(session: AirPlaySession) {
+        val rule = HotspotAudioFirewall.rule(wirelessHotspotInterface, session.host)
+        if (rule == null) {
+            debugLog("hotspot audio firewall rule skipped: no valid hotspot interface or iPhone address")
+            return
+        }
+        submitRootWork {
+            hotspotAudioFirewall.allow(rule) { !closed && activeSession === session && !session.isClosed }
         }
     }
 
