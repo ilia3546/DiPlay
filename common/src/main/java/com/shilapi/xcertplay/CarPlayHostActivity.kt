@@ -182,8 +182,10 @@ open class CarPlayHostActivity : ComponentActivity() {
         super.attachBaseContext(AppLocale.wrap(newBase))
     }
 
+    private fun createRuntimeConfig(): CarPlayRuntimeConfig = createRuntimeConfig(MonjaroA3Options.load(this))
+
     // CH341 USB\VID_1A86&PID_5512&REV_0304 is the deployment-supplied bridge identity.
-    private fun createRuntimeConfig(): CarPlayRuntimeConfig = CarPlayRuntimeConfig(
+    private fun createRuntimeConfig(monjaroA3: MonjaroA3Options): CarPlayRuntimeConfig = CarPlayRuntimeConfig(
         mfiTarget = mfiTarget,
         ch341Devices = if (mfiTarget == MfiTarget.USB_CH341) {
             listOf(UsbDeviceId(0x1a86, 0x5512))
@@ -226,9 +228,9 @@ open class CarPlayHostActivity : ComponentActivity() {
         manualHotspotChannel = manualHotspotChannel,
         manualHotspotSecurity = manualHotspotSecurity,
         manualHotspotInterface = manualHotspotInterface,
-        rootHotspotDetails = AirPlayPersistence.loadRootHotspotDetails(this),
-        disconnectPhoneBluetoothDuringWirelessCarPlay = AirPlayPersistence.loadDisconnectPhoneBluetooth(this),
-        allowHotspotAudioThroughFirewall = AirPlayPersistence.loadHotspotAudioFirewall(this),
+        rootHotspotDetails = monjaroA3.rootHotspotDetails,
+        disconnectPhoneBluetoothDuringWirelessCarPlay = monjaroA3.disconnectPhoneBluetooth,
+        allowHotspotAudioThroughFirewall = monjaroA3.hotspotAudioFirewall,
         existingWifiSsid = existingWifiSsid,
         existingWifiPassphrase = existingWifiPassphrase,
         existingWifiInterface = existingWifiInterface.trim().takeIf { it.isNotEmpty() },
