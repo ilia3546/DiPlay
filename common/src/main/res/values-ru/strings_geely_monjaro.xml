@@ -12,4 +12,6 @@
     <string name="settings_microphone_input_auto">Авто</string>
     <string name="settings_microphone_input_voice_assistant_bus">Шина голосового помощника (bus14_vr_in)</string>
     <string name="settings_microphone_input_all_cabin">Все микрофоны салона (сведение)</string>
+    <string name="settings_dashboard_music">Показывать музыку CarPlay на приборной панели (экспериментально)</string>
+    <string name="settings_dashboard_music_description">Показывает трек, исполнителя, альбом и обложку CarPlay в музыкальном виджете штатной приборной панели и очищает его, когда CarPlay завершается. Root (Magisk) нужен, только если головное устройство отклонит запрос самого DiPlay. Применяется сразу.</string>
 </resources>

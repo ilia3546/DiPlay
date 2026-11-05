@@ -52,6 +52,19 @@ class RootShellTest {
         }
     }
 
+    @Test fun aLargePayloadGoesThroughStdin() {
+        var command: List<String>? = null
+        var input: ByteArray? = null
+        val payload = ByteArray(30_000) { 'A'.code.toByte() }
+        assertEquals(Result.Completed(0, "ok"), RootShell.runWithInput("helper", payload) { cmd, _, stdin ->
+            command = cmd
+            input = stdin
+            CommandOutput(0, "ok")
+        })
+        assertEquals(listOf("su", "-c", "helper"), command)
+        assertTrue(payload.contentEquals(input))
+    }
+
     @Test fun onlyPlainInterfaceNamesAreSafe() {
         assertTrue(RootShell.isSafeInterfaceName("wlan1"))
         assertTrue(RootShell.isSafeInterfaceName("ap_br-wlan0.1"))

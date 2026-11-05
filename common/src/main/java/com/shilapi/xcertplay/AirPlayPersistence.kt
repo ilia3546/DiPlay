@@ -136,6 +136,7 @@ object AirPlayPersistence {
     private const val KEY_DISCONNECT_PHONE_BLUETOOTH = "disconnect_phone_bluetooth_wireless"
     private const val KEY_HOTSPOT_AUDIO_FIREWALL = "hotspot_audio_firewall"
     private const val KEY_MICROPHONE_INPUT = "microphone_input"
+    private const val KEY_DASHBOARD_MUSIC = "monjaro_dashboard_music"
     private const val KEY_BT_SUSPEND_DELAY = "bt_suspend_delay_seconds"
     private const val KEY_LOCATION_REPORTING_ENABLED = "location_reporting_enabled"
     private const val KEY_EXTERNAL_CONTROLLER = "external_controller"
@@ -596,6 +597,14 @@ object AirPlayPersistence {
         val name = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_MICROPHONE_INPUT, null)
         return MicrophoneInput.entries.firstOrNull { it.name == name }
             ?: MicrophoneInput.AUTO
+    }
+
+    fun loadDashboardMusic(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_DASHBOARD_MUSIC, false)
+
+    fun saveDashboardMusic(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putBoolean(KEY_DASHBOARD_MUSIC, enabled).apply()
     }
 
     fun saveMicrophoneInput(context: Context, input: MicrophoneInput) {

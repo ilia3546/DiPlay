@@ -22,9 +22,19 @@ object RootShell {
         command: String,
         timeoutMillis: Long = DEFAULT_TIMEOUT_MILLIS,
         exec: (List<String>, Long) -> CommandOutput = ::runProcess,
-    ): Result {
+    ): Result = complete { exec(listOf("su", "-c", command), timeoutMillis) }
+
+    /** Like [run], with [stdin] written to the command: for payloads too large for an argument. */
+    fun runWithInput(
+        command: String,
+        stdin: ByteArray,
+        timeoutMillis: Long = DEFAULT_TIMEOUT_MILLIS,
+        exec: (List<String>, Long, ByteArray) -> CommandOutput = ::runProcess,
+    ): Result = complete { exec(listOf("su", "-c", command), timeoutMillis, stdin) }
+
+    private inline fun complete(exec: () -> CommandOutput): Result {
         val output = try {
-            exec(listOf("su", "-c", command), timeoutMillis)
+            exec()
         } catch (_: InterruptedException) {
             Thread.currentThread().interrupt()
             return Result.Unavailable("interrupted")
@@ -38,10 +48,15 @@ object RootShell {
     /** A Linux interface name that is safe to place in a command without quoting. */
     fun isSafeInterfaceName(name: String?): Boolean = name != null && INTERFACE_NAME.matches(name)
 
-    private fun runProcess(command: List<String>, timeoutMillis: Long): CommandOutput {
+    private fun runProcess(command: List<String>, timeoutMillis: Long): CommandOutput =
+        runProcess(command, timeoutMillis, ByteArray(0))
+
+    private fun runProcess(command: List<String>, timeoutMillis: Long, stdin: ByteArray): CommandOutput {
         val process = ProcessBuilder(command).redirectErrorStream(true).start()
         try {
-            process.outputStream.close()
+            // A child that never reads stdin must not hold this thread past the timeout.
+            Thread({ runCatching { process.outputStream.use { it.write(stdin) } } }, "root-shell-stdin")
+                .apply { isDaemon = true; start() }
             if (!process.waitFor(timeoutMillis, TimeUnit.MILLISECONDS)) {
                 return CommandOutput(TIMED_OUT, stdout = "")
             }

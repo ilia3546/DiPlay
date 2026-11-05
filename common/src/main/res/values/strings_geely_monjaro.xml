@@ -12,4 +12,6 @@
     <string name="settings_microphone_input_auto">Auto</string>
     <string name="settings_microphone_input_voice_assistant_bus">Voice assistant bus (bus14_vr_in)</string>
     <string name="settings_microphone_input_all_cabin">All cabin microphones (mix)</string>
+    <string name="settings_dashboard_music">Show CarPlay music on the dashboard (experimental)</string>
+    <string name="settings_dashboard_music_description">Shows the CarPlay track, artist, album and cover in the music widget of the stock instrument cluster, and clears it when CarPlay ends. Uses root (Magisk) only if the head unit refuses DiPlay\'s own request. Applies at once.</string>
 </resources>

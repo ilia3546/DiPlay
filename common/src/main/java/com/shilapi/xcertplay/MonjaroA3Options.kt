@@ -10,6 +10,7 @@ internal data class MonjaroA3Options(
     val disconnectPhoneBluetooth: Boolean = false,
     val hotspotAudioFirewall: Boolean = false,
     val microphoneInput: MicrophoneInput = MicrophoneInput.AUTO,
+    val dashboardMusic: Boolean = false,
 ) {
     companion object {
         fun load(context: Context, monjaroA3: Boolean = GeelyHeadUnit.monjaroA3): MonjaroA3Options {
@@ -19,6 +20,7 @@ internal data class MonjaroA3Options(
                 disconnectPhoneBluetooth = AirPlayPersistence.loadDisconnectPhoneBluetooth(context),
                 hotspotAudioFirewall = AirPlayPersistence.loadHotspotAudioFirewall(context),
                 microphoneInput = AirPlayPersistence.loadMicrophoneInput(context),
+                dashboardMusic = AirPlayPersistence.loadDashboardMusic(context),
             )
         }
     }

@@ -80,6 +80,7 @@ internal object CarPlayMediaKeys {
         appContext = context.applicationContext
         controller = next
         GeelyWheelKeys.start(context)
+        MonjaroDashboardMusic.sessionStarted(context)
         com.shilapi.xcertplay.media.AmbientMusicController.claimPlaybackOwner(next)
         next.playbackListener = { playing ->
             com.shilapi.xcertplay.media.AmbientMusicController.phonePlaybackChanged(next, playing)
@@ -102,6 +103,7 @@ internal object CarPlayMediaKeys {
         expected.artworkListener = null
         controller = null
         GeelyWheelKeys.stop()
+        MonjaroDashboardMusic.sessionEnded()
         releaseLocked()
     }
 
@@ -112,6 +114,7 @@ internal object CarPlayMediaKeys {
 
     /** The iPhone started or stopped playing; may run on any thread. */
     private fun onIphonePlaying(expected: CarPlayController, playing: Boolean) {
+        MonjaroDashboardMusic.playingChanged(playing)
         if (playing) mainHandler.post {
             synchronized(this) {
                 if (controller === expected) regainFocusLocked(onIphonePlaybackResume = true)

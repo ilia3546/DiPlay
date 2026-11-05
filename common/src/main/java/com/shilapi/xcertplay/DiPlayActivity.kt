@@ -2149,6 +2149,12 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 AirPlayPersistence.saveHotspotAudioFirewall(this, it)
                 markReconnectNeeded()
             }
+            toggle(card, getString(R.string.settings_dashboard_music),
+                getString(R.string.settings_dashboard_music_description),
+                AirPlayPersistence.loadDashboardMusic(this)) {
+                AirPlayPersistence.saveDashboardMusic(this, it)
+                MonjaroDashboardMusic.settingChanged(this)
+            }
             val microphoneInputs = MicrophoneInput.entries
             choice(card, getString(R.string.settings_microphone_input), microphoneInputs.map { input ->
                 when (input) {
