@@ -79,6 +79,7 @@ import com.shilapi.xcertplay.network.CarHotspotConfigWrite
 import com.shilapi.xcertplay.network.CarHotspotSavedCredentials
 import com.shilapi.xcertplay.network.CarHotspotSettings
 import com.shilapi.xcertplay.network.CarHotspotTethering
+import com.shilapi.xcertplay.network.GeelyHeadUnit
 import com.shilapi.xcertplay.network.HotspotCredentials
 import com.shilapi.xcertplay.network.WifiP2pChannels
 import com.shilapi.xcertplay.orchestration.ManualHotspotProvisioning
@@ -132,6 +133,7 @@ internal enum class SettingsSection {
     BYD_NAVIGATION,
     PERMISSIONS_AND_HELP,
     LANGUAGE,
+    GEELY_MONJARO_A3,
 }
 
 internal object SettingsInformationArchitecture {
@@ -162,6 +164,7 @@ internal object SettingsInformationArchitecture {
             SettingsSection.ADVANCED_MEDIA,
             SettingsSection.NAVIGATION_WHEEL,
             SettingsSection.AMBIENT_LIGHTING,
+            SettingsSection.GEELY_MONJARO_A3,
         ),
     )
 }
@@ -2123,6 +2126,15 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             toggle(card, getString(R.string.settings_ambient_car_rhythm_feed),
                 getString(R.string.settings_ambient_car_rhythm_feed_description), AmbientMusicSettings.load(this).carRhythmFeed) { on ->
                 AmbientMusicSettings.save(this, AmbientMusicSettings.load(this).copy(carRhythmFeed = on))
+            }
+        }
+        if (GeelyHeadUnit.monjaroA3) filteredSection(content, SettingsSection.GEELY_MONJARO_A3,
+            getString(R.string.settings_geely_monjaro_a3_support), R.drawable.ic_dp_car) { card ->
+            toggle(card, getString(R.string.settings_root_hotspot_details),
+                getString(R.string.settings_root_hotspot_details_description),
+                AirPlayPersistence.loadRootHotspotDetails(this)) {
+                AirPlayPersistence.saveRootHotspotDetails(this, it)
+                markReconnectNeeded()
             }
         }
         filteredSection(content, SettingsSection.LOCATION,

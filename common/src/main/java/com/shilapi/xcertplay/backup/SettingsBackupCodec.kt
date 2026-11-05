@@ -43,6 +43,7 @@ object SettingsBackupCodec {
         "adapt_pip_resolution", "auto_start_on_boot", "bt_suspend_during_carplay", "hide_byd_call_popup",
         "launcher_bubble", "launcher_bubble_size",
         "bt_suspend_delay_seconds", "location_reporting_enabled", "external_controller", "usb_charging_current",
+        "root_hotspot_details",
     )
 
     /** Families of layout settings with many keys and nothing sensitive in them. */

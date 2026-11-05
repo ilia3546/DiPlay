@@ -51,6 +51,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.Implementation
 import org.robolectric.annotation.Implements
 import org.robolectric.shadows.ShadowAlertDialog
+import org.robolectric.shadows.ShadowBuild
 import org.robolectric.util.ReflectionHelpers
 
 @RunWith(RobolectricTestRunner::class)
@@ -788,6 +789,30 @@ class AdaptiveSettingsUiTest {
             R.string.side_panel, R.string.split_screen_areas, R.string.carplay_rotation).forEach {
             assertFalse(text(it), text(it) in display)
         }
+    }
+
+    @Test fun geelyMonjaroA3OptionsAreOneAdvancedCardOnlyOnThatHeadUnit() {
+        fun indexedTitles(screen: DiPlayActivity) =
+            ReflectionHelpers.callInstanceMethod<List<DiPlayActivity.SettingsSearchResult>>(screen, "buildSettingsSearchIndex")
+        val options = listOf(R.string.settings_geely_monjaro_a3_support, R.string.settings_root_hotspot_details)
+
+        val elsewhere = openSettings()
+        val elsewhereIndex = indexedTitles(elsewhere)
+        options.forEach { id -> assertFalse(elsewhereIndex.any { it.title == elsewhere.getString(id) }) }
+
+        ShadowBuild.setProduct("geely_fx11")
+        ShadowBuild.setModel("KX11_A3_L1")
+        val screen = openSettings()
+        val index = indexedTitles(screen)
+        options.forEach { id ->
+            assertEquals(SettingsCategory.ADVANCED, index.single { it.title == screen.getString(id) }.category)
+        }
+        descendants(screen.window.decorView).first { candidate ->
+            candidate.contentDescription == screen.getString(R.string.settings_open_category, screen.getString(R.string.settings_advanced))
+        }.performClick()
+        val card = texts(screen).single { it.text == screen.getString(R.string.settings_geely_monjaro_a3_support) }
+        assertTrue(texts(screen).any { it.text == screen.getString(R.string.settings_root_hotspot_details) })
+        assertTrue(card.isShown)
     }
 
     @Test fun navigationAttenuationSliderSavesAndUpdatesActiveAudioWithoutReconnect() {

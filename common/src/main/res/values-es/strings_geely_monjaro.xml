@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_geely_monjaro_a3_support">Soporte para Geely Monjaro A3</string>
+    <string name="settings_root_hotspot_details">Datos exactos del punto de acceso del coche (experimental)</string>
+    <string name="settings_root_hotspot_details_description">Cuando Android oculta el canal del punto de acceso del coche, lo lee de la configuración del punto de acceso del firmware y además comunica al iPhone el BSSID del punto de acceso. Requiere root (Magisk). Se aplica en la próxima conexión.</string>
+</resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_geely_monjaro_a3_support">Geely Monjaro A3 desteği</string>
+    <string name="settings_root_hotspot_details">Araç erişim noktasının kesin bilgileri (deneysel)</string>
+    <string name="settings_root_hotspot_details_description">Android araç erişim noktasının kanalını gizlediğinde kanalı ürün yazılımının erişim noktası yapılandırmasından okur ve erişim noktasının BSSID değerini de iPhone’a bildirir. Root (Magisk) gerektirir. Sonraki bağlantıda uygulanır.</string>
+</resources>

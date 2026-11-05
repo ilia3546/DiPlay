@@ -35,6 +35,8 @@ class ManualHotspotManager(
     private val onDiagnostic: (String) -> Unit = {},
     private val isCancelled: () -> Boolean = { false },
     private val preferredInterface: String? = null,
+    private val rootHotspotDetails: Boolean = false,
+    private val readHostapdChannel: (String?) -> HostapdChannelReader.Result = { HostapdChannelReader.read(it) },
 ) : WirelessHotspotManager {
     private val appContext = context.applicationContext
     private val interfaces = ManualHotspotInterfaces(appContext, onDiagnostic, preferredInterface)
@@ -115,12 +117,16 @@ class ManualHotspotManager(
                 ?: HotspotInterfaceBssid.read(selected.name))
         val connectionFrequency = if (companion) null else frequencyFromConnectionInfo()
         val scanFrequency = if (companion) null else frequencyFromScanResult(localInterface)
-        val channel = observedManualHotspotChannel(
+        val frameworkChannel = observedManualHotspotChannel(
             apChannel = apConfiguration?.channel ?: 0,
             connectionFrequencyMHz = connectionFrequency,
             scanFrequencyMHz = scanFrequency,
             apFrequencyMHz = apConfiguration?.frequencyMHz,
         )
+        val radio = radioDetails(frameworkChannel, localInterface.name, localInterface.hardwareAddress,
+            rootHotspotDetails, readHostapdChannel, onDiagnostic)
+        val channel = radio.channel
+        val accessPointBssid = radio.accessPointBssid
         val frequencyMHz = when {
             apConfiguration?.frequencyMHz != null -> apConfiguration.frequencyMHz
             connectionFrequency != null -> connectionFrequency
@@ -134,7 +140,8 @@ class ManualHotspotManager(
             existingWifiHostAddresses(Collections.list(it.inetAddresses), selected.index)
         }?.takeIf { it.isNotEmpty() } ?: listOfNotNull(localInterface.hostAddress)
         onDiagnostic("Manual hotspot configReadable=${readConfiguration != null} " +
-            "security=$security channelKnown=${channel > 0} " +
+            "security=$security channelKnown=${channel > 0} channel=$channel channelSource=${radio.channelSource} " +
+            "apBssidKnown=${accessPointBssid != null} " +
             "hardwareAddressKnown=${localInterface.hardwareAddress != null} iface=${localInterface.name} " +
             "family=${if (localInterface.hostAddress is Inet6Address) "IPv6" else "IPv4"} " +
             "mdnsFamilies=${hostAddresses.joinToString("+") { address -> if (address is Inet6Address) "IPv6" else "IPv4" }}")
@@ -168,6 +175,7 @@ class ManualHotspotManager(
                     frequencyMHz?.let(::bandLabel) ?: observedBandLabel ?: "Auto"
             },
             backend = WirelessHotspotBackend.MANUAL_HOTSPOT,
+            accessPointBssid = accessPointBssid,
         )
     }
 
@@ -385,9 +393,34 @@ class ManualHotspotManager(
         val hardwareAddress: String?,
     )
 
+    internal class RadioDetails(val channel: Int, val channelSource: String, val accessPointBssid: ByteArray?)
+
     internal companion object {
         private const val TAG = "xcertplay-usb"
         private val FIVE_GHZ_SUFFIXES = listOf("_5G", "-5G")
+
+        /** Without [rootHotspotDetails] only what Android reports is used: no `su`, no access point BSSID. */
+        fun radioDetails(
+            frameworkChannel: Int,
+            interfaceName: String,
+            hardwareAddress: String?,
+            rootHotspotDetails: Boolean,
+            readHostapdChannel: (String?) -> HostapdChannelReader.Result,
+            onDiagnostic: (String) -> Unit,
+        ): RadioDetails {
+            if (!rootHotspotDetails) {
+                return RadioDetails(frameworkChannel, if (frameworkChannel > 0) "framework" else "unknown", null)
+            }
+            val bssid = hardwareAddress?.let(HotspotInterfaceBssid::toBytes)
+            if (frameworkChannel > 0) return RadioDetails(frameworkChannel, "framework", bssid)
+            return when (val hostapd = readHostapdChannel(interfaceName)) {
+                is HostapdChannelReader.Result.Found -> RadioDetails(hostapd.channel, "hostapd", bssid)
+                is HostapdChannelReader.Result.Unavailable -> {
+                    onDiagnostic("Manual hotspot hostapd channel unavailable iface=$interfaceName: ${hostapd.reason}")
+                    RadioDetails(0, "unknown", bssid)
+                }
+            }
+        }
 
         /**
          * Some head units configure one hotspot name in Android and also broadcast a 5 GHz network

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_geely_monjaro_a3_support">Поддержка Geely Monjaro A3</string>
+    <string name="settings_root_hotspot_details">Точные данные точки доступа автомобиля (экспериментально)</string>
+    <string name="settings_root_hotspot_details_description">Если Android скрывает канал точки доступа автомобиля, DiPlay читает его из настроек точки доступа прошивки и также передаёт iPhone BSSID точки доступа. Нужен root (Magisk). Применяется при следующем подключении.</string>
+</resources>

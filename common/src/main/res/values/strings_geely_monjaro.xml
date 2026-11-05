@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_geely_monjaro_a3_support">Geely Monjaro A3 Support</string>
+    <string name="settings_root_hotspot_details">Exact car hotspot details (experimental)</string>
+    <string name="settings_root_hotspot_details_description">When Android hides the channel of the car hotspot, reads it from the firmware\'s hotspot configuration and also tells the iPhone the BSSID of the hotspot. Requires root (Magisk). Applies at the next connection.</string>
+</resources>
