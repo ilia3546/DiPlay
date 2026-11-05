@@ -51,9 +51,18 @@ class Iap2WirelessControlClientTest {
         val frame = Iap2WirelessControlClient.accessoryWiFiConfiguration(endpoint())
 
         assertEquals(
-            "404000275703000900014c49564900000e00027365637265743132330000050003030005000424",
+            "404000275703000900014c49564900000e00027365637265743132330000050003020005000424",
             frame.encodedFrame().hex(),
         )
+    }
+
+    @Test
+    fun wpa3TransitionIsSentAsWpa2SoIosAccessorydAcceptsIt() {
+        val configuration = parameters(Iap2WirelessControlClient.accessoryWiFiConfiguration(endpoint()).payload)
+        assertArrayEquals(byteArrayOf(2), configuration.single { it.id == 3 }.payload)
+        val start = parameters(Iap2WirelessControlClient.carPlayStartSession(endpoint()).payload)
+        val wireless = parameters(start.single { it.id == 1 }.payload)
+        assertArrayEquals(byteArrayOf(2), wireless.single { it.id == 4 }.payload)
     }
 
     @Test
@@ -62,7 +71,7 @@ class Iap2WirelessControlClientTest {
 
         assertEquals(
             "40400060430100350001000900004c49564900000e000173656372657431323300000500022400100003" +
-                "3139322e3136382e322e31000005000403000800020000c000000a00036465762d3100000b000461" +
+                "3139322e3136382e322e31000005000402000800020000c000000a00036465762d3100000b000461" +
                 "61626263630000080005312e3000",
             frame.encodedFrame().hex(),
         )
