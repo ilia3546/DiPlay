@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
+import android.os.SystemClock
 import android.util.Log
 import com.shilapi.xcertplay.compat.Base64Compat
 import com.shilapi.xcertplay.network.RootShell
@@ -15,17 +16,27 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
 /** A track for the dashboard; [cover] is a JPEG ready for the message, or null for none. */
-internal class DashboardTrack(val title: String, val artist: String, val album: String, val cover: ByteArray?)
+internal class DashboardTrack(val title: String, val artist: String, val album: String, val cover: ByteArray?,
+    val durationMillis: Long? = null)
 
 /**
  * The music card messages the Desay SV dashboard service sends to QNX (CabinLAN 0x1001): subtype 0
- * carries the track and its cover, subtype 1 the play state.
+ * carries the track and its cover, subtype 1 the play state, subtype 6 the position and length and
+ * subtype 129 whether the progress bar is shown.
  */
 internal object GeelyDashboardMessages {
     // QNX draws its Bluetooth badge for this origin; the probe on the car showed DiPlay's own cover with it.
     private const val ORIGIN = 6
     const val TRACK = 0
     const val PLAY_STATE = 1
+    const val PLAY_TIME = 6
+    const val PLAY_BAR = 129
+
+    /** Both in whole seconds, as JSON numbers. */
+    fun playTime(currentSeconds: Long, totalSeconds: Long): String =
+        "{\"CurrentPlayingTime\":$currentSeconds,\"TotalPlayTime\":$totalSeconds}"
+
+    fun playBar(shown: Boolean): String = "{\"MusicPlayBarStatus\":${if (shown) 1 else 0}}"
 
     /** Field order, empty fields and base64 lines of 76 characters follow the stock service. */
     fun track(title: String, artist: String, album: String, cover: ByteArray): String = buildString {
@@ -59,25 +70,37 @@ internal object GeelyDashboardMessages {
 
 /**
  * What the dashboard shows. Sends a track only when its text or cover changed and the play state only
- * when it changed; [clear] sends one empty card, and only while a card of ours may be shown. Not
- * thread-safe: [DashboardMusicQueue] calls it from one worker.
+ * when it changed; [clear] sends one empty card, and only while a card of ours may be shown. A track with
+ * a duration gets the progress bar and its position, every [tick] while playing when the second changed
+ * and once at a pause. Not thread-safe: [DashboardMusicQueue] calls it from one worker.
  */
 internal class GeelyDashboardMusicOutput(
     private val send: (subtype: Int, json: String) -> Boolean,
     /** The cover for a track without one and for the empty card; the stock night cover is Desay's asset. */
     private val blankCover: () -> ByteArray,
     private val log: (String) -> Unit = {},
-    /** Sends a repeat of what is shown; a repeat must not start su, so it may refuse where [send] would not. */
+    /**
+     * Sends a repeat of what is shown, the position and the progress bar; none of them may start su, so it
+     * may refuse where [send] would not.
+     */
     private val resend: (subtype: Int, json: String) -> Boolean = send,
     /** A card of ours may already be shown: a killed process sent it and never cleared it. */
     leftBehind: Boolean = false,
     /** Hears whether a card of ours may be shown, so the next process can tell [leftBehind]. */
     private val cardShown: (Boolean) -> Unit = {},
+    private val now: () -> Long = SystemClock::elapsedRealtime,
 ) {
     private var shown = leftBehind
+    private var barShown = leftBehind
     private var lastTrack: String? = null
     private var lastPlaying: Boolean? = null
     private var wantPlaying: Boolean? = null
+    private var durationMillis = 0L
+    private var elapsedMillis: Long? = null
+    private var elapsedAt = 0L
+    private var lastSecond: Long? = null
+
+    val ticking: Boolean get() = lastTrack != null && durationMillis > 0 && wantPlaying == true
 
     fun show(track: DashboardTrack) {
         if (track.title.isBlank() && track.artist.isBlank()) {
@@ -86,8 +109,12 @@ internal class GeelyDashboardMusicOutput(
         }
         val json = GeelyDashboardMessages.track(track.title.trim(), track.artist.trim(), track.album.trim(),
             track.cover ?: blankCover())
-        if (json == lastTrack) return
-        if (send(GeelyDashboardMessages.TRACK, json)) {
+        val duration = track.durationMillis?.coerceAtLeast(0) ?: 0L
+        if (json == lastTrack && duration == durationMillis) return
+        // The stock service hides the bar before it sends the card and shows it after the first position.
+        if (duration == 0L) showBar(false)
+        if (json != lastTrack) {
+            if (!send(GeelyDashboardMessages.TRACK, json)) return
             lastTrack = json
             if (!shown) {
                 shown = true
@@ -96,13 +123,34 @@ internal class GeelyDashboardMusicOutput(
             log("dashboard music track sent titleLength=${track.title.length} cover=${track.cover?.size ?: "blank"}")
             sendPlayState()
         }
+        durationMillis = duration
+        lastSecond = null
+        sendPosition()
+        if (duration > 0) showBar(true)
     }
 
     /** Remembered until a track is shown: QNX gets the play state of a card it has. */
     fun playing(playing: Boolean) {
+        val paused = wantPlaying == true && !playing
+        if (wantPlaying != playing) {
+            elapsedMillis = elapsedMillis?.let { position() }
+            elapsedAt = now()
+        }
         wantPlaying = playing
         sendPlayState()
+        if (paused) {
+            lastSecond = null
+            sendPosition()
+        }
     }
+
+    /** The iPhone's position, [elapsedMillis] at [atMillis] on the elapsed-realtime clock. */
+    fun position(elapsedMillis: Long?, atMillis: Long) {
+        this.elapsedMillis = elapsedMillis
+        elapsedAt = atMillis
+    }
+
+    fun tick() = sendPosition()
 
     private fun sendPlayState() {
         val playing = wantPlaying ?: return
@@ -110,19 +158,53 @@ internal class GeelyDashboardMusicOutput(
         if (send(GeelyDashboardMessages.PLAY_STATE, GeelyDashboardMessages.playState(playing))) lastPlaying = playing
     }
 
-    /** Sends the shown card and play state again: the stock dashboard service overwrites them on its own events. */
+    private fun sendPosition() {
+        if (lastTrack == null || durationMillis <= 0) return
+        val second = position() / 1000
+        if (second == lastSecond) return
+        if (resend(GeelyDashboardMessages.PLAY_TIME, GeelyDashboardMessages.playTime(second, durationMillis / 1000))) {
+            lastSecond = second
+        }
+    }
+
+    private fun showBar(shown: Boolean) {
+        if (barShown != shown) sendBar(shown)
+    }
+
+    private fun sendBar(shown: Boolean) {
+        if (resend(GeelyDashboardMessages.PLAY_BAR, GeelyDashboardMessages.playBar(shown))) barShown = shown
+    }
+
+    private fun position(): Long {
+        val elapsed = elapsedMillis ?: return 0L
+        val moved = if (wantPlaying == true) (now() - elapsedAt).coerceAtLeast(0) else 0L
+        val position = if (durationMillis > 0) (elapsed + moved).coerceAtMost(durationMillis) else elapsed + moved
+        return position.coerceAtLeast(0)
+    }
+
+    /**
+     * Sends the shown card, play state, position and progress bar again: the stock dashboard service overwrites
+     * them on its own events.
+     */
     fun reassert() {
         val track = lastTrack ?: return
         if (!resend(GeelyDashboardMessages.TRACK, track)) return
         lastPlaying?.let { resend(GeelyDashboardMessages.PLAY_STATE, GeelyDashboardMessages.playState(it)) }
+        lastSecond = null
+        sendPosition()
+        sendBar(durationMillis > 0)
     }
 
     fun clear() {
+        elapsedMillis = null
         if (!shown) return
+        showBar(false)
         if (send(GeelyDashboardMessages.TRACK, GeelyDashboardMessages.track("", "", "", blankCover()))) {
             shown = false
             lastTrack = null
             lastPlaying = null
+            durationMillis = 0L
+            lastSecond = null
             cardShown(false)
             log("dashboard music cleared")
         }
@@ -152,6 +234,7 @@ internal class DashboardMusicQueue(
     private val wish = AtomicReference<Wish?>()
     private var stopRepeating: (() -> Unit)? = null
     private var stopProgress: (() -> Unit)? = null
+    private var stopPosition: (() -> Unit)? = null
 
     /** A session with the option on began: the shown card is repeated until [stop]. */
     fun start() = execute(Runnable {
@@ -171,9 +254,13 @@ internal class DashboardMusicQueue(
     fun playing(playing: Boolean) = execute(Runnable {
         output().playing(playing)
         widget().playing(playing)
+        followPosition()
     })
 
-    fun position(elapsedMillis: Long?, atMillis: Long) = execute(Runnable { widget().position(elapsedMillis, atMillis) })
+    fun position(elapsedMillis: Long?, atMillis: Long) = execute(Runnable {
+        output().position(elapsedMillis, atMillis)
+        widget().position(elapsedMillis, atMillis)
+    })
 
     fun stop() {
         want(Wish.Clear)
@@ -182,6 +269,8 @@ internal class DashboardMusicQueue(
             stopRepeating = null
             stopProgress?.invoke()
             stopProgress = null
+            stopPosition?.invoke()
+            stopPosition = null
         })
     }
 
@@ -197,7 +286,7 @@ internal class DashboardMusicQueue(
         when (val next = wish.getAndSet(null) ?: return) {
             is Wish.Track -> {
                 val jpeg = next.cover?.let(encode)
-                output().show(DashboardTrack(next.title, next.artist, next.album, jpeg))
+                output().show(DashboardTrack(next.title, next.artist, next.album, jpeg, next.durationMillis))
                 widget().show(next.title, next.artist, next.album, next.durationMillis, next.cover)
                 next.cover?.recycle()
             }
@@ -206,11 +295,23 @@ internal class DashboardMusicQueue(
                 widget().clear()
             }
         }
+        followPosition()
+    }
+
+    private fun followPosition() {
+        val ticking = output().ticking
+        if (ticking && stopPosition == null) {
+            stopPosition = repeat(POSITION_MILLIS, Runnable { output().tick() })
+        } else if (!ticking) {
+            stopPosition?.invoke()
+            stopPosition = null
+        }
     }
 
     companion object {
         const val REASSERT_MILLIS = 30_000L
         const val PROGRESS_MILLIS = 5_000L
+        const val POSITION_MILLIS = 1_000L
     }
 }
 

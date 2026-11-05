@@ -20,10 +20,10 @@ class DashboardMusicQueueTest {
     private val sent = mutableListOf<Pair<Int, String>>()
     private val resent = mutableListOf<Pair<Int, String>>()
     private val blank = byteArrayOf(9)
-    private val output = GeelyDashboardMusicOutput(send = { subtype, json -> sent += subtype to json; true },
-        blankCover = { blank }, resend = { subtype, json -> resent += subtype to json; true })
-    private val widgetSent = mutableListOf<Intent>()
     private var clock = 0L
+    private val output = GeelyDashboardMusicOutput(send = { subtype, json -> sent += subtype to json; true },
+        blankCover = { blank }, resend = { subtype, json -> resent += subtype to json; true }, now = { clock })
+    private val widgetSent = mutableListOf<Intent>()
     private val widget = GeelyMediaWidgetOutput(send = { widgetSent += it; true }, appName = "DiPlay",
         appPackage = "com.shihab.diplay", now = { clock })
     private val queue = DashboardMusicQueue(
@@ -80,7 +80,8 @@ class DashboardMusicQueueTest {
         assertEquals(30_000L, DashboardMusicQueue.REASSERT_MILLIS)
         repeating.getValue(DashboardMusicQueue.REASSERT_MILLIS).run()
         assertEquals(listOf(GeelyDashboardMessages.TRACK to card("A", 1),
-            GeelyDashboardMessages.PLAY_STATE to GeelyDashboardMessages.playState(true)), resent)
+            GeelyDashboardMessages.PLAY_STATE to GeelyDashboardMessages.playState(true),
+            GeelyDashboardMessages.PLAY_BAR to GeelyDashboardMessages.playBar(false)), resent)
         queue.stop()
         runQueued()
         assertEquals(2, cancels)
@@ -119,6 +120,35 @@ class DashboardMusicQueueTest {
         assertTrue(widgetSent[1].getBooleanExtra("music.is_playing", false))
         assertEquals(35_000L, widgetSent[2].getLongExtra("music.progress", -1))
         assertEquals(35_000L, widgetSent[3].getLongExtra("music.progress", -1))
+    }
+
+    @Test fun thePositionTicksEverySecondOnlyWhilePlayingATrackWithADurationUntilStop() {
+        queue.start()
+        queue.position(0L, clock)
+        queue.show("A", "Artist", "", 200_000L, null)
+        runQueued()
+        assertFalse(repeating.containsKey(DashboardMusicQueue.POSITION_MILLIS))
+        queue.playing(true)
+        runQueued()
+        assertEquals(1_000L, DashboardMusicQueue.POSITION_MILLIS)
+        clock = 1_000L
+        repeating.getValue(DashboardMusicQueue.POSITION_MILLIS).run()
+        assertEquals(GeelyDashboardMessages.PLAY_TIME to GeelyDashboardMessages.playTime(1, 200), resent.last())
+        queue.playing(false)
+        runQueued()
+        assertFalse(repeating.containsKey(DashboardMusicQueue.POSITION_MILLIS))
+        queue.playing(true)
+        queue.show("B", "Artist", "", null, null)
+        runQueued()
+        assertFalse(repeating.containsKey(DashboardMusicQueue.POSITION_MILLIS))
+        queue.show("A", "Artist", "", 200_000L, null)
+        runQueued()
+        assertTrue(repeating.containsKey(DashboardMusicQueue.POSITION_MILLIS))
+        queue.stop()
+        runQueued()
+        assertTrue(repeating.isEmpty())
+        assertEquals(GeelyDashboardMessages.PLAY_BAR to GeelyDashboardMessages.playBar(false), resent.last())
+        assertEquals(GeelyDashboardMessages.track("", "", "", blank), sent.last().second)
     }
 
     @Test fun whenIdleRunsAfterTheWorkAskedForBeforeIt() {
