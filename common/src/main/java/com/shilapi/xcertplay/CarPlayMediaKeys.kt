@@ -145,7 +145,10 @@ internal object CarPlayMediaKeys {
                         update.artworkTransferId?.let { ambientColorCache[it] })
                     artwork = nextArtwork(update.artworkTransferId, artworkCache, artwork)
                 }
-                if (nowPlaying.elapsedMillis != update.elapsedMillis) elapsedUpdatedAt = SystemClock.elapsedRealtime()
+                if (nowPlaying.elapsedMillis != update.elapsedMillis) {
+                    elapsedUpdatedAt = SystemClock.elapsedRealtime()
+                    MonjaroDashboardMusic.positionChanged(update.elapsedMillis, elapsedUpdatedAt)
+                }
                 val metadataChanged = metadataChanged(nowPlaying, update) || artwork !== previousArtwork
                 nowPlaying = update
                 if (metadataChanged) ClusterMusicState.publish(update, artwork)
@@ -441,6 +444,9 @@ internal object CarPlayMediaKeys {
 
     /** A steering-wheel media key captured outside the Android key stream (Geely/Lynk). */
     internal fun onExternalMediaKey(index: Int) = send(index, "geely-wheel")
+
+    /** A button of the stock Geely media widget while DiPlay's track is shown there. */
+    internal fun onWidgetMediaKey(index: Int) = send(index, "geely-widget")
 
     /** The steering-wheel microphone key captured outside the Android key stream (Geely/Lynk). */
     internal fun onExternalSiriKey(): Boolean {

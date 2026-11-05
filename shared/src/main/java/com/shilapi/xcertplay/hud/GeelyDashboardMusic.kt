@@ -130,9 +130,9 @@ internal class GeelyDashboardMusicOutput(
 }
 
 /**
- * Applies the card DiPlay wants on one worker, in order. Each call records what is wanted now and queues
- * a sync that applies the latest wish, so a sync queued before a newer show or stop cannot bring an older
- * card back. Owns the covers it is given until it encodes or drops them.
+ * Applies the card DiPlay wants to the dashboard and the media widgets on one worker, in order. Each call
+ * records what is wanted now and queues a sync that applies the latest wish, so a sync queued before a newer
+ * show or stop cannot bring an older card back. Owns the covers it is given until it encodes or drops them.
  */
 internal class DashboardMusicQueue(
     private val execute: (Runnable) -> Unit,
@@ -140,32 +140,48 @@ internal class DashboardMusicQueue(
     private val repeat: (periodMillis: Long, Runnable) -> () -> Unit,
     private val encode: (Bitmap) -> ByteArray,
     private val output: () -> GeelyDashboardMusicOutput,
+    private val widget: () -> GeelyMediaWidgetOutput,
     private val newSession: () -> Unit,
 ) {
     private sealed interface Wish {
-        class Track(val title: String, val artist: String, val album: String, val cover: Bitmap?) : Wish
+        class Track(val title: String, val artist: String, val album: String, val durationMillis: Long?,
+            val cover: Bitmap?) : Wish
         object Clear : Wish
     }
 
     private val wish = AtomicReference<Wish?>()
     private var stopRepeating: (() -> Unit)? = null
+    private var stopProgress: (() -> Unit)? = null
 
     /** A session with the option on began: the shown card is repeated until [stop]. */
     fun start() = execute(Runnable {
         newSession()
         stopRepeating?.invoke()
-        stopRepeating = repeat(REASSERT_MILLIS, Runnable { output().reassert() })
+        stopProgress?.invoke()
+        stopRepeating = repeat(REASSERT_MILLIS, Runnable {
+            output().reassert()
+            widget().reassert()
+        })
+        stopProgress = repeat(PROGRESS_MILLIS, Runnable { widget().tick() })
     })
 
-    fun show(title: String, artist: String, album: String, cover: Bitmap?) = want(Wish.Track(title, artist, album, cover))
+    fun show(title: String, artist: String, album: String, durationMillis: Long?, cover: Bitmap?) =
+        want(Wish.Track(title, artist, album, durationMillis, cover))
 
-    fun playing(playing: Boolean) = execute(Runnable { output().playing(playing) })
+    fun playing(playing: Boolean) = execute(Runnable {
+        output().playing(playing)
+        widget().playing(playing)
+    })
+
+    fun position(elapsedMillis: Long?, atMillis: Long) = execute(Runnable { widget().position(elapsedMillis, atMillis) })
 
     fun stop() {
         want(Wish.Clear)
         execute(Runnable {
             stopRepeating?.invoke()
             stopRepeating = null
+            stopProgress?.invoke()
+            stopProgress = null
         })
     }
 
@@ -180,28 +196,41 @@ internal class DashboardMusicQueue(
     private fun sync() {
         when (val next = wish.getAndSet(null) ?: return) {
             is Wish.Track -> {
-                val jpeg = next.cover?.let { bitmap -> encode(bitmap).also { bitmap.recycle() } }
+                val jpeg = next.cover?.let(encode)
                 output().show(DashboardTrack(next.title, next.artist, next.album, jpeg))
+                widget().show(next.title, next.artist, next.album, next.durationMillis, next.cover)
+                next.cover?.recycle()
             }
-            Wish.Clear -> output().clear()
+            Wish.Clear -> {
+                output().clear()
+                widget().clear()
+            }
         }
     }
 
     companion object {
         const val REASSERT_MILLIS = 30_000L
+        const val PROGRESS_MILLIS = 5_000L
     }
 }
 
-/** The dashboard as the Monjaro A3 option drives it; every call returns at once and the work runs in order. */
+/**
+ * The dashboard and the media widgets as the Monjaro A3 option drives them; every call returns at once and the
+ * work runs in order.
+ */
 interface DashboardMusic {
-    fun start(context: Context)
+    /** [mediaKey] gets the media widget's buttons as [com.shilapi.xcertplay.airplay.CarPlayMediaButton] indices. */
+    fun start(context: Context, mediaKey: (index: Int) -> Unit)
 
     /** The cover is copied before this returns, so [artwork] stays the caller's to recycle. */
-    fun show(context: Context, title: String?, artist: String?, album: String?, artwork: Bitmap?)
+    fun show(context: Context, title: String?, artist: String?, album: String?, durationMillis: Long?, artwork: Bitmap?)
 
     fun playing(context: Context, playing: Boolean)
 
-    /** Sends one empty card if a card of ours is shown and stops repeating it. */
+    /** The iPhone's position, [elapsedMillis] at [atMillis] on the elapsed-realtime clock. */
+    fun position(context: Context, elapsedMillis: Long?, atMillis: Long)
+
+    /** Sends one empty card if a card of ours is shown, gives the media widgets back and stops repeating. */
     fun stop(context: Context)
 
     /** Runs [done] on the dashboard worker once the work asked for before this call is done. */
@@ -209,8 +238,9 @@ interface DashboardMusic {
 }
 
 /**
- * The CarPlay track on the stock Monjaro A3 dashboard. The first message of a process clears a card that
- * a killed process left; a repeat goes only through the app process, never through su.
+ * The CarPlay track on the stock Monjaro A3 dashboard and media widgets. The first message of a process
+ * clears a dashboard card that a killed process left; a repeat goes only through the app process, never
+ * through su.
  */
 object GeelyDashboardMusic : DashboardMusic {
     private const val TAG = "DiPlay-DashboardMusic"
@@ -220,8 +250,11 @@ object GeelyDashboardMusic : DashboardMusic {
     private const val KEY_CARD_SHOWN = "card_shown"
     private val worker = Executors.newSingleThreadScheduledExecutor { Thread(it, "diplay-dashboard-music").apply { isDaemon = true } }
     @Volatile private var app: Context? = null
+    @Volatile private var mediaKey: (Int) -> Unit = {}
     private var link: Link? = null
+    private var widget: GeelyMediaWidgetOutput? = null
     private var blank: ByteArray? = null
+    private val widgetKeys = GeelyMediaWidgetKeys(press = { mediaKey(it) }, log = { Log.i(TAG, it) })
 
     private class Link(val sender: GeelyCabinLan.Sender, val output: GeelyDashboardMusicOutput)
 
@@ -235,23 +268,31 @@ object GeelyDashboardMusic : DashboardMusic {
             ByteArrayOutputStream().also { bitmap.compress(Bitmap.CompressFormat.JPEG, COVER_QUALITY, it) }.toByteArray()
         },
         output = { link().output },
+        widget = ::mediaWidget,
         newSession = { link().sender.newSession() },
     )
 
-    override fun start(context: Context) {
+    override fun start(context: Context, mediaKey: (index: Int) -> Unit) {
         app = context.applicationContext
+        this.mediaKey = mediaKey
         queue.start()
     }
 
-    override fun show(context: Context, title: String?, artist: String?, album: String?, artwork: Bitmap?) {
+    override fun show(context: Context, title: String?, artist: String?, album: String?, durationMillis: Long?,
+        artwork: Bitmap?) {
         app = context.applicationContext
         val cover = artwork?.takeUnless { it.isRecycled }?.let { runCatching { fitted(it) }.getOrNull() }
-        queue.show(title.orEmpty(), artist.orEmpty(), album.orEmpty(), cover)
+        queue.show(title.orEmpty(), artist.orEmpty(), album.orEmpty(), durationMillis, cover)
     }
 
     override fun playing(context: Context, playing: Boolean) {
         app = context.applicationContext
         queue.playing(playing)
+    }
+
+    override fun position(context: Context, elapsedMillis: Long?, atMillis: Long) {
+        app = context.applicationContext
+        queue.position(elapsedMillis, atMillis)
     }
 
     override fun stop(context: Context) {
@@ -304,5 +345,16 @@ object GeelyDashboardMusic : DashboardMusic {
         )
         output.clear()
         Link(sender, output).also { link = it }
+    }
+
+    private fun mediaWidget(): GeelyMediaWidgetOutput = widget ?: run {
+        val app = checkNotNull(app)
+        GeelyMediaWidgetOutput(
+            send = { intent -> runCatching { app.sendBroadcast(intent) }.isSuccess },
+            appName = app.applicationInfo.loadLabel(app.packageManager).toString(),
+            appPackage = app.packageName,
+            owned = { owned -> if (owned) widgetKeys.register(app) else widgetKeys.unregister() },
+            log = { Log.i(TAG, it) },
+        ).also { widget = it }
     }
 }

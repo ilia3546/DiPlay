@@ -12,6 +12,6 @@
     <string name="settings_microphone_input_auto">自動</string>
     <string name="settings_microphone_input_voice_assistant_bus">音声アシスタント バス（bus14_vr_in）</string>
     <string name="settings_microphone_input_all_cabin">車内のすべてのマイク（ミックス）</string>
-    <string name="settings_dashboard_music">CarPlay の音楽をメーターに表示（実験的機能）</string>
-    <string name="settings_dashboard_music_description">CarPlay の曲名、アーティスト、アルバム、カバーを純正メーターの音楽ウィジェットに表示し、CarPlay が終わると消去します。ヘッドユニットが DiPlay 自身の要求を拒否した場合にのみ root（Magisk）を使います。すぐに反映されます。</string>
+    <string name="settings_dashboard_music">CarPlay の音楽をメーターとメディアウィジェットに表示（実験的機能）</string>
+    <string name="settings_dashboard_music_description">CarPlay の曲名、アーティスト、アルバム、カバーを純正メーターの音楽ウィジェットと、運転席・助手席画面の音楽ウィジェットに表示し、CarPlay が終わると消去します。ウィジェットのボタンで CarPlay を操作できます。ヘッドユニットが DiPlay 自身の要求を拒否した場合にのみ root（Magisk）を使います。すぐに反映されます。</string>
 </resources>

@@ -9,8 +9,8 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 /**
- * Feeds the CarPlay track to the stock Monjaro A3 dashboard while a CarPlay session is attached and
- * the card's option is on; turning either off sends one empty card.
+ * Feeds the CarPlay track to the stock Monjaro A3 dashboard and media widgets while a CarPlay session is
+ * attached and the card's option is on; turning either off sends one empty card and gives the widgets back.
  */
 internal object MonjaroDashboardMusic {
     private val main = Handler(Looper.getMainLooper())
@@ -18,6 +18,7 @@ internal object MonjaroDashboardMusic {
     private var app: Context? = null
     private var sessionAttached = false
     private var iphonePlaying: () -> Boolean = { false }
+    private var position: Pair<Long?, Long>? = null
     private var stopObserving: (() -> Unit)? = null
 
     fun enabled(context: Context): Boolean = MonjaroA3Options.load(context).dashboardMusic
@@ -35,6 +36,7 @@ internal object MonjaroDashboardMusic {
     fun sessionEnded() {
         main.post {
             sessionAttached = false
+            position = null
             refresh()
         }
     }
@@ -54,6 +56,15 @@ internal object MonjaroDashboardMusic {
         }
     }
 
+    /** The iPhone's position, [elapsedMillis] at [atMillis] on the elapsed-realtime clock; may run on any thread. */
+    fun positionChanged(elapsedMillis: Long?, atMillis: Long) {
+        main.post {
+            position = elapsedMillis to atMillis
+            val context = app
+            if (stopObserving != null && context != null) dashboard.position(context, elapsedMillis, atMillis)
+        }
+    }
+
     /** Waits off the main thread for the dashboard work asked for so far, such as the empty card at shutdown. */
     fun awaitIdle(timeoutMillis: Long): Boolean {
         val idle = CountDownLatch(1)
@@ -70,10 +81,12 @@ internal object MonjaroDashboardMusic {
         val context = app ?: return
         val on = sessionAttached && enabled(context)
         if (on && stopObserving == null) {
-            dashboard.start(context)
+            dashboard.start(context, CarPlayMediaKeys::onWidgetMediaKey)
             dashboard.playing(context, iphonePlaying())
+            position?.let { (elapsed, at) -> dashboard.position(context, elapsed, at) }
             stopObserving = ClusterMusicState.observe { snapshot ->
-                dashboard.show(context, snapshot.info.title, snapshot.info.artist, snapshot.info.album, snapshot.artwork)
+                dashboard.show(context, snapshot.info.title, snapshot.info.artist, snapshot.info.album,
+                    snapshot.info.durationMillis, snapshot.artwork)
             }
         } else if (!on) {
             stopObserving?.let {

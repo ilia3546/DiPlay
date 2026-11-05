@@ -1,6 +1,7 @@
 package com.shilapi.xcertplay
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Looper
 import com.shilapi.xcertplay.hud.DashboardMusic
@@ -28,11 +29,15 @@ class MonjaroDashboardMusicTest {
 
     @Before fun record() {
         MonjaroDashboardMusic.dashboard = object : DashboardMusic {
-            override fun start(context: Context) { calls += "start" }
-            override fun show(context: Context, title: String?, artist: String?, album: String?, artwork: Bitmap?) {
+            override fun start(context: Context, mediaKey: (index: Int) -> Unit) { calls += "start" }
+            override fun show(context: Context, title: String?, artist: String?, album: String?, durationMillis: Long?,
+                artwork: Bitmap?) {
                 calls += "show $title"
             }
             override fun playing(context: Context, playing: Boolean) { calls += "playing $playing" }
+            override fun position(context: Context, elapsedMillis: Long?, atMillis: Long) {
+                calls += "position $elapsedMillis@$atMillis"
+            }
             override fun stop(context: Context) { calls += "stop" }
             override fun whenIdle(done: () -> Unit) = done()
         }
@@ -67,6 +72,39 @@ class MonjaroDashboardMusicTest {
         MonjaroDashboardMusic.sessionEnded()
         idle()
         assertEquals(emptyList<String>(), calls)
+    }
+
+    @Test fun anotherHeadUnitSendsNoWidgetBroadcastAndHoldsNoKeyReceiver() {
+        MonjaroDashboardMusic.dashboard = GeelyDashboardMusic
+        AirPlayPersistence.saveDashboardMusic(context, true)
+        startSession()
+        MonjaroDashboardMusic.playingChanged(true)
+        MonjaroDashboardMusic.positionChanged(1_000L, 0L)
+        MonjaroDashboardMusic.settingChanged(context)
+        MonjaroDashboardMusic.sessionEnded()
+        idle()
+        val app = shadowOf(RuntimeEnvironment.getApplication())
+        assertEquals(emptyList<Intent>(), app.broadcastIntents)
+        assertEquals(0, app.registeredReceivers.count { it.intentFilter.hasAction("gmc.audio_play") })
+    }
+
+    @Test fun thePositionGoesToTheDashboardOnlyWhileItIsFollowedAndAtStart() {
+        monjaroA3()
+        AirPlayPersistence.saveDashboardMusic(context, false)
+        startSession()
+        MonjaroDashboardMusic.positionChanged(5_000L, 100L)
+        idle()
+        AirPlayPersistence.saveDashboardMusic(context, true)
+        MonjaroDashboardMusic.settingChanged(context)
+        idle()
+        MonjaroDashboardMusic.positionChanged(9_000L, 200L)
+        idle()
+        MonjaroDashboardMusic.sessionEnded()
+        idle()
+        MonjaroDashboardMusic.positionChanged(1L, 300L)
+        startSession()
+        assertEquals(listOf("start", "playing false", "position 5000@100", "show Song", "position 9000@200", "stop",
+            "start", "playing false", "position 1@300", "show Song"), calls)
     }
 
     @Test fun aSessionFollowsTheTrackAndEndsWithOneStop() {

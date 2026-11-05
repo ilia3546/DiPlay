@@ -12,6 +12,6 @@
     <string name="settings_microphone_input_auto">Automático</string>
     <string name="settings_microphone_input_voice_assistant_bus">Bus del asistente de voz (bus14_vr_in)</string>
     <string name="settings_microphone_input_all_cabin">Todos los micrófonos del habitáculo (mezcla)</string>
-    <string name="settings_dashboard_music">Mostrar la música de CarPlay en el cuadro (experimental)</string>
-    <string name="settings_dashboard_music_description">Muestra la canción, el artista, el álbum y la portada de CarPlay en el widget de música del cuadro de instrumentos original, y lo vacía al terminar CarPlay. Usa root (Magisk) solo si el equipo rechaza la petición propia de DiPlay. Se aplica al instante.</string>
+    <string name="settings_dashboard_music">Mostrar la música de CarPlay en el cuadro y los widgets multimedia (experimental)</string>
+    <string name="settings_dashboard_music_description">Muestra la canción, el artista, el álbum y la portada de CarPlay en el widget de música del cuadro de instrumentos original y en los widgets de música de las pantallas del conductor y del pasajero, y los vacía al terminar CarPlay. Los botones del widget controlan CarPlay. Usa root (Magisk) solo si el equipo rechaza la petición propia de DiPlay. Se aplica al instante.</string>
 </resources>
