@@ -40,7 +40,20 @@ internal fun microphoneSource(
     speakerphoneCall: Boolean,
     carPhoneState: Boolean,
     geelyHeadUnit: Boolean,
-): Int = input.source ?: when (audioType) {
+    monjaroA3: Boolean = false,
+): Int = input.source ?: when {
+    // Monjaro A3 routes VOICE_COMMUNICATION to a capture path with no voice and records silence on
+    // VOICE_RECOGNITION; MIC opens the cabin microphones (front and rear seats heard on the car).
+    monjaroA3 && (audioType == "telephony" || audioType == "speechrecognition") -> MediaRecorder.AudioSource.MIC
+    else -> autoMicrophoneSource(audioType, speakerphoneCall, carPhoneState, geelyHeadUnit)
+}
+
+private fun autoMicrophoneSource(
+    audioType: String,
+    speakerphoneCall: Boolean,
+    carPhoneState: Boolean,
+    geelyHeadUnit: Boolean,
+): Int = when (audioType) {
     "telephony" -> telephonyMicrophoneSource(speakerphoneCall, carPhoneState, geelyHeadUnit)
     // The Geely/Lynk head unit only opens the microphone for the voice-communication
     // source; its voice-recognition source records silence, so Siri never hears.

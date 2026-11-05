@@ -22,6 +22,15 @@ class MicrophoneInputTest {
         assertEquals(MediaRecorder.AudioSource.MIC, microphoneSource("other", MicrophoneInput.AUTO, false, false, true))
     }
 
+    @Test fun autoUsesTheCabinMicrophoneOnMonjaroA3() {
+        for (type in listOf("telephony", "speechrecognition")) for (carPhoneState in flags) {
+            assertEquals(type, MediaRecorder.AudioSource.MIC,
+                microphoneSource(type, MicrophoneInput.AUTO, false, carPhoneState, geelyHeadUnit = true, monjaroA3 = true))
+        }
+        assertEquals(MediaRecorder.AudioSource.CAMCORDER,
+            microphoneSource("telephony", MicrophoneInput.CAMCORDER, false, false, geelyHeadUnit = true, monjaroA3 = true))
+    }
+
     @Test fun aChosenInputReplacesTheSourceForCallsAndSiri() {
         val expected = mapOf(
             MicrophoneInput.VOICE_RECOGNITION to MediaRecorder.AudioSource.VOICE_RECOGNITION,

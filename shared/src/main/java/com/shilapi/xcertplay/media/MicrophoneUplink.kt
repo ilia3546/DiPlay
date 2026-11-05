@@ -100,6 +100,7 @@ internal class MicrophoneUplink(
             speakerphoneCall = speakerphoneCall,
             carPhoneState = PhoneAudioRoute.carPlayCallsUseCarAudio(),
             geelyHeadUnit = com.shilapi.xcertplay.network.GeelyHeadUnit.detected,
+            monjaroA3 = com.shilapi.xcertplay.network.GeelyHeadUnit.monjaroA3,
         )
         stats.useInput(chosen)
         stats.useSource(source)
