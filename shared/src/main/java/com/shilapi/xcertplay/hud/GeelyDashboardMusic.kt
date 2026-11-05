@@ -171,7 +171,7 @@ object GeelyDashboardMusic {
         val sender = GeelyCabinLan.Sender(
             direct = GeelyCabinLan::sendDirect,
             root = { msgType, subtype, json ->
-                GeelyCabinLan.rootSent(RootShell.runWithInput(GeelyCabinLan.rootCommand(apk, msgType, subtype),
+                GeelyCabinLan.rootFailure(RootShell.runWithInput(GeelyCabinLan.rootCommand(apk, msgType, subtype),
                     json.toByteArray(Charsets.UTF_8)))
             },
             log = { Log.i(TAG, it) },

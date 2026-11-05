@@ -1,5 +1,6 @@
 package com.shilapi.xcertplay.network
 
+import java.io.OutputStream
 import java.util.concurrent.TimeUnit
 
 /** Runs one shell command as root through `su -c`. Callers must validate every value they put in the command. */
@@ -49,14 +50,19 @@ object RootShell {
     fun isSafeInterfaceName(name: String?): Boolean = name != null && INTERFACE_NAME.matches(name)
 
     private fun runProcess(command: List<String>, timeoutMillis: Long): CommandOutput =
-        runProcess(command, timeoutMillis, ByteArray(0))
+        execute(command, timeoutMillis) { it.close() }
 
-    private fun runProcess(command: List<String>, timeoutMillis: Long, stdin: ByteArray): CommandOutput {
+    private fun runProcess(command: List<String>, timeoutMillis: Long, stdin: ByteArray): CommandOutput =
+        execute(command, timeoutMillis) { input ->
+            // A child that never reads stdin must not hold this thread past the timeout.
+            Thread({ runCatching { input.use { it.write(stdin) } } }, "root-shell-stdin")
+                .apply { isDaemon = true; start() }
+        }
+
+    private inline fun execute(command: List<String>, timeoutMillis: Long, feed: (OutputStream) -> Unit): CommandOutput {
         val process = ProcessBuilder(command).redirectErrorStream(true).start()
         try {
-            // A child that never reads stdin must not hold this thread past the timeout.
-            Thread({ runCatching { process.outputStream.use { it.write(stdin) } } }, "root-shell-stdin")
-                .apply { isDaemon = true; start() }
+            feed(process.outputStream)
             if (!process.waitFor(timeoutMillis, TimeUnit.MILLISECONDS)) {
                 return CommandOutput(TIMED_OUT, stdout = "")
             }
