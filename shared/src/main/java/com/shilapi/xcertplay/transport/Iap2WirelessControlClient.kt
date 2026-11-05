@@ -291,7 +291,10 @@ enum class Iap2WirelessSecurity(val wireValue: Int) {
     NONE(0),
     WEP(1),
     WPA_WPA2(2),
-    WPA3_TRANSITION(3),
+
+    // iOS accessoryd rejects 3 ("Invalid accessory security type 3") and crashes, dropping iAP2.
+    // A transition AP still accepts WPA2-PSK, and factory CarPlay head units (Desay KX11) send 2.
+    WPA3_TRANSITION(2),
     WPA3_ONLY(4),
 }
 
