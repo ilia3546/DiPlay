@@ -5337,6 +5337,7 @@ open class CarPlayHostActivity : ComponentActivity() {
             vendorLowLatencyDecoder = AirPlayPersistence.loadLowLatencyDecoder(this),
             mtkDecoderTuningEnabled = AirPlayPersistence.loadMtkDecoderTuning(this),
             navigationPromptAudioFocus = AirPlayPersistence.loadNavigationPromptAudioFocus(this),
+            microphoneInput = { MonjaroA3Options.load(this).microphoneInput },
         )
     }
 

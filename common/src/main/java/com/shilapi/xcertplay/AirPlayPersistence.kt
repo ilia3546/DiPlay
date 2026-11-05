@@ -13,6 +13,7 @@ import com.shilapi.xcertplay.airplay.AirPlayIdentity
 import com.shilapi.xcertplay.airplay.PairingStore
 import com.shilapi.xcertplay.airplay.SafeAreaCodec
 import com.shilapi.xcertplay.airplay.SafeAreaRect
+import com.shilapi.xcertplay.media.MicrophoneInput
 import com.shilapi.xcertplay.orchestration.ManualHotspotBand
 import com.shilapi.xcertplay.orchestration.ManualHotspotSecurity
 import com.shilapi.xcertplay.orchestration.MfiTarget
@@ -134,6 +135,7 @@ object AirPlayPersistence {
     private const val KEY_ROOT_HOTSPOT_DETAILS = "root_hotspot_details"
     private const val KEY_DISCONNECT_PHONE_BLUETOOTH = "disconnect_phone_bluetooth_wireless"
     private const val KEY_HOTSPOT_AUDIO_FIREWALL = "hotspot_audio_firewall"
+    private const val KEY_MICROPHONE_INPUT = "microphone_input"
     private const val KEY_BT_SUSPEND_DELAY = "bt_suspend_delay_seconds"
     private const val KEY_LOCATION_REPORTING_ENABLED = "location_reporting_enabled"
     private const val KEY_EXTERNAL_CONTROLLER = "external_controller"
@@ -588,6 +590,17 @@ object AirPlayPersistence {
     fun saveHotspotAudioFirewall(context: Context, enabled: Boolean) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putBoolean(KEY_HOTSPOT_AUDIO_FIREWALL, enabled).apply()
+    }
+
+    fun loadMicrophoneInput(context: Context): MicrophoneInput {
+        val name = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_MICROPHONE_INPUT, null)
+        return MicrophoneInput.entries.firstOrNull { it.name == name }
+            ?: MicrophoneInput.AUTO
+    }
+
+    fun saveMicrophoneInput(context: Context, input: MicrophoneInput) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putString(KEY_MICROPHONE_INPUT, input.name).apply()
     }
 
     fun saveBtSuspendDuringCarplay(context: Context, enabled: Boolean) {
