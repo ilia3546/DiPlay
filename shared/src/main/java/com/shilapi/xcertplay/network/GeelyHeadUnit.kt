@@ -32,4 +32,13 @@ object GeelyHeadUnit {
     val detected: Boolean = identifiers.any { id ->
         id == PRODUCT || id == MODEL || id.contains("geely") || id.contains("lynk")
     }
+
+    /** Model prefix of the Geely Monjaro (KX11) A3 head unit, a `geely_fx11` build by DesaySV. */
+    private const val MONJARO_A3_MODEL_PREFIX = "kx11_a3"
+
+    /** Read from [Build] on every call, unlike [detected], so Settings tests can switch it. */
+    val monjaroA3: Boolean
+        get() = runCatching {
+            Build.PRODUCT.lowercase() == PRODUCT && Build.MODEL.lowercase().startsWith(MONJARO_A3_MODEL_PREFIX)
+        }.getOrDefault(false)
 }

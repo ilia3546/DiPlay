@@ -65,6 +65,8 @@ class CarPlayRuntimeConfig(
     val manualHotspotSecurity: ManualHotspotSecurity = ManualHotspotSecurity.WPA2,
     /** Interface override for head units that keep their hotspot off the Wi-Fi tether list (#573). */
     val manualHotspotInterface: String? = null,
+    /** Reads the hotspot channel through root when Android hides it, and sends the access point BSSID. */
+    val rootHotspotDetails: Boolean = false,
     val wirelessBluetoothDeviceAddress: String? = null,
     val locationReportingEnabled: Boolean = false,
     val wifiP2pPreferredChannel: Int = WifiP2pChannels.AUTO,

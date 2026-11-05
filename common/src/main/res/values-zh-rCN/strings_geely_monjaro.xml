@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_geely_monjaro_a3_support">Geely Monjaro A3 支持</string>
+    <string name="settings_root_hotspot_details">车辆热点的准确信息（实验性）</string>
+    <string name="settings_root_hotspot_details_description">当 Android 隐藏车辆热点的信道时，从固件的热点配置中读取信道，并把热点的 BSSID 告诉 iPhone。需要 root（Magisk）。下次连接时生效。</string>
+</resources>

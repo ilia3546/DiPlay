@@ -51,6 +51,14 @@ internal object HotspotInterfaceBssid {
             "so its MAC cannot be derived"
     }
 
+    fun toBytes(mac: String): ByteArray? {
+        val parts = mac.split(':')
+        if (parts.size != 6 || parts.any { it.length != 2 }) return null
+        val bytes = ByteArray(6) { index -> (parts[index].toIntOrNull(16) ?: return null).toByte() }
+        if (bytes.all { it == 0.toByte() } || (bytes[0].toInt() and 1) != 0) return null
+        return bytes
+    }
+
     fun fromAddresses(addresses: List<ByteArray>): String? =
         addresses.mapNotNull(::decode).distinct().singleOrNull()
 

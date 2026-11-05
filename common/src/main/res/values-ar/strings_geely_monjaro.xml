@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_geely_monjaro_a3_support">دعم Geely Monjaro A3</string>
+    <string name="settings_root_hotspot_details">بيانات دقيقة لنقطة اتصال السيارة (تجريبي)</string>
+    <string name="settings_root_hotspot_details_description">عندما يخفي Android قناة نقطة اتصال السيارة، يقرأها من إعدادات نقطة الاتصال في البرنامج الثابت ويُبلغ iPhone أيضًا بمعرّف BSSID لنقطة الاتصال. يتطلب صلاحيات root (Magisk). يُطبَّق عند الاتصال التالي.</string>
+</resources>

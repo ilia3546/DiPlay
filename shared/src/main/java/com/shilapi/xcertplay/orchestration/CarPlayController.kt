@@ -1597,7 +1597,8 @@ class CarPlayController(
             debugLog(
                 "wireless endpoint addressCount=${endpoint.ipAddresses.size} " +
                     "family=${if (hostAddress is Inet6Address) "IPv6" else "IPv4"} " +
-                    "port=${endpoint.airPlayPort} channel=${endpoint.channel} security=${endpoint.security}",
+                    "port=${endpoint.airPlayPort} channel=${endpoint.channel} security=${endpoint.security} " +
+                    "apBssid=${if (endpoint.accessPointBssid != null) "sent" else "omitted"}",
             )
             media.setIapTunnelHandler(::startWirelessTunnelControl)
 
@@ -2559,6 +2560,7 @@ class CarPlayController(
                 onDiagnostic = { debugLog("generation=$generation $it") },
                 isCancelled = { isStaleWirelessRun(generation) },
                 preferredInterface = config.manualHotspotInterface,
+                rootHotspotDetails = config.rootHotspotDetails,
             )
         }
         synchronized(wirelessResourceLock) {

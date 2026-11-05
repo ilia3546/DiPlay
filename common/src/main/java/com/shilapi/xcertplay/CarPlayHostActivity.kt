@@ -226,6 +226,7 @@ open class CarPlayHostActivity : ComponentActivity() {
         manualHotspotChannel = manualHotspotChannel,
         manualHotspotSecurity = manualHotspotSecurity,
         manualHotspotInterface = manualHotspotInterface,
+        rootHotspotDetails = AirPlayPersistence.loadRootHotspotDetails(this),
         existingWifiSsid = existingWifiSsid,
         existingWifiPassphrase = existingWifiPassphrase,
         existingWifiInterface = existingWifiInterface.trim().takeIf { it.isNotEmpty() },

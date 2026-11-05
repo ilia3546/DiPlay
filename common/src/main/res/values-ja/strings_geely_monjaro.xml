@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_geely_monjaro_a3_support">Geely Monjaro A3 サポート</string>
+    <string name="settings_root_hotspot_details">車のホットスポットの正確な情報（実験的機能）</string>
+    <string name="settings_root_hotspot_details_description">Android が車のホットスポットのチャンネルを公開しない場合、ファームウェアのホットスポット設定から読み取り、ホットスポットの BSSID も iPhone に伝えます。root（Magisk）が必要です。次回の接続から反映されます。</string>
+</resources>
