@@ -36,9 +36,13 @@ object GeelyHeadUnit {
     /** Model prefix of the Geely Monjaro (KX11) A3 head unit, a `geely_fx11` build by DesaySV. */
     private const val MONJARO_A3_MODEL_PREFIX = "kx11_a3"
 
-    /** Read from [Build] on every call, unlike [detected], so Settings tests can switch it. */
+    /**
+     * Read from [Build] on every call, unlike [detected], so Settings tests can switch it.
+     * The firmware reports `KX11-A3-L1`; `adb devices` shows the same model as `KX11_A3_L1`.
+     */
     val monjaroA3: Boolean
         get() = runCatching {
-            Build.PRODUCT.lowercase() == PRODUCT && Build.MODEL.lowercase().startsWith(MONJARO_A3_MODEL_PREFIX)
+            Build.PRODUCT.lowercase() == PRODUCT &&
+                Build.MODEL.lowercase().replace('-', '_').startsWith(MONJARO_A3_MODEL_PREFIX)
         }.getOrDefault(false)
 }

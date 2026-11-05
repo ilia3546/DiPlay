@@ -802,7 +802,7 @@ class AdaptiveSettingsUiTest {
         options.forEach { id -> assertFalse(elsewhereIndex.any { it.title == elsewhere.getString(id) }) }
 
         ShadowBuild.setProduct("geely_fx11")
-        ShadowBuild.setModel("KX11_A3_L1")
+        ShadowBuild.setModel("KX11-A3-L1")
         val screen = openSettings()
         val index = indexedTitles(screen)
         options.forEach { id ->
