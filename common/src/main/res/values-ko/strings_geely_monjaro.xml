@@ -12,6 +12,6 @@
     <string name="settings_microphone_input_auto">자동</string>
     <string name="settings_microphone_input_voice_assistant_bus">음성 비서 버스 (bus14_vr_in)</string>
     <string name="settings_microphone_input_all_cabin">실내 전체 마이크 (믹스)</string>
-    <string name="settings_dashboard_music">계기판에 CarPlay 음악 표시 (실험 기능)</string>
-    <string name="settings_dashboard_music_description">CarPlay 곡, 아티스트, 앨범, 커버를 기본 계기판의 음악 위젯에 표시하고 CarPlay가 끝나면 지웁니다. 헤드 유닛이 DiPlay 자체 요청을 거부할 때만 루트(Magisk)를 사용합니다. 바로 적용됩니다.</string>
+    <string name="settings_dashboard_music">계기판과 미디어 위젯에 CarPlay 음악 표시 (실험 기능)</string>
+    <string name="settings_dashboard_music_description">CarPlay 곡, 아티스트, 앨범, 커버를 기본 계기판의 음악 위젯과 운전석 및 조수석 화면의 음악 위젯에 표시하고 CarPlay가 끝나면 지웁니다. 위젯 버튼으로 CarPlay를 제어합니다. 헤드 유닛이 DiPlay 자체 요청을 거부할 때만 루트(Magisk)를 사용합니다. 바로 적용됩니다.</string>
 </resources>

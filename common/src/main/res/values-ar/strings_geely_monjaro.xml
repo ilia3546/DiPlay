@@ -12,6 +12,6 @@
     <string name="settings_microphone_input_auto">تلقائي</string>
     <string name="settings_microphone_input_voice_assistant_bus">ناقل المساعد الصوتي (bus14_vr_in)</string>
     <string name="settings_microphone_input_all_cabin">كل ميكروفونات المقصورة (مزج)</string>
-    <string name="settings_dashboard_music">عرض موسيقى CarPlay على لوحة العدادات (تجريبي)</string>
-    <string name="settings_dashboard_music_description">يعرض مقطع CarPlay والفنان والألبوم والغلاف في أداة الموسيقى بلوحة العدادات الأصلية، ويمسحها عند انتهاء CarPlay. يستخدم صلاحيات root (Magisk) فقط إذا رفضت وحدة الرأس طلب DiPlay نفسه. يُطبَّق فورًا.</string>
+    <string name="settings_dashboard_music">عرض موسيقى CarPlay على لوحة العدادات وأدوات الوسائط (تجريبي)</string>
+    <string name="settings_dashboard_music_description">يعرض مقطع CarPlay والفنان والألبوم والغلاف في أداة الموسيقى بلوحة العدادات الأصلية وفي أدوات الموسيقى على شاشتي السائق والراكب، ويمسحها عند انتهاء CarPlay. تتحكم أزرار الأداة في CarPlay. يستخدم صلاحيات root (Magisk) فقط إذا رفضت وحدة الرأس طلب DiPlay نفسه. يُطبَّق فورًا.</string>
 </resources>

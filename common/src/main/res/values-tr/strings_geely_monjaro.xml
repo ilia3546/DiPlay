@@ -12,6 +12,6 @@
     <string name="settings_microphone_input_auto">Otomatik</string>
     <string name="settings_microphone_input_voice_assistant_bus">Sesli asistan veri yolu (bus14_vr_in)</string>
     <string name="settings_microphone_input_all_cabin">Tüm kabin mikrofonları (karışım)</string>
-    <string name="settings_dashboard_music">CarPlay müziğini gösterge panelinde göster (deneysel)</string>
-    <string name="settings_dashboard_music_description">CarPlay parçasını, sanatçısını, albümünü ve kapağını orijinal gösterge panelinin müzik bileşeninde gösterir ve CarPlay bittiğinde temizler. Root’u (Magisk) yalnızca ana ünite DiPlay’in kendi isteğini reddederse kullanır. Hemen uygulanır.</string>
+    <string name="settings_dashboard_music">CarPlay müziğini gösterge panelinde ve medya bileşenlerinde göster (deneysel)</string>
+    <string name="settings_dashboard_music_description">CarPlay parçasını, sanatçısını, albümünü ve kapağını orijinal gösterge panelinin müzik bileşeninde ve sürücü ile yolcu ekranlarının müzik bileşenlerinde gösterir, CarPlay bittiğinde temizler. Bileşenin düğmeleri CarPlay’i kontrol eder. Root’u (Magisk) yalnızca ana ünite DiPlay’in kendi isteğini reddederse kullanır. Hemen uygulanır.</string>
 </resources>
