@@ -25,6 +25,9 @@ object RootShell {
     ): Result {
         val output = try {
             exec(listOf("su", "-c", command), timeoutMillis)
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+            return Result.Unavailable("interrupted")
         } catch (error: Exception) {
             return Result.Unavailable("su unavailable (${error.javaClass.simpleName})")
         }

@@ -317,7 +317,7 @@ class CarPlayController(
     private val phoneBluetoothProfilesSession = AtomicReference<AirPlaySession?>()
     @Volatile private var wirelessHotspotInterface: String? = null
     private val hotspotAudioSession = AtomicReference<AirPlaySession?>()
-    private val hotspotAudioFirewall = HotspotAudioFirewall(log = { debugLog(it) })
+    private val hotspotAudioFirewall by lazy { HotspotAudioFirewall.shared(appContext) }
     private val rootExecutor: ExecutorService = Executors.newSingleThreadExecutor { task ->
         Thread(task, "diplay-root-shell").apply { isDaemon = true }
     }
@@ -398,13 +398,14 @@ class CarPlayController(
                     !closed && activeSession === session && !session.isClosed
                 }
             }
-            if (config.transport == CarPlayTransport.WIRELESS && config.disconnectPhoneBluetoothDuringWirelessCarPlay &&
-                phoneBluetoothProfilesSession.getAndSet(session) !== session) {
-                disconnectPhoneBluetoothProfiles(session)
-            }
+            // Queued first: the firmware bans the iPhone after about 120 unanswered RTP packets.
             if (config.transport == CarPlayTransport.WIRELESS && config.wirelessHotspotMode == WirelessHotspotMode.MANUAL &&
                 config.allowHotspotAudioThroughFirewall && hotspotAudioSession.getAndSet(session) !== session) {
                 allowHotspotAudio(session)
+            }
+            if (config.transport == CarPlayTransport.WIRELESS && config.disconnectPhoneBluetoothDuringWirelessCarPlay &&
+                phoneBluetoothProfilesSession.getAndSet(session) !== session) {
+                disconnectPhoneBluetoothProfiles(session)
             }
             if (replacement) restoreDashboardContent(session)
             debugLog(
@@ -421,7 +422,7 @@ class CarPlayController(
                 synchronized(albumReplayLock) { initialArtworkReplay = null }
                 BydNavigationOutputs.endNow(preserveTurnOverlay = !closed && config.transport == CarPlayTransport.WIRELESS)
                 BydBluetoothSuspend.resume(appContext, this@CarPlayController) { debugLog(it) }
-                submitRootWork { hotspotAudioFirewall.remove() }
+                submitRootWork { hotspotAudioFirewall.remove(session) { debugLog(it) } }
                 com.shilapi.xcertplay.glance.CarPlayGlance.setConnected(false)
                 videoListener?.onVideoSessionEnded()
                 synchronized(playbackStatus) {
@@ -742,7 +743,8 @@ class CarPlayController(
         firstTcpWatchdog?.terminate()
         wiredStartWatchdog?.terminate()
         BydBluetoothSuspend.resume(appContext, this) { debugLog(it) }
-        submitRootWork { hotspotAudioFirewall.remove() }
+        val lastHotspotAudioSession = hotspotAudioSession.get()
+        submitRootWork { hotspotAudioFirewall.remove(lastHotspotAudioSession) { debugLog(it) } }
         rootExecutor.shutdown()
         startupTimer.shutdownNow()
         (hotspot as? ManualHotspotManager)?.close()
@@ -783,14 +785,18 @@ class CarPlayController(
                 } finally {
                     executor.shutdownNow()
                     var executorTerminated = false
+                    var rootWorkFinished = false
                     try {
                         executorTerminated = executor.awaitTermination(EXECUTOR_CLOSE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
+                        // The host may kill the process once teardown completes; a root firewall rule must be gone first.
+                        rootWorkFinished = rootExecutor.awaitTermination(
+                            (ROOT_CLOSE_TIMEOUT_MILLIS - elapsedMillis(teardownStarted)).coerceAtLeast(0), TimeUnit.MILLISECONDS)
                     } catch (_: InterruptedException) {
                         Thread.currentThread().interrupt()
                     }
                     connectionDiagnostic(
                         "teardown end elapsedMs=${elapsedMillis(teardownStarted)} " +
-                            "executorTerminated=$executorTerminated",
+                            "executorTerminated=$executorTerminated rootWorkFinished=$rootWorkFinished",
                     )
                     teardownComplete.countDown()
                 }
@@ -2660,7 +2666,9 @@ class CarPlayController(
             return
         }
         submitRootWork {
-            hotspotAudioFirewall.allow(rule) { !closed && activeSession === session && !session.isClosed }
+            hotspotAudioFirewall.allow(rule, session, { debugLog(it) }) {
+                !closed && activeSession === session && !session.isClosed
+            }
         }
     }
 
@@ -3312,6 +3320,7 @@ class CarPlayController(
         private const val IPHONE_NOT_LISTED_AFTER_MILLIS = 20_000L
         private const val START_SESSION_PROGRESS = "iap2 tx=0x4301"
         private const val EXECUTOR_CLOSE_TIMEOUT_MILLIS = 2_000L
+        private const val ROOT_CLOSE_TIMEOUT_MILLIS = 3_000L
         private const val ADAPTER_ADDRESS_PLACEHOLDER = "02:00:00:00:00:00"
         private val BLUETOOTH_ADDRESS = Regex("^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$")
     }

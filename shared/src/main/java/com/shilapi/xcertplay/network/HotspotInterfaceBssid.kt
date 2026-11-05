@@ -51,13 +51,16 @@ internal object HotspotInterfaceBssid {
             "so its MAC cannot be derived"
     }
 
-    fun toBytes(mac: String): ByteArray? {
-        val parts = mac.split(':')
-        if (parts.size != 6 || parts.any { it.length != 2 }) return null
-        val bytes = ByteArray(6) { index -> (parts[index].toIntOrNull(16) ?: return null).toByte() }
-        if (bytes.all { it == 0.toByte() } || (bytes[0].toInt() and 1) != 0) return null
+    /** The six bytes of a unicast BSSID for 0x5703; null for Android's masked `02:00:00:00:00:00`. */
+    fun toBytes(mac: String?): ByteArray? {
+        if (mac == null || !mac.matches(BSSID)) return null
+        val bytes = mac.split(':').map { it.toInt(16).toByte() }.toByteArray()
+        if (bytes.all { it == 0.toByte() } || bytes[0].toInt() and 1 != 0 ||
+            mac.equals("02:00:00:00:00:00", ignoreCase = true)) return null
         return bytes
     }
+
+    private val BSSID = Regex("(?i)[0-9a-f]{2}(:[0-9a-f]{2}){5}")
 
     fun fromAddresses(addresses: List<ByteArray>): String? =
         addresses.mapNotNull(::decode).distinct().singleOrNull()
