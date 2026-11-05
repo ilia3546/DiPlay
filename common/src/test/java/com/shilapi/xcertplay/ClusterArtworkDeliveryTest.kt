@@ -14,6 +14,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowBuild
 import org.robolectric.util.ReflectionHelpers
 
 @RunWith(RobolectricTestRunner::class)
@@ -88,6 +89,16 @@ class ClusterArtworkDeliveryTest {
         ClusterMusicSettings.saveEnabled(context, true)
         assertEquals(true, call("albumRecoveryEnabled"))
         ClusterMusicSettings.saveEnabled(context, false)
+        assertEquals(false, call("albumRecoveryEnabled"))
+    }
+
+    @Test fun missingCoverRecoveryAlsoWorksWithOnlyDashboardMusicEnabled() {
+        seed(CarPlayNowPlaying(title = "A", artworkTransferId = 7))
+        ShadowBuild.setProduct("geely_fx11")
+        ShadowBuild.setModel("KX11-A3-L1")
+        AirPlayPersistence.saveDashboardMusic(context, true)
+        assertEquals(true, call("albumRecoveryEnabled"))
+        AirPlayPersistence.saveDashboardMusic(context, false)
         assertEquals(false, call("albumRecoveryEnabled"))
     }
 }

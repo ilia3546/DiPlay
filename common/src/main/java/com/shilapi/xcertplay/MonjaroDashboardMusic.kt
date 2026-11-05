@@ -3,7 +3,10 @@ package com.shilapi.xcertplay
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import com.shilapi.xcertplay.hud.DashboardMusic
 import com.shilapi.xcertplay.hud.GeelyDashboardMusic
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * Feeds the CarPlay track to the stock Monjaro A3 dashboard while a CarPlay session is attached and
@@ -11,13 +14,19 @@ import com.shilapi.xcertplay.hud.GeelyDashboardMusic
  */
 internal object MonjaroDashboardMusic {
     private val main = Handler(Looper.getMainLooper())
+    internal var dashboard: DashboardMusic = GeelyDashboardMusic
     private var app: Context? = null
     private var sessionAttached = false
+    private var iphonePlaying: () -> Boolean = { false }
     private var stopObserving: (() -> Unit)? = null
 
-    fun sessionStarted(context: Context) {
+    fun enabled(context: Context): Boolean = MonjaroA3Options.load(context).dashboardMusic
+
+    /** [playing] reads the session's play state now: the music snapshots are not published when only that changes. */
+    fun sessionStarted(context: Context, playing: () -> Boolean) {
         main.post {
             app = context.applicationContext
+            iphonePlaying = playing
             sessionAttached = true
             refresh()
         }
@@ -41,24 +50,36 @@ internal object MonjaroDashboardMusic {
     fun playingChanged(playing: Boolean) {
         main.post {
             val context = app
-            if (stopObserving != null && context != null) GeelyDashboardMusic.playing(context, playing)
+            if (stopObserving != null && context != null) dashboard.playing(context, playing)
+        }
+    }
+
+    /** Waits off the main thread for the dashboard work asked for so far, such as the empty card at shutdown. */
+    fun awaitIdle(timeoutMillis: Long): Boolean {
+        val idle = CountDownLatch(1)
+        main.post { dashboard.whenIdle(idle::countDown) }
+        return try {
+            idle.await(timeoutMillis, TimeUnit.MILLISECONDS)
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+            false
         }
     }
 
     private fun refresh() {
         val context = app ?: return
-        val on = sessionAttached && MonjaroA3Options.load(context).dashboardMusic
+        val on = sessionAttached && enabled(context)
         if (on && stopObserving == null) {
+            dashboard.start(context)
+            dashboard.playing(context, iphonePlaying())
             stopObserving = ClusterMusicState.observe { snapshot ->
-                GeelyDashboardMusic.playing(context, snapshot.info.playing)
-                GeelyDashboardMusic.show(context, snapshot.info.title, snapshot.info.artist, snapshot.info.album,
-                    snapshot.artwork)
+                dashboard.show(context, snapshot.info.title, snapshot.info.artist, snapshot.info.album, snapshot.artwork)
             }
         } else if (!on) {
             stopObserving?.let {
                 it()
                 stopObserving = null
-                GeelyDashboardMusic.clear(context)
+                dashboard.stop(context)
             }
         }
     }

@@ -82,4 +82,34 @@ class GeelyDashboardMusicOutputTest {
         output.show(DashboardTrack("Song", "Artist", "", byteArrayOf(1)))
         assertEquals(2, sent.size)
     }
+
+    @Test fun aRepeatSendsTheShownCardAndPlayStateThroughResend() {
+        val resent = mutableListOf<Pair<Int, String>>()
+        val output = GeelyDashboardMusicOutput(send = { subtype, json -> sent += subtype to json; true }, blankCover = { blank },
+            resend = { subtype, json -> resent += subtype to json; true })
+        output.reassert()
+        output.show(DashboardTrack("Song", "Artist", "", byteArrayOf(1)))
+        output.playing(true)
+        output.reassert()
+        assertEquals(sent, resent)
+        output.clear()
+        resent.clear()
+        output.reassert()
+        assertEquals(emptyList<Pair<Int, String>>(), resent)
+    }
+
+    @Test fun aCardLeftByAKilledProcessIsClearedAndTheJournalFollowsTheCard() {
+        val journal = mutableListOf<Boolean>()
+        val output = GeelyDashboardMusicOutput(send = { subtype, json -> sent += subtype to json; accept }, blankCover = { blank },
+            leftBehind = true, cardShown = journal::add)
+        output.clear()
+        assertEquals(listOf(GeelyDashboardMessages.TRACK to GeelyDashboardMessages.track("", "", "", blank)), sent)
+        output.show(DashboardTrack("Song", "Artist", "", byteArrayOf(1)))
+        output.show(DashboardTrack("Next", "Artist", "", byteArrayOf(1)))
+        accept = false
+        output.clear()
+        accept = true
+        output.clear()
+        assertEquals(listOf(false, true, false), journal)
+    }
 }
