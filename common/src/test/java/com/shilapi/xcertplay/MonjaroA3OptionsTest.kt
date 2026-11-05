@@ -1,6 +1,7 @@
 package com.shilapi.xcertplay
 
 import android.content.Context
+import com.shilapi.xcertplay.media.MicrophoneInput
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -18,6 +19,7 @@ class MonjaroA3OptionsTest {
         AirPlayPersistence.saveRootHotspotDetails(context, true)
         AirPlayPersistence.saveDisconnectPhoneBluetooth(context, true)
         AirPlayPersistence.saveHotspotAudioFirewall(context, true)
+        AirPlayPersistence.saveMicrophoneInput(context, MicrophoneInput.ALL_CABIN_MICROPHONES)
     }
 
     @Test fun everyOptionIsOffByDefault() {
@@ -34,7 +36,7 @@ class MonjaroA3OptionsTest {
         turnEverythingOn()
         ShadowBuild.setProduct("geely_fx11")
         ShadowBuild.setModel("KX11-A3-L1")
-        assertEquals(MonjaroA3Options(rootHotspotDetails = true, disconnectPhoneBluetooth = true, hotspotAudioFirewall = true),
-            MonjaroA3Options.load(context))
+        assertEquals(MonjaroA3Options(rootHotspotDetails = true, disconnectPhoneBluetooth = true, hotspotAudioFirewall = true,
+            microphoneInput = MicrophoneInput.ALL_CABIN_MICROPHONES), MonjaroA3Options.load(context))
     }
 }

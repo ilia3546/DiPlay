@@ -15,7 +15,7 @@ class MicrophoneCaptureStatsTest {
         var now = 0L
         val reports = mutableListOf<String>()
         val stats = MicrophoneCaptureStats(config, reports::add) { now }
-        stats.started(15)
+        stats.started(MicrophoneRoute(15, ""))
         stats.reading()
         now = 25_000_000
         stats.read(1920)
@@ -30,7 +30,7 @@ class MicrophoneCaptureStatsTest {
         stats.flush()
         assertEquals(1, reports.size)
         now = 5_000_000_000
-        stats.flush(routeType = { 18 })
+        stats.flush(route = { MicrophoneRoute(18, "") })
         val first = reports.last()
         assertTrue(first.contains("captureBytes=1920 reads=2 zeroReads=1 readErrors=0 readMaxMs=30"))
         assertTrue(first.contains("encodedFrames=1 emptyEncodedFrames=1 udpSent=2 sendErrors=1 sendGapMaxMs=30"))
@@ -74,12 +74,12 @@ class MicrophoneCaptureStatsTest {
             now += 1000
             stats.read(0)
             stats.encoded(0, 1)
-            stats.flush(routeType = { routeQueries++; 15 })
+            stats.flush(route = { routeQueries++; MicrophoneRoute(15, "") })
         }
         assertEquals(0, reports)
         assertEquals(0, routeQueries)
         now = 5_000_000_000
-        stats.flush(routeType = { routeQueries++; 15 })
+        stats.flush(route = { routeQueries++; MicrophoneRoute(15, "") })
         assertEquals(1, reports)
         assertEquals(1, routeQueries)
         assertTrue(longest < 512)
@@ -93,13 +93,13 @@ class MicrophoneCaptureStatsTest {
             if (fail) throw IllegalStateException("diagnostic callback failed")
             reports.add(it)
         }) { now }
-        stats.started(15)
+        stats.started(MicrophoneRoute(15, ""))
         stats.failure(MicrophoneFailureStage.CAPTURE, IllegalStateException("not reported"))
         stats.reading()
         stats.read(1920)
         stats.sent()
         now = 5_000_000_000
-        stats.flush(routeType = { throw IllegalStateException("route metadata unavailable") })
+        stats.flush(route = { throw IllegalStateException("route metadata unavailable") })
         fail = false
         stats.flush(ended = true)
         assertEquals(1, reports.size)
@@ -133,7 +133,7 @@ class MicrophoneCaptureStatsTest {
         stats.useSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
         stats.failure(MicrophoneFailureStage.RECORDER_CREATION, UnsupportedOperationException())
         stats.useSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION)
-        stats.started(15)
+        stats.started(MicrophoneRoute(15, ""))
         stats.flush(ended = true)
         assertTrue(reports[0].contains("type=speechrecognition source=VOICE_RECOGNITION"))
         assertTrue(reports.drop(1).all { it.contains("type=speechrecognition source=VOICE_COMMUNICATION") })
@@ -143,7 +143,7 @@ class MicrophoneCaptureStatsTest {
         val reports = mutableListOf<String>()
         val privateConfig = config.copy(audioType = "PRIVATE_PHONE_NAME\nsecret=value")
         val stats = MicrophoneCaptureStats(privateConfig, reports::add) { 0 }
-        stats.started(15)
+        stats.started(MicrophoneRoute(15, ""))
         stats.failure(MicrophoneFailureStage.CAPTURE, IllegalStateException("SECRET_PAYLOAD 198.51.100.20 54321"))
         stats.flush(ended = true)
         MicrophoneCaptureStats.reportStartFailure(privateConfig, SecurityException("PRIVATE_DEVICE_ADDRESS"), reports::add)
@@ -155,5 +155,28 @@ class MicrophoneCaptureStatsTest {
         }
         assertEquals(4, reports.size)
         assertTrue(reports.all { it.length < 512 && '\n' !in it })
+    }
+
+    @Test fun reportsTheChosenInputTheRoutedAddressAndEachChannelOfACabinRecording() {
+        val reports = mutableListOf<String>()
+        val stats = MicrophoneCaptureStats(config.copy(audioType = "telephony"), reports::add) { 0 }
+        stats.useInput(MicrophoneInput.ALL_CABIN_MICROPHONES)
+        stats.useSource(MediaRecorder.AudioSource.MIC)
+        stats.started(MicrophoneRoute(15, "bottom"))
+        stats.channelLevels(intArrayOf(0, 3277, 32767))
+        stats.channelLevels(intArrayOf(10, 0, 0))
+        stats.flush(ended = true)
+        assertTrue(reports[0], reports[0].endsWith("routedDeviceType=15 routedDeviceAddress=bottom input=ALL_CABIN_MICROPHONES"))
+        assertTrue(reports[1], reports[1].contains("routedDeviceAddress=bottom input=ALL_CABIN_MICROPHONES "))
+        assertTrue(reports[1], reports[1].contains(" channelPeaksDbfs=[-70,-20,0] "))
+    }
+
+    @Test fun aSingleChannelRecordingHasNoChannelPeaks() {
+        val reports = mutableListOf<String>()
+        val stats = MicrophoneCaptureStats(config, reports::add) { 0 }
+        stats.started(null)
+        stats.flush(ended = true)
+        assertTrue(reports[0], reports[0].endsWith("routedDeviceType=unknown routedDeviceAddress=unknown input=AUTO"))
+        assertTrue(reports[1], !reports[1].contains("channelPeaksDbfs"))
     }
 }

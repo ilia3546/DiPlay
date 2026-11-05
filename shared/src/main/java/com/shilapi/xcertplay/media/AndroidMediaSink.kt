@@ -221,6 +221,8 @@ class AndroidMediaSink(
     private val mtkDecoderTuningEnabled: Boolean = false,
     /** Opt-in (#946): navigation prompts request duckable focus while the iPhone ducks audio. Needs [audioFocusEnabled]. */
     navigationPromptAudioFocus: Boolean = false,
+    /** Read at each microphone stream, so a new choice applies from the next call or Siri request. */
+    private val microphoneInput: () -> MicrophoneInput = { MicrophoneInput.AUTO },
 ) : MediaSink {
     // Each downlink publishes its own reference; a mic must match that stream and sample rate.
     private val callEchoReferences = ConcurrentHashMap<AudioStreamId, EchoReference>()
@@ -565,7 +567,8 @@ class AndroidMediaSink(
                 MicrophoneUplink(config, onAudioDiagnostic,
                     speakerphoneCall = speakerphoneCall,
                     echoReference = if (config.audioType == TELEPHONY_AUDIO_TYPE) callEchoReferences[id] else null,
-                    audioManager = audioManager)
+                    audioManager = audioManager,
+                    input = runCatching(microphoneInput).getOrDefault(MicrophoneInput.AUTO))
             }
             if (!uplink.start()) {
                 microphoneUplinks.remove(id, uplink)

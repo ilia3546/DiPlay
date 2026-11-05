@@ -3,6 +3,11 @@ package com.shilapi.xcertplay.media
 import android.media.MediaRecorder
 import com.shilapi.xcertplay.airplay.MicrophoneConfig
 
+/** The input device a recorder is routed to; [address] tells a car's microphones and input buses apart. */
+internal class MicrophoneRoute(val type: Int, val address: String) {
+    override fun toString(): String = "routedDeviceType=$type routedDeviceAddress=${address.ifBlank { "none" }}"
+}
+
 internal enum class MicrophoneFailureStage {
     MIN_BUFFER, ENCODER, RECORDER_CREATION, RECORDER_INITIALIZATION, SOCKET_CREATION,
     RECORDING, READ, CAPTURE, START,
@@ -31,12 +36,20 @@ internal class MicrophoneCaptureStats(
     private var lastSentNs: Long? = null
     private var sendGapMaxNs = 0L
     private var peakSample = 0
-    private var routedDeviceType: Int? = null
+    private var routedDevice: MicrophoneRoute? = null
+    private var channelPeaks: IntArray? = null
+    private var input = MicrophoneInput.AUTO
 
-    fun started(routeType: Int?) {
-        routedDeviceType = routeType
-        emit("Microphone: start $metadata routedDeviceType=${routeType ?: "unknown"}")
+    fun started(route: MicrophoneRoute?) {
+        routedDevice = route
+        emit("Microphone: start $metadata ${routeText(route)}")
     }
+
+    /** The Settings choice the source came from; call before the capture thread starts, like [useSource]. */
+    fun useInput(choice: MicrophoneInput) { input = choice }
+
+    private fun routeText(route: MicrophoneRoute?): String =
+        "${route ?: "routedDeviceType=unknown routedDeviceAddress=unknown"} input=${input.name}"
 
     /**
      * The source the recorder is built with: a call in the car's phone state records from VOICE_RECOGNITION,
@@ -70,6 +83,12 @@ internal class MicrophoneCaptureStats(
         }
     }
 
+    /** Per-channel peaks of a multichannel recording before its downmix; reported as `channelPeaksDbfs`. */
+    fun channelLevels(latest: IntArray) {
+        val window = channelPeaks?.takeIf { it.size == latest.size } ?: IntArray(latest.size).also { channelPeaks = it }
+        latest.forEachIndexed { channel, peak -> if (peak > window[channel]) window[channel] = peak }
+    }
+
     fun encoded(frameCount: Int, emptyCount: Int) {
         encodedFrames += frameCount.coerceAtLeast(0)
         emptyEncodedFrames += emptyCount.coerceAtLeast(0)
@@ -84,9 +103,8 @@ internal class MicrophoneCaptureStats(
 
     fun sendFailed() { sendErrors++ }
 
-    fun restarted(attempt: Int, reason: String, routeType: Int?) {
-        emit("Microphone: recording restarted $metadata attempt=$attempt reason=$reason " +
-            "routedDeviceType=${routeType ?: "unknown"}")
+    fun restarted(attempt: Int, reason: String, route: MicrophoneRoute?) {
+        emit("Microphone: recording restarted $metadata attempt=$attempt reason=$reason ${routeText(route)}")
     }
 
     fun failure(stage: MicrophoneFailureStage, error: Throwable? = null, code: Int? = null) {
@@ -97,16 +115,19 @@ internal class MicrophoneCaptureStats(
      * [silence] is asked only for a window with no sound in it, for what else might explain it: a silent source
      * alone cannot tell a head unit that mutes it from another app holding the microphone (#987).
      */
-    fun flush(ended: Boolean = false, routeType: (() -> Int?)? = null, silence: (() -> String)? = null) {
+    fun flush(ended: Boolean = false, route: (() -> MicrophoneRoute?)? = null, silence: (() -> String)? = null) {
         val now = nowNs()
         if (!ended && now - windowStart < REPORT_INTERVAL_NS) return
-        if (routeType != null) routedDeviceType = runCatching { routeType() }.getOrNull()
+        if (route != null) routedDevice = runCatching { route() }.getOrNull()
         val silenceDetail = if (peakSample <= 0 && silence != null) runCatching { " " + silence() }.getOrDefault("") else ""
-        emit("Microphone: stats $metadata routedDeviceType=${routedDeviceType ?: "unknown"} " +
+        emit("Microphone: stats $metadata ${routeText(routedDevice)} " +
             "captureBytes=$capturedBytes reads=$reads zeroReads=$zeroReads readErrors=$readErrors " +
             "readMaxMs=${readMaxNs / 1_000_000} encodedFrames=$encodedFrames " +
             "emptyEncodedFrames=$emptyEncodedFrames udpSent=$udpSent sendErrors=$sendErrors " +
-            "sendGapMaxMs=${sendGapMaxNs / 1_000_000} peakDbfs=${peakDbfs(peakSample)}$silenceDetail ended=$ended")
+            "sendGapMaxMs=${sendGapMaxNs / 1_000_000} peakDbfs=${peakDbfs(peakSample)}" +
+            (channelPeaks?.joinToString(",", " channelPeaksDbfs=[", "]") { peakDbfs(it) } ?: "") +
+            "$silenceDetail ended=$ended")
+        channelPeaks?.fill(0)
         windowStart = now
         capturedBytes = 0
         reads = 0

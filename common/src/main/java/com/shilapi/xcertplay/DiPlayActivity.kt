@@ -70,6 +70,7 @@ import com.shilapi.xcertplay.host.R
 import com.shilapi.xcertplay.media.AmbientColorMode
 import com.shilapi.xcertplay.media.AmbientColorSpeed
 import com.shilapi.xcertplay.media.AmbientIdleBehavior
+import com.shilapi.xcertplay.media.MicrophoneInput
 import com.shilapi.xcertplay.media.AmbientMusicController
 import com.shilapi.xcertplay.media.AmbientColorSource
 import com.shilapi.xcertplay.media.AmbientMusicSettings
@@ -2148,6 +2149,18 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 AirPlayPersistence.saveHotspotAudioFirewall(this, it)
                 markReconnectNeeded()
             }
+            val microphoneInputs = MicrophoneInput.entries
+            choice(card, getString(R.string.settings_microphone_input), microphoneInputs.map { input ->
+                when (input) {
+                    MicrophoneInput.AUTO -> getString(R.string.settings_microphone_input_auto)
+                    MicrophoneInput.VOICE_ASSISTANT_BUS -> getString(R.string.settings_microphone_input_voice_assistant_bus)
+                    MicrophoneInput.ALL_CABIN_MICROPHONES -> getString(R.string.settings_microphone_input_all_cabin)
+                    else -> input.name
+                }
+            }, microphoneInputs.indexOf(AirPlayPersistence.loadMicrophoneInput(this)), reconnects = false) {
+                AirPlayPersistence.saveMicrophoneInput(this, microphoneInputs[it])
+            }
+            card.addView(label(getString(R.string.settings_microphone_input_description), 14, MUTED))
         }
         filteredSection(content, SettingsSection.LOCATION,
             getString(R.string.location), R.drawable.ic_dp_navigation) { card ->
