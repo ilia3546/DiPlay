@@ -6369,7 +6369,12 @@ open class CarPlayHostActivity : ComponentActivity() {
             applicationContext.stopService(Intent(applicationContext, DiPlaySessionService::class.java))
             teardownExecutor.shutdown()
             mainHandler.post { completion() }
-            if (terminateProcess) Process.killProcess(Process.myPid())
+            if (terminateProcess) {
+                if (!MonjaroDashboardMusic.awaitIdle(DASHBOARD_MUSIC_CLOSE_TIMEOUT_MILLIS)) {
+                    Log.w(TAG, "shutdown dashboard music still pending")
+                }
+                Process.killProcess(Process.myPid())
+            }
         }
     }
 
@@ -6972,6 +6977,7 @@ open class CarPlayHostActivity : ComponentActivity() {
         const val RECONNECT_DELAY_MILLIS = 2_000L
         const val IAP_TUNNEL_RECONNECT_DELAY_MILLIS = 15_000L
         const val CONTROLLER_CLOSE_TIMEOUT_MILLIS = 4_000L
+        const val DASHBOARD_MUSIC_CLOSE_TIMEOUT_MILLIS = 1_500L
         const val AUDIO_CAPTURE_MARKER = "audio-capture.enabled"
         const val AUDIO_CAPTURE_DIRECTORY = "audio-captures"
         const val PROTOCOL_TRACE_PREFIX = "TRACE "

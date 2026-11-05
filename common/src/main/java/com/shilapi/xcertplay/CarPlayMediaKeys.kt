@@ -80,7 +80,7 @@ internal object CarPlayMediaKeys {
         appContext = context.applicationContext
         controller = next
         GeelyWheelKeys.start(context)
-        MonjaroDashboardMusic.sessionStarted(context)
+        MonjaroDashboardMusic.sessionStarted(context) { next.nowPlayingSnapshot().playing }
         com.shilapi.xcertplay.media.AmbientMusicController.claimPlaybackOwner(next)
         next.playbackListener = { playing ->
             com.shilapi.xcertplay.media.AmbientMusicController.phonePlaybackChanged(next, playing)
@@ -200,7 +200,7 @@ internal object CarPlayMediaKeys {
 
     private fun albumRecoveryEnabled(): Boolean {
         val context = appContext ?: return false
-        if (ClusterMusicSettings.enabled(context)) return true
+        if (ClusterMusicSettings.enabled(context) || MonjaroDashboardMusic.enabled(context)) return true
         val settings = com.shilapi.xcertplay.media.AmbientMusicSettings.load(context)
         return settings.enabled && settings.colorSource == com.shilapi.xcertplay.media.AmbientColorSource.ALBUM
     }
