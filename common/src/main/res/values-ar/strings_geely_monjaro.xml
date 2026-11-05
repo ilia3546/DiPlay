@@ -3,4 +3,6 @@
     <string name="settings_geely_monjaro_a3_support">دعم Geely Monjaro A3</string>
     <string name="settings_root_hotspot_details">بيانات دقيقة لنقطة اتصال السيارة (تجريبي)</string>
     <string name="settings_root_hotspot_details_description">عندما يخفي Android قناة نقطة اتصال السيارة، يقرأها من إعدادات نقطة الاتصال في البرنامج الثابت ويُبلغ iPhone أيضًا بمعرّف BSSID لنقطة الاتصال. يتطلب صلاحيات root (Magisk). يُطبَّق عند الاتصال التالي.</string>
+    <string name="settings_disconnect_phone_bluetooth">فصل Bluetooth في iPhone أثناء CarPlay اللاسلكي (تجريبي)</string>
+    <string name="settings_disconnect_phone_bluetooth_description">بعد بدء CarPlay اللاسلكي، يفصل مكالمات Bluetooth والموسيقى وجهات الاتصال وعناصر التحكم في الوسائط الخاصة بـ iPhone عن وحدة الرأس، كما يفعل CarPlay الأصلي في السيارة. للبرامج الثابتة التي توقف موسيقى CarPlay مؤقتًا عبر Bluetooth. يستمر CarPlay في العمل عبر Wi-Fi، ولا يعيد iPhone توصيل Bluetooth تلقائيًا بعد ذلك. يتطلب صلاحيات root (Magisk). يُطبَّق عند الاتصال التالي.</string>
 </resources>

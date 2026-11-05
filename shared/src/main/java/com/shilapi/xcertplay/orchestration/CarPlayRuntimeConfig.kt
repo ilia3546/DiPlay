@@ -67,6 +67,8 @@ class CarPlayRuntimeConfig(
     val manualHotspotInterface: String? = null,
     /** Reads the hotspot channel through root when Android hides it, and sends the access point BSSID. */
     val rootHotspotDetails: Boolean = false,
+    /** Disconnects the iPhone's Bluetooth profiles through root once a wireless session is active. */
+    val disconnectPhoneBluetoothDuringWirelessCarPlay: Boolean = false,
     val wirelessBluetoothDeviceAddress: String? = null,
     val locationReportingEnabled: Boolean = false,
     val wifiP2pPreferredChannel: Int = WifiP2pChannels.AUTO,

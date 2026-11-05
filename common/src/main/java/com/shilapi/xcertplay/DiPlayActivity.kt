@@ -2136,6 +2136,12 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 AirPlayPersistence.saveRootHotspotDetails(this, it)
                 markReconnectNeeded()
             }
+            toggle(card, getString(R.string.settings_disconnect_phone_bluetooth),
+                getString(R.string.settings_disconnect_phone_bluetooth_description),
+                AirPlayPersistence.loadDisconnectPhoneBluetooth(this)) {
+                AirPlayPersistence.saveDisconnectPhoneBluetooth(this, it)
+                markReconnectNeeded()
+            }
         }
         filteredSection(content, SettingsSection.LOCATION,
             getString(R.string.location), R.drawable.ic_dp_navigation) { card ->

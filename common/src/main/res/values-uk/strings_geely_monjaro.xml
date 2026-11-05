@@ -3,4 +3,6 @@
     <string name="settings_geely_monjaro_a3_support">Підтримка Geely Monjaro A3</string>
     <string name="settings_root_hotspot_details">Точні дані точки доступу автомобіля (експериментально)</string>
     <string name="settings_root_hotspot_details_description">Якщо Android приховує канал точки доступу автомобіля, DiPlay читає його з налаштувань точки доступу прошивки й також передає iPhone BSSID точки доступу. Потрібен root (Magisk). Застосовується під час наступного підключення.</string>
+    <string name="settings_disconnect_phone_bluetooth">Вимикати Bluetooth iPhone у бездротовому CarPlay (експериментально)</string>
+    <string name="settings_disconnect_phone_bluetooth_description">Після запуску бездротового CarPlay відключає від головного пристрою Bluetooth-дзвінки, музику, контакти й керування медіа iPhone, як це робить штатний CarPlay автомобіля. Для прошивок, які ставлять музику CarPlay на паузу через Bluetooth. CarPlay продовжує працювати через Wi-Fi; потім iPhone сам Bluetooth не перепідключає. Потрібен root (Magisk). Застосовується під час наступного підключення.</string>
 </resources>

@@ -227,6 +227,7 @@ open class CarPlayHostActivity : ComponentActivity() {
         manualHotspotSecurity = manualHotspotSecurity,
         manualHotspotInterface = manualHotspotInterface,
         rootHotspotDetails = AirPlayPersistence.loadRootHotspotDetails(this),
+        disconnectPhoneBluetoothDuringWirelessCarPlay = AirPlayPersistence.loadDisconnectPhoneBluetooth(this),
         existingWifiSsid = existingWifiSsid,
         existingWifiPassphrase = existingWifiPassphrase,
         existingWifiInterface = existingWifiInterface.trim().takeIf { it.isNotEmpty() },

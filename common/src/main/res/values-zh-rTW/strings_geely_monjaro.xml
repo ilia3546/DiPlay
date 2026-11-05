@@ -3,4 +3,6 @@
     <string name="settings_geely_monjaro_a3_support">Geely Monjaro A3 支援</string>
     <string name="settings_root_hotspot_details">車輛熱點的準確資訊（實驗性）</string>
     <string name="settings_root_hotspot_details_description">當 Android 隱藏車輛熱點的頻道時，從韌體的熱點設定中讀取頻道，並把熱點的 BSSID 告訴 iPhone。需要 root（Magisk）。下次連線時生效。</string>
+    <string name="settings_disconnect_phone_bluetooth">無線 CarPlay 期間中斷 iPhone 藍牙（實驗性）</string>
+    <string name="settings_disconnect_phone_bluetooth_description">無線 CarPlay 啟動後，像車輛原廠 CarPlay 一樣，從車機中斷 iPhone 的藍牙通話、音樂、聯絡人和媒體控制。適用於會透過藍牙暫停 CarPlay 音樂的韌體。CarPlay 繼續透過 Wi-Fi 運作；之後 iPhone 不會自動重新連接藍牙。需要 root（Magisk）。下次連線時生效。</string>
 </resources>

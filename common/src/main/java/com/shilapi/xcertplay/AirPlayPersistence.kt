@@ -132,6 +132,7 @@ object AirPlayPersistence {
     private const val KEY_BT_SUSPEND_DURING_CARPLAY = "bt_suspend_during_carplay"
     private const val KEY_HIDE_BYD_CALL_POPUP = "hide_byd_call_popup"
     private const val KEY_ROOT_HOTSPOT_DETAILS = "root_hotspot_details"
+    private const val KEY_DISCONNECT_PHONE_BLUETOOTH = "disconnect_phone_bluetooth_wireless"
     private const val KEY_BT_SUSPEND_DELAY = "bt_suspend_delay_seconds"
     private const val KEY_LOCATION_REPORTING_ENABLED = "location_reporting_enabled"
     private const val KEY_EXTERNAL_CONTROLLER = "external_controller"
@@ -570,6 +571,14 @@ object AirPlayPersistence {
     fun saveRootHotspotDetails(context: Context, enabled: Boolean) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putBoolean(KEY_ROOT_HOTSPOT_DETAILS, enabled).apply()
+    }
+
+    fun loadDisconnectPhoneBluetooth(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_DISCONNECT_PHONE_BLUETOOTH, false)
+
+    fun saveDisconnectPhoneBluetooth(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putBoolean(KEY_DISCONNECT_PHONE_BLUETOOTH, enabled).apply()
     }
 
     fun saveBtSuspendDuringCarplay(context: Context, enabled: Boolean) {
