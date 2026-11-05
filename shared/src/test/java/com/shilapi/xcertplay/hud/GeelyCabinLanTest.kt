@@ -1,9 +1,12 @@
 package com.shilapi.xcertplay.hud
 
 import com.shilapi.xcertplay.network.RootShell
+import java.io.ByteArrayInputStream
 import java.lang.reflect.InvocationTargetException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -11,10 +14,18 @@ class GeelyCabinLanTest {
     private val direct = mutableListOf<String>()
     private val root = mutableListOf<String>()
     private val logs = mutableListOf<String>()
+    private var now = 0L
+    private var directError: Throwable? = null
+    private var rootFailure: String? = null
+
+    private val sender = GeelyCabinLan.Sender(
+        direct = { _, _, json -> direct += json; directError?.let { throw it } },
+        root = { _, _, json -> root += json; rootFailure },
+        log = logs::add,
+        now = { now },
+    )
 
     @Test fun theAppProcessIsUsedWhileItWorks() {
-        val sender = GeelyCabinLan.Sender(direct = { _, _, json -> direct += json }, root = { _, _, json -> root += json; true },
-            log = logs::add)
         assertTrue(sender.send(GeelyCabinLan.MUSIC, 0, "a"))
         assertTrue(sender.send(GeelyCabinLan.MUSIC, 0, "b"))
         assertEquals(listOf("a", "b"), direct)
@@ -22,23 +33,61 @@ class GeelyCabinLanTest {
         assertEquals(listOf("dashboard CabinLAN sends through the app process"), logs)
     }
 
-    @Test fun aRefusedAppProcessFallsBackToRootForTheRestOfTheProcess() {
-        val sender = GeelyCabinLan.Sender(
-            direct = { _, _, json -> direct += json; throw InvocationTargetException(SecurityException("denied")) },
-            root = { _, _, json -> root += json; true }, log = logs::add)
+    @Test fun aFailedAppProcessIsTriedAgainForTheNextMessage() {
+        directError = InvocationTargetException(IllegalStateException("gone"))
+        assertTrue(sender.send(GeelyCabinLan.MUSIC, 0, "a"))
+        directError = null
+        assertTrue(sender.send(GeelyCabinLan.MUSIC, 1, "b"))
+        assertEquals(listOf("a", "b"), direct)
+        assertEquals(listOf("a"), root)
+        assertEquals(listOf("dashboard CabinLAN refused in the app process (IllegalStateException)",
+            "dashboard CabinLAN sends through the root helper", "dashboard CabinLAN sends through the app process"), logs)
+    }
+
+    @Test fun aPolicyRefusalSkipsTheAppProcessForAWhile() {
+        directError = InvocationTargetException(SecurityException("denied"))
         assertTrue(sender.send(GeelyCabinLan.MUSIC, 0, "a"))
         assertTrue(sender.send(GeelyCabinLan.MUSIC, 1, "b"))
         assertEquals(listOf("a"), direct)
         assertEquals(listOf("a", "b"), root)
-        assertEquals(listOf("dashboard CabinLAN refused in the app process (SecurityException); using root",
-            "dashboard CabinLAN sends through the root helper"), logs)
+        now += GeelyCabinLan.Sender.DIRECT_RETRY_MILLIS
+        directError = null
+        assertTrue(sender.send(GeelyCabinLan.MUSIC, 0, "c"))
+        assertEquals(listOf("a", "c"), direct)
+        assertEquals(listOf("a", "b"), root)
+        assertEquals(listOf("dashboard CabinLAN refused in the app process (SecurityException)",
+            "dashboard CabinLAN sends through the root helper", "dashboard CabinLAN sends through the app process"), logs)
     }
 
-    @Test fun aFailedRootHelperReportsFailure() {
-        val sender = GeelyCabinLan.Sender(direct = { _, _, _ -> throw NoClassDefFoundError() }, root = { _, _, _ -> false },
-            log = logs::add)
-        assertFalse(sender.send(GeelyCabinLan.MUSIC, 0, "a"))
-        assertEquals("dashboard CabinLAN root helper failed", logs.last())
+    @Test fun aRepeatNeverStartsTheRootHelper() {
+        directError = IllegalStateException()
+        assertFalse(sender.sendWithoutRoot(GeelyCabinLan.MUSIC, 0, "a"))
+        assertEquals(listOf("a"), direct)
+        assertEquals(emptyList<String>(), root)
+    }
+
+    @Test fun aRootHelperThatKeepsFailingStopsUntilTheNextSession() {
+        directError = NoClassDefFoundError()
+        rootFailure = "su timed out"
+        repeat(GeelyCabinLan.Sender.MAX_ROOT_FAILURES + 2) { assertFalse(sender.send(GeelyCabinLan.MUSIC, 0, "m$it")) }
+        assertEquals(GeelyCabinLan.Sender.MAX_ROOT_FAILURES, root.size)
+        assertEquals(listOf("dashboard CabinLAN refused in the app process (NoClassDefFoundError)",
+            "dashboard CabinLAN root helper failed (su timed out)",
+            "dashboard CabinLAN root helper failed 3 times in a row; stopped until the next session"), logs)
+        sender.newSession()
+        rootFailure = null
+        assertTrue(sender.send(GeelyCabinLan.MUSIC, 0, "n"))
+        assertEquals("n", root.last())
+    }
+
+    @Test fun eachNewRootFailureReasonIsLoggedOnce() {
+        directError = NoClassDefFoundError()
+        rootFailure = "exit 1"
+        sender.send(GeelyCabinLan.MUSIC, 0, "a")
+        rootFailure = "FAILED SecurityException"
+        sender.send(GeelyCabinLan.MUSIC, 0, "b")
+        assertEquals(listOf("dashboard CabinLAN root helper failed (exit 1)",
+            "dashboard CabinLAN root helper failed (FAILED SecurityException)"), logs.drop(1))
     }
 
     @Test fun theRootHelperGetsOnlyNumbersAsArguments() {
@@ -47,9 +96,21 @@ class GeelyCabinLanTest {
     }
 
     @Test fun onlyTheHelpersSentLineCounts() {
-        assertTrue(GeelyCabinLan.rootSent(RootShell.Result.Completed(0, "warning\n${GeelyCabinLanMain.HEADER}|SENT\n")))
-        assertFalse(GeelyCabinLan.rootSent(RootShell.Result.Completed(0, "${GeelyCabinLanMain.HEADER}|FAILED SecurityException")))
-        assertFalse(GeelyCabinLan.rootSent(RootShell.Result.Completed(1, "${GeelyCabinLanMain.HEADER}|SENT")))
-        assertFalse(GeelyCabinLan.rootSent(RootShell.Result.Unavailable("su timed out")))
+        assertNull(GeelyCabinLan.rootFailure(RootShell.Result.Completed(0, "warning\n${GeelyCabinLanMain.HEADER}|SENT\n")))
+        assertEquals("FAILED SecurityException",
+            GeelyCabinLan.rootFailure(RootShell.Result.Completed(0, "${GeelyCabinLanMain.HEADER}|FAILED SecurityException")))
+        assertEquals("exit 1", GeelyCabinLan.rootFailure(RootShell.Result.Completed(1, "${GeelyCabinLanMain.HEADER}|SENT")))
+        assertEquals("su timed out", GeelyCabinLan.rootFailure(RootShell.Result.Unavailable("su timed out")))
+        assertEquals("no helper reply", GeelyCabinLan.rootFailure(RootShell.Result.Completed(0, "Permission denied")))
+        assertEquals("no helper reply",
+            GeelyCabinLan.rootFailure(RootShell.Result.Completed(0, "${GeelyCabinLanMain.HEADER}|FAILED {\"SongName\":\"x\"}")))
+    }
+
+    @Test fun theHelperReadsAMessageUpToItsLimit() {
+        val largest = ByteArray(GeelyCabinLanMain.MAX_MESSAGE_BYTES) { 'a'.code.toByte() }
+        assertEquals(GeelyCabinLanMain.MAX_MESSAGE_BYTES, GeelyCabinLanMain.readMessage(ByteArrayInputStream(largest)).length)
+        assertThrows(IllegalArgumentException::class.java) {
+            GeelyCabinLanMain.readMessage(ByteArrayInputStream(largest + 'a'.code.toByte()))
+        }
     }
 }
