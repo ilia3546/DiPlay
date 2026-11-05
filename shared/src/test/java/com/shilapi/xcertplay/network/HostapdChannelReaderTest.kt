@@ -48,7 +48,7 @@ class HostapdChannelReaderTest {
             HotspotInterfaceBssid.toBytes("52:0e:3c:5b:04:78"))
         assertArrayEquals(byteArrayOf(0xDA.toByte(), 0x12, 0x34, 0x56, 0x78, 0x9A.toByte()),
             HotspotInterfaceBssid.toBytes("DA:12:34:56:78:9A"))
-        for (mac in listOf("", "00:00:00:00:00:00", "01:00:5e:00:00:fb", "52:0e:3c:5b:04", "52:0e:3c:5b:04:7", "zz:0e:3c:5b:04:78")) {
+        for (mac in listOf(null, "", "00:00:00:00:00:00", "02:00:00:00:00:00", "01:00:5e:00:00:fb", "52:0e:3c:5b:04", "52:0e:3c:5b:04:7", "zz:0e:3c:5b:04:78")) {
             assertNull(mac, HotspotInterfaceBssid.toBytes(mac))
         }
     }

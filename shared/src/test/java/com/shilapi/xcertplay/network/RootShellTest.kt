@@ -42,6 +42,16 @@ class RootShellTest {
             RootShell.run("id -u") { _, _ -> CommandOutput(RootShell.TIMED_OUT, "") })
     }
 
+    @Test fun anInterruptedWaitKeepsTheInterruptForTheCaller() {
+        try {
+            assertEquals(Result.Unavailable("interrupted"),
+                RootShell.run("id -u") { _, _ -> throw InterruptedException() })
+            assertTrue(Thread.currentThread().isInterrupted)
+        } finally {
+            Thread.interrupted()
+        }
+    }
+
     @Test fun onlyPlainInterfaceNamesAreSafe() {
         assertTrue(RootShell.isSafeInterfaceName("wlan1"))
         assertTrue(RootShell.isSafeInterfaceName("ap_br-wlan0.1"))
