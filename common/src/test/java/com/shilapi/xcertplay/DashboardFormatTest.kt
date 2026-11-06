@@ -22,11 +22,14 @@ class DashboardFormatTest {
         assertEquals("-12°C", DashboardFormat.temperature(-11.6f, Locale.US))
     }
 
-    @Test fun unknownValuesAreDashesNotZeros() {
-        assertEquals("--", DashboardFormat.temperature(null))
-        assertEquals("--", DashboardFormat.decimal(null))
-        assertEquals("--", DashboardFormat.hours(null))
-        assertEquals("--", DashboardFormat.minutesOfHour(null))
+    @Test fun unknownValuesAreOneDashNotZeros() {
+        assertEquals("—", DashboardFormat.temperature(null))
+        assertEquals("—", DashboardFormat.decimal(null))
+        assertEquals("—", DashboardFormat.hours(null))
+        assertEquals("—", DashboardFormat.minutesOfHour(null))
+        assertEquals("—", DashboardFormat.arrival(null, moscow, is24Hour = true))
+        assertEquals("—", DashboardFormat.remainingMinutes(null))
+        assertEquals("—", DashboardFormat.remainingKm(null))
     }
 
     @Test fun theArrivalIsATimeByTheClockAndTheRestIsMinutesAndKilometres() {

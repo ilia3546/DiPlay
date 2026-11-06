@@ -123,6 +123,16 @@ class CustomDashboardRenderTest {
         assertTrue(edge < 0x12 + 0x21)
     }
 
+    @Test fun unknownValuesAreOneDash() {
+        render("unknown-dash") {
+            showBackground(DashboardBackground.OCEAN, 0) { null }
+            showTemperature(null)
+            trip.show(DashboardTrip())
+            map.showRoute(DashboardRoute(ClusterTurnGuidance.fromApple(1, 0, 1_250, ""), null, null, null),
+                is24Hour = true, zone = moscow)
+        }
+    }
+
     /** [attached] puts the view in an activity's window first, so that its animations run. */
     private fun render(name: String?, attached: Boolean = false, setUp: MonjaroDashboardView.() -> Unit): Bitmap {
         val view = MonjaroDashboardView(context)

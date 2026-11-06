@@ -15,7 +15,7 @@ class EcarxCarDataTest {
         assertNull(outsideTemperature(null, 0))
         assertNull(outsideTemperature(Float.NaN, 0))
         assertNull(outsideTemperature(-273f, 0))
-        assertEquals("--", DashboardFormat.temperature(outsideTemperature(6.6f, 1)))
+        assertEquals("—", DashboardFormat.temperature(outsideTemperature(6.6f, 1)))
     }
 
     @Test fun onlyParameterlessPublicAttributeGettersOfTripFieldsAreRead() {

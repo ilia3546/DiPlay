@@ -8,7 +8,7 @@ import kotlin.math.roundToInt
 
 /** The custom dashboard's numbers; a value the head unit does not give is [UNKNOWN], never a zero. */
 internal object DashboardFormat {
-    const val UNKNOWN = "--"
+    const val UNKNOWN = "\u2014"
 
     /** Without an AM/PM marker in the 12-hour form, as the cluster has no room for one. */
     fun clock(millis: Long, zone: TimeZone, is24Hour: Boolean, locale: Locale = Locale.getDefault()): String =
