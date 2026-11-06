@@ -8,8 +8,8 @@ import android.text.format.DateFormat
 import android.view.View
 
 /**
- * Keeps a [MonjaroDashboardView] current while it is in its window: the clock, and the background and dimming
- * from the settings.
+ * Keeps a [MonjaroDashboardView] current while it is in its window: the clock, the background and dimming from
+ * the settings, and the outside temperature from [EcarxCarData].
  */
 internal class MonjaroDashboardSources(private val view: MonjaroDashboardView) : View.OnAttachStateChangeListener {
     private val app = view.context.applicationContext
@@ -27,12 +27,14 @@ internal class MonjaroDashboardSources(private val view: MonjaroDashboardView) :
         showTime()
         showBackground()
         stopObservingSettings = MonjaroCustomDashboard.observeSettings(::showBackground)
+        EcarxCarData.start(app, view::showTemperature)
     }
 
     override fun onViewDetachedFromWindow(detached: View) {
         runCatching { app.unregisterReceiver(time) }
         stopObservingSettings?.invoke()
         stopObservingSettings = null
+        EcarxCarData.stop()
     }
 
     private fun showTime() = view.showTime(System.currentTimeMillis(), DateFormat.is24HourFormat(app))
