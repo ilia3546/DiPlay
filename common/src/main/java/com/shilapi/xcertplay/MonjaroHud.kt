@@ -23,7 +23,10 @@ import com.shilapi.xcertplay.hud.HudSettings
 
 /** The HUD line window on the head-up display, as [HudState] drives it. Main thread. */
 internal interface HudWindow {
-    /** The overlay permission is granted and exactly one head-up display is present. */
+    /**
+     * The overlay permission is granted, exactly one head-up display is present, and the shown window, if any, is on
+     * it.
+     */
     fun available(): Boolean
 
     /** Reports each change that may change [available] to [changed], until [stopWatching]. */
@@ -97,6 +100,8 @@ internal class HudState(
                 window.hide()
                 shown = false
                 drawn = null
+                // Shows a new window on a head-up display that came back under a new id.
+                if (wanted) update()
             }
             return
         }
@@ -171,6 +176,7 @@ internal class MonjaroHudWindow(
     private val main = Handler(Looper.getMainLooper())
     private val displays = context.getSystemService(DisplayManager::class.java)
     private var view: HudLineView? = null
+    private var shownOn: Int? = null
     private var windows: WindowManager? = null
     private var displayListener: DisplayManager.DisplayListener? = null
     private var opListener: AppOpsManager.OnOpChangedListener? = null
@@ -185,7 +191,7 @@ internal class MonjaroHudWindow(
             reported = report
             log(report)
         }
-        return permitted && choice.displayId != null
+        return MonjaroHudDisplay.usable(permitted, choice.displayId, shownOn)
     }
 
     override fun startWatching(changed: () -> Unit) {
@@ -248,6 +254,7 @@ internal class MonjaroHudWindow(
             return false
         }
         view = line
+        shownOn = display.displayId
         this.windows = windows
         log("HUD window added on display ${display.displayId}")
         return true
@@ -256,6 +263,7 @@ internal class MonjaroHudWindow(
     override fun hide() {
         val line = view ?: return
         view = null
+        shownOn = null
         runCatching { windows?.removeViewImmediate(line) }
         windows = null
         log("HUD window removed")

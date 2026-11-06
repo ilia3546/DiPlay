@@ -5,6 +5,7 @@ import com.shilapi.xcertplay.hud.HudFrame
 import com.shilapi.xcertplay.hud.HudManeuver
 import com.shilapi.xcertplay.hud.HudSettings
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -40,6 +41,12 @@ class MonjaroHudDisplayTest {
             MonjaroHudDisplay.choose(listOf(centre, hud.copy(width = 1280))))
     }
 
+    @Test fun aShownWindowStaysOnlyOnTheChosenDisplay() {
+        assertTrue(MonjaroHudDisplay.usable(permitted = true, chosenDisplayId = 11, shownOnDisplayId = 11))
+        assertFalse(MonjaroHudDisplay.usable(permitted = true, chosenDisplayId = 12, shownOnDisplayId = 11))
+        assertFalse(MonjaroHudDisplay.usable(permitted = false, chosenDisplayId = 11, shownOnDisplayId = null))
+    }
+
     @Test fun unreadableAddressesPickNothing() {
         assertNull(MonjaroHudDisplay.choose(listOf(centre, hud).map { it.copy(uniqueId = null, physicalId = null) }).displayId)
     }
@@ -51,12 +58,14 @@ class HudStateTest {
     private val timers = mutableListOf<Runnable>()
     private var options = MonjaroA3Options(hudManeuvers = true)
     private var available = true
+    private var hudDisplayId = 11
+    private var shownOn: Int? = null
     private var showWorks = true
     private var watcher: (() -> Unit)? = null
     private var glance = CarPlayGlance.Snapshot()
 
     private val window = object : HudWindow {
-        override fun available() = available
+        override fun available() = MonjaroHudDisplay.usable(available, hudDisplayId, shownOn)
         override fun startWatching(changed: () -> Unit) {
             watcher = changed
             events += "watch"
@@ -67,10 +76,12 @@ class HudStateTest {
         }
         override fun show(): Boolean {
             events += "show"
+            if (showWorks) shownOn = hudDisplayId
             return showWorks
         }
         override fun hide() {
             events += "hide"
+            shownOn = null
         }
         override fun draw(frame: HudFrame?, settings: HudSettings) {
             drawn += frame to settings
@@ -149,6 +160,16 @@ class HudStateTest {
         watcher!!()
         assertEquals(listOf("watch", "show", "hide", "show"), events)
         assertEquals(HudManeuver.RIGHT, drawn.last().first?.kind)
+    }
+
+    @Test fun aHeadUpDisplayBackUnderANewIdGetsTheWindowAtOnce() {
+        state.glanceChanged(turn)
+        hudDisplayId = 12
+        watcher!!()
+        assertEquals(listOf("watch", "show", "hide", "show"), events)
+        assertEquals(12, shownOn)
+        assertEquals(HudManeuver.RIGHT, drawn.last().first?.kind)
+        assertEquals(1, timers.size)
     }
 
     @Test fun aRefusedWindowIsTriedAgainOnTheNextChange() {
