@@ -111,4 +111,20 @@ class DashboardRadioTest {
         descriptor.setDataPosition(0)
         assertEquals(RadioListener.DESCRIPTOR, descriptor.readString())
     }
+
+    @Test fun anAnswerAskedForBeforeTheLatestCallIsStale() {
+        val stations = RadioEvents()
+        val plays = RadioEvents()
+        val listener = RadioListener({ stations.heard() }, { plays.heard() })
+        val stationFresh = stations.mark()
+        val playingFresh = plays.mark()
+        val pause = Parcel.obtain().apply {
+            writeInterfaceToken(RadioListener.DESCRIPTOR)
+            setDataPosition(0)
+        }
+        assertTrue(listener.transact(5, pause, null, IBinder.FLAG_ONEWAY))
+        assertTrue("no station call came", stationFresh())
+        assertFalse("the pause came after the request", playingFresh())
+        assertTrue("a later request", plays.mark()())
+    }
 }

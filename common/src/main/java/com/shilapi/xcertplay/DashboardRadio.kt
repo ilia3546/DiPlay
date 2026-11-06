@@ -15,6 +15,7 @@ import android.util.Log
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicLong
 
 /** The station of the firmware's radio service, read from its `com.ts.radio.model.RadioLocalInfo`. */
 internal data class RadioStation(
@@ -136,6 +137,24 @@ internal class RadioListener(
 }
 
 /**
+ * Counts the listener's calls of one kind, so that an answer to a request sent before the latest call does not
+ * replace what that call brought. Any thread.
+ */
+internal class RadioEvents {
+    private val heard = AtomicLong()
+
+    fun heard() {
+        heard.incrementAndGet()
+    }
+
+    /** Before a request: the returned check is true while no call came since. */
+    fun mark(): () -> Boolean {
+        val seen = heard.get()
+        return { heard.get() == seen }
+    }
+}
+
+/**
  * The firmware radio's station and play state, through its exported `com.ts.radio.service.IRadioAppManager`.
  * [connect] binds without starting the service, so that DiPlay never brings up another app's radio. Main thread;
  * [changed] runs on it after each update.
@@ -203,20 +222,30 @@ internal class DashboardRadio(context: Context, private val changed: () -> Unit)
     private fun connected(current: Long, binder: IBinder) {
         if (current != generation) return
         service = binder
+        val stations = RadioEvents()
+        val plays = RadioEvents()
         val next = RadioListener(
-            station = { station -> main.post { if (current == generation) showStation(station) } },
-            playing = { playing -> main.post { if (current == generation) showPlaying(playing) } },
+            station = { station ->
+                stations.heard()
+                main.post { if (current == generation) showStation(station) }
+            },
+            playing = { playing ->
+                plays.heard()
+                main.post { if (current == generation) showPlaying(playing) }
+            },
         )
         listener = next
         worker.execute {
             val registered = call(binder, REGISTER_LISTENER, { it.writeStrongBinder(next) }) {} != null
+            val stationFresh = stations.mark()
             val station = call(binder, GET_CURRENT_RADIO_INFO) { RadioStation.read(it) }
+            val playingFresh = plays.mark()
             val playing = call(binder, IS_PLAY) { it.readInt() != 0 }
             Log.i(TAG, "radio service registered=$registered playing=$playing station=${station != null}")
             main.post {
                 if (current != generation) return@post
-                showStation(station)
-                showPlaying(playing)
+                if (stationFresh()) showStation(station)
+                if (playingFresh()) showPlaying(playing)
             }
         }
     }
