@@ -15,7 +15,7 @@ import com.shilapi.xcertplay.glance.CarPlayGlance
 /**
  * Keeps a [MonjaroDashboardView] current while it is in its window: the clock, the background and dimming from
  * the settings, the outside temperature from [EcarxCarData], CarPlay's route from [CarPlayGlance], the map
- * stream's stops, and the parked map from [EcarxWheelSpeed].
+ * stream's stops, the parked map from [EcarxWheelSpeed], and the media block through [DashboardMediaFeed].
  */
 internal class MonjaroDashboardSources(private val view: MonjaroDashboardView) : View.OnAttachStateChangeListener {
     private val app = view.context.applicationContext
@@ -24,6 +24,7 @@ internal class MonjaroDashboardSources(private val view: MonjaroDashboardView) :
     private var stopObservingGlance: (() -> Unit)? = null
     private var stopFollowingSpeed: (() -> Unit)? = null
     private val parking = DashboardParking()
+    private val media = DashboardMediaFeed(view.media)
     private val streamChanged: (Boolean) -> Unit = { active -> if (!active) view.map.video.streamStopped() }
     // A route expires without a new frame, and the glance notices that only when asked.
     private val routeTick = object : Runnable {
@@ -57,6 +58,7 @@ internal class MonjaroDashboardSources(private val view: MonjaroDashboardView) :
         MapMirrors.addStreamListener(streamChanged)
         stopFollowingSpeed = EcarxWheelSpeed.follow(app)
         parkingTick.run()
+        media.start()
     }
 
     override fun onViewDetachedFromWindow(detached: View) {
@@ -71,6 +73,7 @@ internal class MonjaroDashboardSources(private val view: MonjaroDashboardView) :
         stopFollowingSpeed?.invoke()
         stopFollowingSpeed = null
         main.removeCallbacks(parkingTick)
+        media.stop()
     }
 
     private fun showTime() = view.showTime(System.currentTimeMillis(), DateFormat.is24HourFormat(app))

@@ -17,6 +17,7 @@ import java.time.Duration
 import java.util.TimeZone
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -97,6 +98,39 @@ class CustomDashboardRenderTest {
             media.show(DashboardMedia.Track("Hymn", "Charlotte de Witte", null, 0.38f))
         }
     }
+
+    @Test fun theMediaBlockOfEachSource() {
+        val cover = Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888).apply {
+            Canvas(this).drawPaint(Paint().apply {
+                shader = LinearGradient(0f, 0f, 600f, 600f, Color.rgb(240, 90, 120), Color.rgb(60, 40, 160),
+                    Shader.TileMode.CLAMP)
+            })
+        }
+        render("media-carplay") {
+            showBackground(DashboardBackground.OCEAN, 0) { null }
+            showTemperature(6.4f)
+            media.show(DashboardMedia.Track("Hymn", "Charlotte de Witte", cover, 0.38f))
+        }
+        assertFalse("the dashboard does not own CarPlay's cover", cover.isRecycled)
+        val station = RadioStation(frequencyId = 10620, frequencyName = "106.2", psName = "Europa Plus",
+            titleText = "Houdini", artistText = "Dua Lipa")
+        render("media-radio") {
+            showBackground(DashboardBackground.OCEAN, 0) { null }
+            showTemperature(6.4f)
+            media.show(DashboardMedia.Radio(station.title, station.subtitle, null))
+            assertEquals(listOf(View.VISIBLE, View.VISIBLE, View.VISIBLE, View.GONE), media.childVisibility())
+        }
+        render("media-empty") {
+            showBackground(DashboardBackground.OCEAN, 0) { null }
+            showTemperature(6.4f)
+            media.show(DashboardMedia.Track("Hymn", "Charlotte de Witte", cover, 0.38f))
+            media.show(DashboardMedia.Empty)
+            assertEquals("nothing of the track stays", listOf(View.VISIBLE, View.GONE, View.GONE, View.GONE),
+                media.childVisibility())
+        }
+    }
+
+    private fun DashboardMediaBlock.childVisibility() = (0 until childCount).map { getChildAt(it).visibility }
 
     @Test fun theRouteCardsOverTheEmptyMap() {
         val frame = render("map-route") {

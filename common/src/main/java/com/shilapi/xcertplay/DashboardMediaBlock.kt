@@ -8,8 +8,10 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Shader
 import android.view.Gravity
+import android.text.TextUtils
 import android.view.View
 import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.core.graphics.drawable.toBitmap
 import com.shilapi.xcertplay.MonjaroDashboardLayout as L
 import com.shilapi.xcertplay.host.R
@@ -51,40 +53,52 @@ internal class DashboardMediaBlock(context: Context) : LinearLayout(context) {
 
     fun show(media: DashboardMedia) {
         when (media) {
-            DashboardMedia.Empty -> show(null, null, null, null)
-            is DashboardMedia.Track -> show(media.artwork, media.title, media.artist, media.progress)
-            is DashboardMedia.Radio -> show(media.logo, media.title, media.subtitle, null)
+            DashboardMedia.Empty -> show(null, NOW_PLAYING, null, null, null)
+            is DashboardMedia.Track -> show(media.artwork, NOW_PLAYING, media.title, media.artist, media.progress)
+            is DashboardMedia.Radio -> show(media.logo, R.drawable.art_radio_placeholder, media.title, media.subtitle, null)
         }
     }
 
-    private fun show(image: Bitmap?, title: String?, subtitle: String?, progress: Float?) {
-        artwork.image = image
-        this.title.text = title
-        this.title.visibility = if (title.isNullOrEmpty()) GONE else VISIBLE
-        this.subtitle.text = subtitle
-        this.subtitle.visibility = if (subtitle.isNullOrEmpty()) GONE else VISIBLE
+    private fun show(image: Bitmap?, placeholder: Int, title: String?, subtitle: String?, progress: Float?) {
+        artwork.show(image, placeholder)
+        this.title.showText(title)
+        this.subtitle.showText(subtitle)
         this.progress.progress = progress
         this.progress.visibility = if (progress == null) GONE else VISIBLE
     }
+
+    // The feed shows the block again every second for the progress alone; an unchanged text must not relayout it.
+    private fun TextView.showText(value: String?) {
+        if (!TextUtils.equals(text, value.orEmpty())) text = value
+        visibility = if (value.isNullOrEmpty()) GONE else VISIBLE
+    }
+
+    private companion object {
+        val NOW_PLAYING = R.drawable.art_now_playing_placeholder
+    }
 }
 
-/** The rounded artwork with its shadow, or the app's now-playing placeholder when there is none. */
+/** The rounded artwork with its shadow, or a placeholder drawable of the source when there is none. */
 internal class DashboardArtworkView(context: Context) : View(context) {
     private val shadow = DashboardShadow(L.ARTWORK_RADIUS, L.ARTWORK_SHADOW_DY, L.ARTWORK_SHADOW_BLUR, L.ARTWORK_SHADOW)
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-    private val placeholder by lazy {
-        requireNotNull(context.getDrawable(R.drawable.art_now_playing_placeholder)).toBitmap(L.ARTWORK_SIZE, L.ARTWORK_SIZE)
-    }
+    private val placeholders = mutableMapOf<Int, Bitmap>()
+    private var image: Bitmap? = null
+    private var placeholder = R.drawable.art_now_playing_placeholder
 
-    var image: Bitmap? = null
-        set(value) {
-            field = value
-            invalidate()
-        }
+    /** [image] stays its owner's: the view never recycles it. */
+    fun show(image: Bitmap?, placeholder: Int) {
+        if (image === this.image && placeholder == this.placeholder) return
+        this.image = image
+        this.placeholder = placeholder
+        invalidate()
+    }
 
     override fun onDraw(canvas: Canvas) {
         shadow.draw(canvas, width, height)
-        val picture = image ?: placeholder
+        val picture = image ?: placeholders.getOrPut(placeholder) {
+            requireNotNull(context.getDrawable(placeholder)).toBitmap(L.ARTWORK_SIZE, L.ARTWORK_SIZE)
+        }
         val crop = centerCrop(picture.width, picture.height, width, height)
         val scale = max(width / crop.width().toFloat(), height / crop.height().toFloat())
         paint.shader = BitmapShader(picture, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {

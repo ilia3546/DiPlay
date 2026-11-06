@@ -1,0 +1,151 @@
+package com.shilapi.xcertplay
+
+import android.content.Context
+import android.database.ContentObserver
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
+import android.provider.Settings
+import android.util.Log
+
+/**
+ * Keeps a [DashboardMediaBlock] on what plays now, from [start] to [stop]: picks the source with
+ * [DashboardMediaSource.of], then shows only that source's data, and moves CarPlay's progress on once a second.
+ * Main thread.
+ */
+internal class DashboardMediaFeed(private val block: DashboardMediaBlock) {
+    private val main = Handler(Looper.getMainLooper())
+    private val flags = HeadUnitMediaFlags(block.context, ::refresh)
+    private val radio = DashboardRadio(block.context, ::refresh)
+    private var music = ClusterMusicState.Snapshot()
+    private var playback = ClusterPlaybackState.Snapshot()
+    private var stopObservingMusic: (() -> Unit)? = null
+    private var stopObservingPlayback: (() -> Unit)? = null
+    private var started = false
+    private var source: DashboardMediaSource? = null
+    private val tick = object : Runnable {
+        override fun run() {
+            refresh()
+            main.postDelayed(this, PROGRESS_REFRESH_MILLIS)
+        }
+    }
+
+    fun start() {
+        if (started) return
+        started = true
+        flags.start()
+        stopObservingMusic = ClusterMusicState.observe { snapshot ->
+            music = snapshot
+            refresh()
+        }
+        stopObservingPlayback = ClusterPlaybackState.observe { snapshot ->
+            playback = snapshot
+            refresh()
+        }
+        tick.run()
+    }
+
+    fun stop() {
+        if (!started) return
+        started = false
+        main.removeCallbacks(tick)
+        flags.stop()
+        stopObservingMusic?.invoke()
+        stopObservingMusic = null
+        stopObservingPlayback?.invoke()
+        stopObservingPlayback = null
+        radio.disconnect()
+        source = null
+        block.show(DashboardMedia.Empty)
+    }
+
+    private fun refresh() {
+        if (!started) return
+        val heard = flags.current
+        if (heard.radio) radio.connect() else radio.disconnect()
+        val info = music.info
+        val track = !info.title.isNullOrBlank() || !info.artist.isNullOrBlank()
+        val signals = DashboardMediaSignals(
+            carPlayFocus = playback.focusHeld,
+            carPlayPlaying = playback.playing,
+            carPlayTrack = track,
+            radioPlaying = heard.radio,
+            bluetoothPlaying = heard.bluetooth,
+            usbPlaying = heard.usb,
+            radioServicePlaying = radio.servicePlaying,
+        )
+        val next = DashboardMediaSource.of(signals)
+        if (next != source) {
+            Log.i(TAG, "media source $next: $signals")
+            source = next
+        }
+        block.show(when (next) {
+            DashboardMediaSource.CARPLAY -> if (!track) DashboardMedia.Empty else DashboardMedia.Track(
+                title = info.title.orEmpty(),
+                artist = info.artist,
+                artwork = music.artwork?.takeUnless { it.isRecycled },
+                progress = DashboardProgress.of(playback.elapsedMillis, playback.elapsedAt, info.durationMillis,
+                    playback.playing, SystemClock.elapsedRealtime()),
+            )
+            DashboardMediaSource.RADIO -> radio.station?.let { DashboardMedia.Radio(it.title, it.subtitle, radio.logo) }
+                ?: DashboardMedia.Empty
+            DashboardMediaSource.OTHER, DashboardMediaSource.UNKNOWN -> DashboardMedia.Empty
+        })
+    }
+
+    companion object {
+        private const val TAG = "DiPlay-CustomDashboard"
+        private const val PROGRESS_REFRESH_MILLIS = 1_000L
+    }
+}
+
+/** The firmware's `Settings.Global` flags of the head-unit sources that play now; [changed] runs on the main thread. */
+internal class HeadUnitMediaFlags(context: Context, private val changed: () -> Unit) {
+    /** [carPlay] is the firmware's own CarPlay, only logged. */
+    data class Flags(val radio: Boolean = false, val bluetooth: Boolean = false, val usb: Boolean = false,
+        val carPlay: Boolean = false)
+
+    private val resolver = context.applicationContext.contentResolver
+    private val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean) = read()
+    }
+    private var observing = false
+
+    var current = Flags()
+        private set
+
+    fun start() {
+        if (observing) return
+        observing = true
+        for (key in listOf(RADIO, BLUETOOTH, USB, CARPLAY)) {
+            runCatching { resolver.registerContentObserver(Settings.Global.getUriFor(key), false, observer) }
+        }
+        read()
+    }
+
+    fun stop() {
+        if (!observing) return
+        observing = false
+        runCatching { resolver.unregisterContentObserver(observer) }
+        current = Flags()
+    }
+
+    private fun read() {
+        if (!observing) return
+        val next = Flags(playing(RADIO), playing(BLUETOOTH), playing(USB), playing(CARPLAY))
+        if (next == current) return
+        Log.i(TAG, "head-unit media flags $next")
+        current = next
+        changed()
+    }
+
+    private fun playing(key: String): Boolean = runCatching { Settings.Global.getInt(resolver, key, 0) == 1 }.getOrDefault(false)
+
+    companion object {
+        private const val TAG = "DiPlay-CustomDashboard"
+        private const val RADIO = "radio_is_playing"
+        private const val BLUETOOTH = "bt_is_playing"
+        private const val USB = "usb_is_playing"
+        private const val CARPLAY = "cp_is_playing"
+    }
+}
