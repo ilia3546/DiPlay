@@ -36,6 +36,9 @@
             <action android:name="android.intent.action.OPEN_DOCUMENT" />
             <data android:mimeType="*/*" />
         </intent>
+        <intent>
+            <action android:name="com.ts.radio.intent.action.SERVICE" />
+        </intent>
     </queries>
     <application>
         <provider
