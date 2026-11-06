@@ -1373,7 +1373,7 @@ open class CarPlayHostActivity : ComponentActivity() {
         }
         // Handed back after CarPlay left; the next cluster stream takes the cluster again.
         if (clusterReleasedWhileIdle) return
-        if (clusterStreamOwner() == ClusterStreamOwner.CLUSTER_DISPLAY) {
+        if (clusterStreamOwner().clusterSurfaceTakesStream) {
             clusterSurface?.let { sink?.setSurface(SCREEN_TYPE_ALT, it) }
         }
         if (AdbClusterRouter.enabled(this)) {
@@ -1551,8 +1551,7 @@ open class CarPlayHostActivity : ComponentActivity() {
                 !adbClusterConfigured && controller != null) {
                 ClusterActivityOutput.setStreamActive(false)
                 reconnectAfterLoss("DiLink 4 cluster confirmed; requesting its native stream")
-            } else if (clusterOutputReady() &&
-                clusterStreamOwner().let { it != ClusterStreamOwner.CUSTOM_DASHBOARD && it != ClusterStreamOwner.NONE }) {
+            } else if (clusterStreamOwner().clusterSurfaceTakesStream) {
                 sink?.setSurface(SCREEN_TYPE_ALT, surface)
             }
         }
@@ -6538,10 +6537,11 @@ open class CarPlayHostActivity : ComponentActivity() {
 
     private fun attachSurface(surface: Surface) {
         sink?.setSurface(SCREEN_TYPE_MAIN, surface)
-        when (clusterStreamOwner()) {
-            ClusterStreamOwner.CLUSTER_DISPLAY -> clusterSurface?.let { sink?.setSurface(SCREEN_TYPE_ALT, it) }
-            ClusterStreamOwner.MAIN_SURFACE -> sink?.setSurface(SCREEN_TYPE_ALT, surface)
-            ClusterStreamOwner.CUSTOM_DASHBOARD, ClusterStreamOwner.NONE -> Unit
+        val owner = clusterStreamOwner()
+        if (owner.clusterSurfaceTakesStream) {
+            clusterSurface?.let { sink?.setSurface(SCREEN_TYPE_ALT, it) }
+        } else if (owner == ClusterStreamOwner.MAIN_SURFACE) {
+            sink?.setSurface(SCREEN_TYPE_ALT, surface)
         }
     }
 

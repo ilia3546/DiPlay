@@ -1,6 +1,8 @@
 package com.shilapi.xcertplay
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ClusterStreamOwnerTest {
@@ -28,5 +30,15 @@ class ClusterStreamOwnerTest {
                 assertEquals(ClusterStreamOwner.NONE, ClusterStreamOwner.of(true, false, clusterMap, presentation))
             }
         }
+    }
+
+    @Test fun onlyTheClusterDisplayOwnerLetsTheClusterSurfaceTakeTheStream() {
+        assertEquals(listOf(ClusterStreamOwner.CLUSTER_DISPLAY),
+            ClusterStreamOwner.entries.filter { it.clusterSurfaceTakesStream })
+        assertTrue("another head unit with the cluster map and its surface ready",
+            ClusterStreamOwner.of(false, false, true, true).clusterSurfaceTakesStream)
+        assertFalse("the cluster map off", ClusterStreamOwner.of(false, false, false, true).clusterSurfaceTakesStream)
+        assertFalse("a dashboard session", ClusterStreamOwner.of(true, true, true, true).clusterSurfaceTakesStream)
+        assertFalse("a dashboard turned off mid-session", ClusterStreamOwner.of(true, false, true, true).clusterSurfaceTakesStream)
     }
 }

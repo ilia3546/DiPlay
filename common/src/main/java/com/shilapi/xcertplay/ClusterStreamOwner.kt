@@ -13,6 +13,9 @@ internal enum class ClusterStreamOwner {
      */
     NONE;
 
+    /** Whether a cluster display's surface may take the stream from a CarPlay screen. */
+    val clusterSurfaceTakesStream: Boolean get() = this == CLUSTER_DISPLAY
+
     companion object {
         fun of(
             customDashboardStream: Boolean,
