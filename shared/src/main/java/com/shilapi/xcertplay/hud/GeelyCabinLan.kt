@@ -82,15 +82,20 @@ internal object GeelyCabinLan {
         }
 
         @Synchronized
-        fun send(msgType: Int, subtype: Int, json: String): Boolean {
-            if (sendWithoutRoot(msgType, subtype, json)) return true
-            if (rootFailures >= MAX_ROOT_FAILURES) return false
+        fun send(msgType: Int, subtype: Int, json: String): Boolean = attempt(msgType, subtype, json) == Outcome.SENT
+
+        /** Like [send], telling a message that surely did not leave from one that may have. */
+        @Synchronized
+        fun attempt(msgType: Int, subtype: Int, json: String): Outcome {
+            val directSkipped = refusedAt?.let { now() - it < DIRECT_RETRY_MILLIS } == true
+            if (sendWithoutRoot(msgType, subtype, json)) return Outcome.SENT
+            if (rootFailures >= MAX_ROOT_FAILURES) return if (directSkipped) Outcome.NOT_ATTEMPTED else Outcome.FAILED_KNOWN
             val failure = root(msgType, subtype, json)
             if (failure == null) {
                 rootFailures = 0
                 rootFailure = null
                 announce("root helper")
-                return true
+                return Outcome.SENT
             }
             rootFailures += 1
             if (failure != rootFailure) {
@@ -100,7 +105,7 @@ internal object GeelyCabinLan {
             if (rootFailures == MAX_ROOT_FAILURES) {
                 log("dashboard CabinLAN root helper failed $MAX_ROOT_FAILURES times in a row; stopped until the next session")
             }
-            return false
+            return if (HELPER_FAILURE.matches(failure)) Outcome.FAILED_KNOWN else Outcome.UNKNOWN
         }
 
         /** The app process only: for repeats of a message that is already shown, which must not start su. */
@@ -129,6 +134,19 @@ internal object GeelyCabinLan {
             if (transport == next) return
             transport = next
             log("dashboard CabinLAN sends through the $next")
+        }
+
+        enum class Outcome {
+            SENT,
+
+            /** The app process is skipped for now and the root helper is stopped for this session. */
+            NOT_ATTEMPTED,
+
+            /** The app process refused it, and the root helper was stopped or answered that it failed. */
+            FAILED_KNOWN,
+
+            /** The root helper timed out, failed to start or ended without its answer: it may have sent it. */
+            UNKNOWN,
         }
 
         companion object {

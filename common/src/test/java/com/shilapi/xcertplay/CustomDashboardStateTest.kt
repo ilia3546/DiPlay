@@ -23,10 +23,12 @@ class CustomDashboardStateTest {
     private var watcher: (() -> Unit)? = null
     private var pendingFrame: (() -> Unit)? = null
     private var current: (() -> Boolean)? = null
+    private var pendingLeft: (() -> Unit)? = null
+    private val availableAnswers = ArrayDeque<Boolean>()
     private var enabled: () -> Boolean = { flag }
 
     private val window = object : DashboardWindow {
-        override fun available() = available
+        override fun available() = availableAnswers.removeFirstOrNull() ?: available
         override fun startWatching(changed: () -> Unit) {
             watcher = changed
             events += "watch"
@@ -54,7 +56,10 @@ class CustomDashboardStateTest {
                 current = it
                 events += "enter"
             },
-            exit = { events += "exit" },
+            exit = {
+                pendingLeft = it
+                events += "exit"
+            },
             sessionStarted = { events += "session" },
             postDelayed = { delayMillis, task -> timers += now + delayMillis to task },
             cancel = { task -> timers.removeAll { it.second === task } },
@@ -72,6 +77,12 @@ class CustomDashboardStateTest {
     private fun drawFirstFrame() {
         pendingFrame?.invoke()
         pendingFrame = null
+    }
+
+    /** The mode's worker sent the exit and cleared the claim. */
+    private fun confirmExit() {
+        pendingLeft?.invoke()
+        pendingLeft = null
     }
 
     /** As a CarPlay screen does: the option is read while the AirPlay configuration is built, then iOS connects. */
@@ -100,7 +111,8 @@ class CustomDashboardStateTest {
         advance(CustomDashboardState.SESSION_END_GRACE_MILLIS)
         frame()
         assertFalse(events.contains("enter"))
-        assertEquals(listOf("session", "watch", "show", "unwatch", "exit", "hide"), events)
+        confirmExit()
+        assertEquals(listOf("session", "watch", "show", "exit", "hide", "unwatch"), events)
     }
 
     @Test fun aSessionEndLeavesTheModeAfterTheGrace() {
@@ -110,8 +122,54 @@ class CustomDashboardStateTest {
         advance(CustomDashboardState.SESSION_END_GRACE_MILLIS - 1)
         assertEquals(emptyList<String>(), events)
         advance(1)
-        assertEquals(listOf("unwatch", "exit", "hide"), events)
+        assertEquals("the window stays until the mode is off", listOf("exit"), events)
         assertFalse("an enter still queued is out of date", current!!())
+        confirmExit()
+        assertEquals(listOf("exit", "hide", "unwatch"), events)
+    }
+
+    @Test fun aWindowWhoseExitIsNotConfirmedStays() {
+        startAndDraw()
+        events.clear()
+        state.connectedChanged(false)
+        advance(CustomDashboardState.SESSION_END_GRACE_MILLIS)
+        advance(60_000)
+        watcher!!()
+        assertEquals(listOf("exit"), events)
+    }
+
+    @Test fun aSessionBackBeforeTheExitIsConfirmedKeepsTheWindowAndEntersAgain() {
+        startAndDraw()
+        state.connectedChanged(false)
+        advance(CustomDashboardState.SESSION_END_GRACE_MILLIS)
+        events.clear()
+        connect()
+        assertEquals(listOf("session", "enter"), events)
+        assertTrue(current!!())
+        confirmExit()
+        assertFalse("the late confirmation of the old exit", events.contains("hide"))
+    }
+
+    @Test fun losingTheDisplayWhileLeavingRemovesTheWindowAtOnce() {
+        startAndDraw()
+        state.connectedChanged(false)
+        advance(CustomDashboardState.SESSION_END_GRACE_MILLIS)
+        events.clear()
+        available = false
+        watcher!!()
+        assertEquals("no second exit", listOf("hide", "unwatch"), events)
+        confirmExit()
+        assertEquals(listOf("hide", "unwatch"), events)
+    }
+
+    @Test fun aClusterDisplayBackUnderANewIdGetsANewWindow() {
+        startAndDraw()
+        events.clear()
+        availableAnswers += false
+        watcher!!()
+        assertEquals(listOf("exit", "hide", "show"), events)
+        drawFirstFrame()
+        assertEquals(listOf("exit", "hide", "show", "enter"), events)
     }
 
     @Test fun aReconnectWithinTheGraceKeepsTheWindowAndTheMode() {
@@ -132,6 +190,7 @@ class CustomDashboardStateTest {
         val oldFrame = pendingFrame!!
         state.connectedChanged(false)
         advance(CustomDashboardState.SESSION_END_GRACE_MILLIS)
+        confirmExit()
         connect()
         oldFrame()
         assertFalse(events.contains("enter"))
@@ -146,7 +205,9 @@ class CustomDashboardStateTest {
         flag = false
         state.settingChanged()
         assertFalse(wish())
-        assertEquals(listOf("unwatch", "exit", "hide"), events.takeLast(3))
+        assertEquals(listOf("enter", "exit"), events.takeLast(2))
+        confirmExit()
+        assertEquals(listOf("exit", "hide", "unwatch"), events.takeLast(3))
     }
 
     @Test fun turningTheOptionOffLeavesAtOnceAndTurningItOnWaitsForTheNextSession() {
@@ -222,7 +283,8 @@ class CustomDashboardStateTest {
         state.settingChanged()
         assertFalse(state.sessionEnabled)
         assertTrue("the stream stays sized for the dashboard", state.sessionStream)
-        assertEquals(listOf("session", "watch", "show", "unwatch", "exit", "hide"), events)
+        confirmExit()
+        assertEquals(listOf("session", "watch", "show", "exit", "hide", "unwatch"), events)
         state.connectedChanged(false)
         advance(CustomDashboardState.SESSION_END_GRACE_MILLIS)
         assertTrue(state.sessionStream)

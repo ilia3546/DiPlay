@@ -1,6 +1,10 @@
 package com.shilapi.xcertplay.hud
 
+import com.shilapi.xcertplay.hud.GeelyCabinLan.Sender.Outcome
 import com.shilapi.xcertplay.network.RootShell
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -15,7 +19,8 @@ class EngineeringModeLinkTest {
     private val logs = mutableListOf<String>()
     private val rootTimeouts = mutableListOf<Long>()
     private var supported = true
-    private var enterWorks = true
+    private var enterOutcome = Outcome.SENT
+    private var now = 0L
     private var exitWorks = true
     private var commitWorks = true
     private var onEnter: () -> Unit = {}
@@ -37,7 +42,7 @@ class EngineeringModeLinkTest {
         sendEnter = { json ->
             events += "send $json"
             onEnter()
-            enterWorks
+            enterOutcome
         },
         sendExit = { json, rootTimeoutMillis ->
             events += "send $json"
@@ -48,6 +53,8 @@ class EngineeringModeLinkTest {
         supported = { supported },
         newSession = { events += "new session" },
         log = { logs += it },
+        nowMillis = { now },
+        sleep = { now += it },
     )
 
     private fun runWorker() {
@@ -123,21 +130,127 @@ class EngineeringModeLinkTest {
         assertEquals(emptyList<String>(), events)
     }
 
-    @Test fun aFailedExitKeepsTheClaimAndIsRetriedThreeTimes() {
+    private fun runOneRetry(): Long {
+        val (delayMillis, task) = delayed.removeAt(0)
+        task.run()
+        runWorker()
+        return delayMillis
+    }
+
+    @Test fun aFailedExitKeepsTheClaimAndIsRetriedWithBackOffWhileTheClaimStays() {
         link.enter { true }
         runWorker()
         exitWorks = false
         link.exit()
         runWorker()
-        assertEquals(listOf(EngineeringModeLink.EXIT_RETRY_MILLIS), delayed.map { it.first })
-        runRetries()
-        assertEquals(1 + EngineeringModeLink.EXIT_RETRIES, events.count { it == "send $exit" })
+        val waits = List(6) { runOneRetry() }
+        assertEquals(listOf(2_000L, 5_000L, 10_000L, 30_000L, 30_000L, 30_000L), waits)
+        assertEquals(7, events.count { it == "send $exit" })
         assertTrue(claim.held)
 
         exitWorks = true
+        runOneRetry()
+        assertFalse(claim.held)
+        assertTrue("no retry once the exit was sent", delayed.isEmpty())
+    }
+
+    @Test fun theRetriesStopWhenTheClaimIsGone() {
+        link.enter { true }
+        runWorker()
+        exitWorks = false
         link.exit()
         runWorker()
-        assertFalse("the next trigger tries again", claim.held)
+        claim.held = false
+        runOneRetry()
+        assertEquals(1, events.count { it == "send $exit" })
+        assertTrue(delayed.isEmpty())
+    }
+
+    @Test fun theExitReportsOnlyOnceTheModeIsOffAndTheClaimGone() {
+        val left = mutableListOf<String>()
+        link.exit { left += "no claim" }
+        runWorker()
+        assertEquals("nothing to leave", listOf("no claim"), left)
+
+        link.enter { true }
+        runWorker()
+        exitWorks = false
+        link.exit { left += "sent" }
+        runWorker()
+        runOneRetry()
+        assertEquals(listOf("no claim"), left)
+        exitWorks = true
+        runOneRetry()
+        assertEquals(listOf("no claim", "sent"), left)
+    }
+
+    @Test fun anExitReplacedByANewerWishDoesNotReport() {
+        var left = false
+        link.enter { true }
+        runWorker()
+        exitWorks = false
+        link.exit { left = true }
+        runWorker()
+        exitWorks = true
+        link.enter { true }
+        runWorker()
+        runRetries()
+        assertFalse(left)
+    }
+
+    @Test fun idleWaitsForTheExitRetries() {
+        var idle = 0
+        link.enter { true }
+        runWorker()
+        exitWorks = false
+        link.exit()
+        link.whenIdle { idle++ }
+        runWorker()
+        runOneRetry()
+        assertEquals("an exit still waits for a retry", 0, idle)
+        exitWorks = true
+        runOneRetry()
+        assertEquals(1, idle)
+        link.whenIdle { idle++ }
+        runWorker()
+        assertEquals(2, idle)
+    }
+
+    @Test fun anEnterThatReplacesTheRetriesLeavesTheLinkIdle() {
+        var idle = false
+        link.enter { true }
+        runWorker()
+        exitWorks = false
+        link.exit()
+        link.whenIdle { idle = true }
+        runWorker()
+        assertFalse(idle)
+        link.enter { true }
+        runWorker()
+        assertTrue(idle)
+    }
+
+    @Test fun anEnterThatSurelyDidNotLeaveDropsTheClaim() {
+        for (outcome in listOf(Outcome.NOT_ATTEMPTED, Outcome.FAILED_KNOWN)) {
+            events.clear()
+            enterOutcome = outcome
+            link.enter { true }
+            runWorker()
+            assertFalse(claim.held)
+            link.exit()
+            runWorker()
+            assertEquals("no exit for a mode that was not entered", listOf("claim true", "send $enter", "claim false"), events)
+        }
+    }
+
+    @Test fun anEnterThatMayHaveLeftKeepsTheClaimForTheExit() {
+        enterOutcome = Outcome.UNKNOWN
+        link.enter { true }
+        runWorker()
+        assertTrue(claim.held)
+        link.exit()
+        runWorker()
+        assertEquals(listOf("claim true", "send $enter", "send $exit", "claim false"), events)
     }
 
     @Test fun aNewEnterStopsTheRetriesOfAnOlderExit() {
@@ -174,6 +287,61 @@ class EngineeringModeLinkTest {
         runWorker()
         link.exitNow()
         assertEquals(listOf("claim true", "send $enter", "send $exit", "claim false"), events)
+    }
+
+    @Test fun noEnterStartsAfterACrashExit() {
+        link.exitNow()
+        link.enter { true }
+        runWorker()
+        assertEquals(emptyList<String>(), events)
+    }
+
+    @Test fun aCrashDuringAnEnterThatDoesNotFinishLeavesButKeepsTheClaim() {
+        onEnter = { link.exitNow() }
+        link.enter { true }
+        runWorker()
+        assertEquals(listOf("claim true", "send $enter", "send $exit"), events)
+        assertTrue("the enter may arrive after the exit", claim.held)
+        assertTrue(now >= EngineeringModeLink.CRASH_ENTER_WAIT_MILLIS)
+    }
+
+    @Test fun aCrashWaitsForAnEnterUnderWayAndThenClearsTheClaim() {
+        val sending = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val sent = mutableListOf<String>()
+        val heldClaim = object : EngineeringModeClaim {
+            @Volatile override var held = false
+            override fun set(held: Boolean): Boolean {
+                this.held = held
+                return true
+            }
+        }
+        val threaded = EngineeringModeLink(
+            execute = { it.run() },
+            schedule = { _, _ -> },
+            sendEnter = { json ->
+                synchronized(sent) { sent += json }
+                sending.countDown()
+                release.await(5, TimeUnit.SECONDS)
+                Outcome.SENT
+            },
+            sendExit = { json, _ ->
+                synchronized(sent) { sent += json }
+                true
+            },
+            claim = heldClaim,
+            supported = { true },
+        )
+        val worker = thread { threaded.enter { true } }
+        assertTrue(sending.await(5, TimeUnit.SECONDS))
+        val crash = thread { threaded.exitNow() }
+        Thread.sleep(50)
+        assertEquals("the exit waits for the enter", listOf(enter), synchronized(sent) { sent.toList() })
+        release.countDown()
+        crash.join(5_000)
+        worker.join(5_000)
+        assertEquals(listOf(enter, exit), sent)
+        assertFalse(heldClaim.held)
     }
 
     @Test fun aCrashGivesTheRootHelperAShortTimeoutAndAnOrdinaryExitTheFullOne() {

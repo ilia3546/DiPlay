@@ -60,6 +60,13 @@ internal object MonjaroClusterDisplay {
         return ClusterDisplayChoice(match.displayId, "display ${match.displayId} at local:$PHYSICAL_ID")
     }
 
+    /**
+     * Whether the dashboard window may be shown or stay: permitted, and the cluster display is there and is the
+     * one the shown window, if any, is on. A cluster display removed and added again comes back under a new id.
+     */
+    fun usable(permitted: Boolean, chosenDisplayId: Int?, shownOnDisplayId: Int?): Boolean =
+        permitted && chosenDisplayId != null && (shownOnDisplayId == null || shownOnDisplayId == chosenDisplayId)
+
     private fun uniqueIdPhysical(display: DisplayDescription): Long? =
         display.uniqueId?.takeIf { it.startsWith("local:") }?.removePrefix("local:")?.toLongOrNull()
 
@@ -90,6 +97,7 @@ internal class MonjaroDashboardWindow(
     private val main = Handler(Looper.getMainLooper())
     private val displays = context.getSystemService(DisplayManager::class.java)
     private var root: View? = null
+    private var shownOn: Int? = null
     private var windows: WindowManager? = null
     private var displayListener: DisplayManager.DisplayListener? = null
     private var opListener: AppOpsManager.OnOpChangedListener? = null
@@ -105,7 +113,7 @@ internal class MonjaroDashboardWindow(
             reported = report
             log(report)
         }
-        return permitted && choice.displayId != null
+        return MonjaroClusterDisplay.usable(permitted, choice.displayId, shownOn)
     }
 
     override fun startWatching(changed: () -> Unit) {
@@ -181,6 +189,7 @@ internal class MonjaroDashboardWindow(
             return false
         }
         root = frame
+        shownOn = display.displayId
         this.windows = windows
         log("custom dashboard window added on display ${display.displayId}")
         return true
@@ -189,6 +198,7 @@ internal class MonjaroDashboardWindow(
     override fun hide() {
         val view = root ?: return
         root = null
+        shownOn = null
         runCatching { windows?.removeViewImmediate(view) }
         windows = null
         log("custom dashboard window removed")

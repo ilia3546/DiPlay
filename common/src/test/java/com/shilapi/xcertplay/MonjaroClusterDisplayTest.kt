@@ -1,7 +1,9 @@
 package com.shilapi.xcertplay
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MonjaroClusterDisplayTest {
@@ -39,5 +41,14 @@ class MonjaroClusterDisplayTest {
         val choice = MonjaroClusterDisplay.choose(listOf(centre, cluster.copy(width = 1280)))
         assertNull(choice.displayId)
         assertEquals("local:130 is 1280x720, not 1920x720", choice.reason)
+    }
+
+    @Test fun aShownWindowStaysOnlyOnTheCurrentClusterDisplay() {
+        assertTrue(MonjaroClusterDisplay.usable(permitted = true, chosenDisplayId = 1, shownOnDisplayId = null))
+        assertTrue(MonjaroClusterDisplay.usable(permitted = true, chosenDisplayId = 1, shownOnDisplayId = 1))
+        assertFalse("the display came back under a new id",
+            MonjaroClusterDisplay.usable(permitted = true, chosenDisplayId = 3, shownOnDisplayId = 1))
+        assertFalse(MonjaroClusterDisplay.usable(permitted = true, chosenDisplayId = null, shownOnDisplayId = 1))
+        assertFalse(MonjaroClusterDisplay.usable(permitted = false, chosenDisplayId = 1, shownOnDisplayId = 1))
     }
 }

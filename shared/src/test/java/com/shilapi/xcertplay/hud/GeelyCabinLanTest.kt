@@ -80,6 +80,22 @@ class GeelyCabinLanTest {
         assertEquals("n", root.last())
     }
 
+    @Test fun anAttemptTellsAMessageThatSurelyStayedFromOneThatMayHaveLeft() {
+        fun attempt() = sender.attempt(GeelyCabinLan.ENGINEERING_MODE, 0, "m").name
+        assertEquals("SENT", attempt())
+        directError = IllegalStateException()
+        rootFailure = "FAILED SecurityException"
+        assertEquals("the helper says it failed", "FAILED_KNOWN", attempt())
+        rootFailure = "su timed out"
+        assertEquals("UNKNOWN", attempt())
+        rootFailure = "exit 1"
+        assertEquals("UNKNOWN", attempt())
+        assertEquals("the root helper is stopped and the app process failed", "FAILED_KNOWN", attempt())
+        directError = SecurityException()
+        assertEquals("FAILED_KNOWN", attempt())
+        assertEquals("the app process is skipped and the root helper stopped", "NOT_ATTEMPTED", attempt())
+    }
+
     @Test fun eachNewRootFailureReasonIsLoggedOnce() {
         directError = NoClassDefFoundError()
         rootFailure = "exit 1"

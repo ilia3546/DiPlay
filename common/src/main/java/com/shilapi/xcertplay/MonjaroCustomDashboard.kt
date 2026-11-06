@@ -37,14 +37,17 @@ internal interface DashboardWindow {
  * The custom dashboard during a CarPlay session: the window on the cluster display, and engineering mode once the
  * window drew its first frame. The option is read once per session, by [sessionStarting] while its AirPlay
  * configuration is built, so the cluster stream and the window agree; turning it off, losing the overlay
- * permission or the display, and [terminate] take the dashboard away at once, while a session end waits
- * [SESSION_END_GRACE_MILLIS] so that a reconnect does not leave and enter the mode again. Main thread only.
+ * permission or the display, and [terminate] leave the mode at once, while a session end waits
+ * [SESSION_END_GRACE_MILLIS] so that a reconnect does not leave and enter the mode again. The window stays until
+ * the exit is confirmed, so that the cluster never shows engineering mode without it, unless it cannot stay: the
+ * display or the permission is gone, or the process ends. Main thread only.
  */
 internal class CustomDashboardState(
     private val enabled: () -> Boolean,
     private val window: DashboardWindow,
     private val enter: (current: () -> Boolean) -> Unit,
-    private val exit: () -> Unit,
+    /** Runs `left` on the main thread once the mode is off, unless a later enter replaced the exit. */
+    private val exit: (left: () -> Unit) -> Unit,
     private val sessionStarted: () -> Unit,
     private val postDelayed: (delayMillis: Long, Runnable) -> Unit,
     private val cancel: (Runnable) -> Unit,
@@ -65,6 +68,7 @@ internal class CustomDashboardState(
     private var generation = 0L
     private var shownGeneration: Long? = null
     private var drawnGeneration: Long? = null
+    private var leavingGeneration: Long? = null
     @Volatile private var enterableGeneration: Long? = null
     private val sessionEnd = Runnable {
         sessionActive = false
@@ -105,20 +109,27 @@ internal class CustomDashboardState(
 
     private fun update() {
         val wanted = !terminating && sessionEnabled && sessionActive
-        if (wanted != watching) {
-            watching = wanted
-            if (wanted) window.startWatching(::update) else window.stopWatching()
+        val keep = !terminating && (wanted || shownGeneration != null)
+        if (keep != watching) {
+            watching = keep
+            if (keep) window.startWatching(::update) else window.stopWatching()
         }
-        if (!wanted || !window.available()) {
+        val available = keep && window.available()
+        if (!wanted || !available) {
             enterableGeneration = null
-            if (shownGeneration != null) {
-                exit()
-                window.hide()
-                shownGeneration = null
-                drawnGeneration = null
+            val shown = shownGeneration ?: return
+            if (leavingGeneration != shown) {
+                leavingGeneration = shown
+                exit { left(shown) }
+            }
+            if (!available) {
+                hideWindow()
+                // Stops watching, or shows a new window on a cluster display that came back under a new id.
+                update()
             }
             return
         }
+        leavingGeneration = null
         if (shownGeneration == null) {
             val next = ++generation
             shownGeneration = next
@@ -138,6 +149,19 @@ internal class CustomDashboardState(
         if (shown != shownGeneration) return
         drawnGeneration = shown
         update()
+    }
+
+    private fun left(shown: Long) {
+        if (leavingGeneration != shown) return
+        hideWindow()
+        update()
+    }
+
+    private fun hideWindow() {
+        window.hide()
+        shownGeneration = null
+        drawnGeneration = null
+        leavingGeneration = null
     }
 
     companion object {
@@ -165,7 +189,7 @@ internal object MonjaroCustomDashboard {
             enabled = { MonjaroA3Options.load(app).customDashboard },
             window = MonjaroDashboardWindow(app, { content }) { Log.i(TAG, it) },
             enter = { current -> mode.enter(app, current) },
-            exit = { mode.exit(app) },
+            exit = { left -> mode.exit(app) { main.post(left) } },
             sessionStarted = { mode.sessionStarted(app) },
             postDelayed = { delayMillis, task -> main.postDelayed(task, delayMillis) },
             cancel = main::removeCallbacks,
