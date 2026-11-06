@@ -3,6 +3,7 @@ package com.shilapi.xcertplay
 import android.content.Context
 import com.shilapi.xcertplay.media.MicrophoneInput
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -21,6 +22,9 @@ class MonjaroA3OptionsTest {
         AirPlayPersistence.saveHotspotAudioFirewall(context, true)
         AirPlayPersistence.saveMicrophoneInput(context, MicrophoneInput.ALL_CABIN_MICROPHONES)
         AirPlayPersistence.saveDashboardMusic(context, true)
+        AirPlayPersistence.saveCustomDashboard(context, true)
+        AirPlayPersistence.saveDashboardBackground(context, DashboardBackground.NEON)
+        AirPlayPersistence.saveDashboardDimmingPercent(context, 40)
     }
 
     @Test fun everyOptionIsOffByDefault() {
@@ -38,6 +42,26 @@ class MonjaroA3OptionsTest {
         ShadowBuild.setProduct("geely_fx11")
         ShadowBuild.setModel("KX11-A3-L1")
         assertEquals(MonjaroA3Options(rootHotspotDetails = true, disconnectPhoneBluetooth = true, hotspotAudioFirewall = true,
-            microphoneInput = MicrophoneInput.ALL_CABIN_MICROPHONES, dashboardMusic = true), MonjaroA3Options.load(context))
+            microphoneInput = MicrophoneInput.ALL_CABIN_MICROPHONES, dashboardMusic = true, customDashboard = true,
+            dashboardBackground = DashboardBackground.NEON, dashboardDimmingPercent = 40), MonjaroA3Options.load(context))
+    }
+
+    @Test fun theCustomDashboardIsOffOnTheOceanPresetWithoutDimmingByDefault() {
+        val options = MonjaroA3Options.load(context, monjaroA3 = true)
+        assertFalse(options.customDashboard)
+        assertEquals(DashboardBackground.OCEAN, options.dashboardBackground)
+        assertEquals(0, options.dashboardDimmingPercent)
+    }
+
+    @Test fun aPhotoIsDimmedUntilTheDriverChoosesADimming() {
+        AirPlayPersistence.saveDashboardBackground(context, DashboardBackground.CUSTOM_PHOTO)
+        assertEquals(20, MonjaroA3Options.load(context, monjaroA3 = true).dashboardDimmingPercent)
+        AirPlayPersistence.saveDashboardDimmingPercent(context, 0)
+        assertEquals(0, MonjaroA3Options.load(context, monjaroA3 = true).dashboardDimmingPercent)
+    }
+
+    @Test fun anUnknownSavedDimmingFallsBackToTheDefault() {
+        AirPlayPersistence.saveDashboardDimmingPercent(context, 35)
+        assertEquals(0, MonjaroA3Options.load(context, monjaroA3 = true).dashboardDimmingPercent)
     }
 }

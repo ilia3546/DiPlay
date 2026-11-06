@@ -2167,6 +2167,38 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 AirPlayPersistence.saveMicrophoneInput(this, microphoneInputs[it])
             }
             card.addView(label(getString(R.string.settings_microphone_input_description), 14, MUTED))
+            val customDashboard = AirPlayPersistence.loadCustomDashboard(this)
+            toggle(card, getString(R.string.settings_custom_dashboard),
+                getString(R.string.settings_custom_dashboard_description), customDashboard) {
+                AirPlayPersistence.saveCustomDashboard(this, it)
+                if (it) {
+                    if (!CenterMapOverlay.permitted(this)) openOverlayPermission()
+                    markReconnectNeeded()
+                }
+                render()
+            }
+            if (customDashboard) {
+                val backgrounds = DashboardBackground.presets
+                choice(card, getString(R.string.settings_custom_dashboard_background), backgrounds.map { background ->
+                    when (background) {
+                        DashboardBackground.OCEAN -> getString(R.string.settings_custom_dashboard_background_ocean)
+                        DashboardBackground.AURORA -> getString(R.string.settings_custom_dashboard_background_aurora)
+                        DashboardBackground.DUSK -> getString(R.string.settings_custom_dashboard_background_dusk)
+                        DashboardBackground.NEON -> getString(R.string.settings_custom_dashboard_background_neon)
+                        DashboardBackground.GRAPHITE -> getString(R.string.settings_custom_dashboard_background_graphite)
+                        DashboardBackground.BLACK -> getString(R.string.settings_custom_dashboard_background_black)
+                        DashboardBackground.CUSTOM_PHOTO -> background.name
+                    }
+                }, backgrounds.indexOf(AirPlayPersistence.loadDashboardBackground(this)).coerceAtLeast(0), reconnects = false) {
+                    AirPlayPersistence.saveDashboardBackground(this, backgrounds[it])
+                }
+                val dimmings = DashboardBackground.dimmingPercents
+                choice(card, getString(R.string.settings_custom_dashboard_dimming),
+                    dimmings.map { getString(R.string.percent_value, it) },
+                    dimmings.indexOf(AirPlayPersistence.loadDashboardDimmingPercent(this)).coerceAtLeast(0), reconnects = false) {
+                    AirPlayPersistence.saveDashboardDimmingPercent(this, dimmings[it])
+                }
+            }
         }
         filteredSection(content, SettingsSection.LOCATION,
             getString(R.string.location), R.drawable.ic_dp_navigation) { card ->

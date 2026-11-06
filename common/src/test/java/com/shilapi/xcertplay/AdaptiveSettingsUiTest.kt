@@ -796,7 +796,7 @@ class AdaptiveSettingsUiTest {
             ReflectionHelpers.callInstanceMethod<List<DiPlayActivity.SettingsSearchResult>>(screen, "buildSettingsSearchIndex")
         val options = listOf(R.string.settings_geely_monjaro_a3_support, R.string.settings_root_hotspot_details,
             R.string.settings_disconnect_phone_bluetooth, R.string.settings_hotspot_audio_firewall, R.string.settings_microphone_input,
-            R.string.settings_dashboard_music)
+            R.string.settings_dashboard_music, R.string.settings_custom_dashboard)
 
         val elsewhere = openSettings()
         val elsewhereIndex = indexedTitles(elsewhere)
@@ -815,6 +815,50 @@ class AdaptiveSettingsUiTest {
         val card = texts(screen).single { it.text == screen.getString(R.string.settings_geely_monjaro_a3_support) }
         assertTrue(texts(screen).any { it.text == screen.getString(R.string.settings_root_hotspot_details) })
         assertTrue(card.isShown)
+    }
+
+    @Test fun customDashboardBackgroundFollowsItsSwitchAndChangesWithoutReconnecting() {
+        ShadowBuild.setProduct("geely_fx11")
+        ShadowBuild.setModel("KX11-A3-L1")
+        val screen = openSettings()
+        val session = mock(CarPlayController::class.java)
+        var disconnects = 0
+        CarPlayBackgroundSession.store(session, mock(AndroidMediaSink::class.java), 800, 480, Any(),
+            CarPlaySessionDisplay(800, 480, Surface.ROTATION_0, false, false, 800, 480)) { disconnects++ }
+        CarPlayBackgroundSession.active = true
+        try {
+            PendingReconnect.clear()
+            ReflectionHelpers.setField(screen, "settingsCategory", SettingsCategory.ADVANCED)
+            ReflectionHelpers.callInstanceMethod<Unit>(screen, "render")
+            val background = screen.getString(R.string.settings_custom_dashboard_background)
+            val dimming = screen.getString(R.string.settings_custom_dashboard_dimming)
+            assertTrue(texts(screen).none { it.text.startsWith(background) || it.text.startsWith(dimming) })
+            val switch = descendants(screen.window.decorView).filterIsInstance<Switch>()
+                .single { it.contentDescription == screen.getString(R.string.settings_custom_dashboard) }
+            assertFalse(switch.isChecked)
+            switch.isChecked = true
+            shadowOf(Looper.getMainLooper()).idle()
+            assertTrue(AirPlayPersistence.loadCustomDashboard(context))
+            assertTrue(PendingReconnect.isPending(session))
+
+            val row = texts(screen).single { it.text.startsWith(background) }
+            assertEquals("$background · ${screen.getString(R.string.settings_custom_dashboard_background_ocean)}",
+                row.text.toString())
+            assertEquals("$dimming · ${screen.getString(R.string.percent_value, 0)}",
+                texts(screen).single { it.text.startsWith(dimming) }.text.toString())
+            row.performClick()
+            val dialog = ShadowAlertDialog.getLatestAlertDialog()
+            assertEquals(screen.getString(R.string.save), dialog.getButton(AlertDialog.BUTTON_POSITIVE).text.toString())
+            shadowOf(dialog).clickOnItem(DashboardBackground.presets.indexOf(DashboardBackground.NEON))
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick()
+            shadowOf(Looper.getMainLooper()).idle()
+            assertEquals(DashboardBackground.NEON, AirPlayPersistence.loadDashboardBackground(context))
+            assertEquals(0, disconnects)
+            assertSame(session, CarPlayBackgroundSession.snapshot()?.controller)
+        } finally {
+            CarPlayBackgroundSession.clear()
+            PendingReconnect.clear()
+        }
     }
 
     @Test fun navigationAttenuationSliderSavesAndUpdatesActiveAudioWithoutReconnect() {

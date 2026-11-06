@@ -14,4 +14,14 @@
     <string name="settings_microphone_input_all_cabin">全部车内麦克风（混音）</string>
     <string name="settings_dashboard_music">在仪表盘和媒体组件上显示 CarPlay 音乐（实验性）</string>
     <string name="settings_dashboard_music_description">在原厂仪表盘的音乐组件以及驾驶员和乘客屏幕的音乐组件中显示 CarPlay 的曲目、艺人、专辑和封面，CarPlay 结束时清除。组件上的按钮可控制 CarPlay。只有车机拒绝 DiPlay 自身的请求时才使用 root（Magisk）。立即生效。</string>
+    <string name="settings_custom_dashboard">带 CarPlay 地图的自定义仪表盘（实验性）</string>
+    <string name="settings_custom_dashboard_description">CarPlay 连接期间，DiPlay 在仪表盘上绘制自己的界面：中间是 CarPlay 地图，周围以时钟、车外温度、行程和音乐取代原厂仪表盘两侧的组件。车速、警告灯和底部信息栏仍由固件绘制在上层。适用于在工程模式下显示 Android 仪表盘屏幕的固件。请先关闭 GMC 自定义仪表盘。与中控屏上的仪表盘地图同时使用时，CarPlay 需要多一个视频解码器。需要“显示在其他应用上层”权限。开启后在下次连接时生效，关闭后立即生效。</string>
+    <string name="settings_custom_dashboard_background">仪表盘背景</string>
+    <string name="settings_custom_dashboard_background_ocean">海洋</string>
+    <string name="settings_custom_dashboard_background_aurora">极光</string>
+    <string name="settings_custom_dashboard_background_dusk">黄昏</string>
+    <string name="settings_custom_dashboard_background_neon">霓虹</string>
+    <string name="settings_custom_dashboard_background_graphite">石墨</string>
+    <string name="settings_custom_dashboard_background_black">黑色</string>
+    <string name="settings_custom_dashboard_dimming">背景变暗</string>
 </resources>

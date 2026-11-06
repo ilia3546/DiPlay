@@ -14,4 +14,14 @@
     <string name="settings_microphone_input_all_cabin">Todos los micrófonos del habitáculo (mezcla)</string>
     <string name="settings_dashboard_music">Mostrar la música de CarPlay en el cuadro y los widgets multimedia (experimental)</string>
     <string name="settings_dashboard_music_description">Muestra la canción, el artista, el álbum y la portada de CarPlay en el widget de música del cuadro de instrumentos original y en los widgets de música de las pantallas del conductor y del pasajero, y los vacía al terminar CarPlay. Los botones del widget controlan CarPlay. Usa root (Magisk) solo si el equipo rechaza la petición propia de DiPlay. Se aplica al instante.</string>
+    <string name="settings_custom_dashboard">Panel de instrumentos propio con mapa de CarPlay (experimental)</string>
+    <string name="settings_custom_dashboard_description">Mientras CarPlay está conectado, DiPlay dibuja su propio panel en el cuadro de instrumentos: el mapa de CarPlay en el centro y, alrededor, el reloj, la temperatura exterior, el viaje y la música en lugar de los widgets laterales del panel de serie. El firmware sigue dibujando encima la velocidad, los testigos y la línea inferior. Para firmware que muestra la pantalla del cuadro de Android en su modo de ingeniería. Desactiva primero el panel personalizado de GMC. Junto con el mapa del panel en la pantalla central, CarPlay necesita un decodificador de vídeo más. Requiere \"Mostrar sobre otras aplicaciones\". Al activarlo se aplica en la próxima conexión; al desactivarlo, de inmediato.</string>
+    <string name="settings_custom_dashboard_background">Fondo del panel</string>
+    <string name="settings_custom_dashboard_background_ocean">Océano</string>
+    <string name="settings_custom_dashboard_background_aurora">Aurora</string>
+    <string name="settings_custom_dashboard_background_dusk">Atardecer</string>
+    <string name="settings_custom_dashboard_background_neon">Neón</string>
+    <string name="settings_custom_dashboard_background_graphite">Grafito</string>
+    <string name="settings_custom_dashboard_background_black">Negro</string>
+    <string name="settings_custom_dashboard_dimming">Oscurecimiento del fondo</string>
 </resources>

@@ -137,6 +137,9 @@ object AirPlayPersistence {
     private const val KEY_HOTSPOT_AUDIO_FIREWALL = "hotspot_audio_firewall"
     private const val KEY_MICROPHONE_INPUT = "microphone_input"
     private const val KEY_DASHBOARD_MUSIC = "monjaro_dashboard_music"
+    private const val KEY_CUSTOM_DASHBOARD = "monjaro_custom_dashboard"
+    private const val KEY_DASHBOARD_BACKGROUND = "monjaro_dashboard_background"
+    private const val KEY_DASHBOARD_DIMMING = "monjaro_dashboard_dimming_percent"
     private const val KEY_BT_SUSPEND_DELAY = "bt_suspend_delay_seconds"
     private const val KEY_LOCATION_REPORTING_ENABLED = "location_reporting_enabled"
     private const val KEY_EXTERNAL_CONTROLLER = "external_controller"
@@ -610,6 +613,36 @@ object AirPlayPersistence {
     fun saveMicrophoneInput(context: Context, input: MicrophoneInput) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putString(KEY_MICROPHONE_INPUT, input.name).apply()
+    }
+
+    fun loadCustomDashboard(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_CUSTOM_DASHBOARD, false)
+
+    fun saveCustomDashboard(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putBoolean(KEY_CUSTOM_DASHBOARD, enabled).apply()
+    }
+
+    fun loadDashboardBackground(context: Context): DashboardBackground {
+        val name = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_DASHBOARD_BACKGROUND, null)
+        return DashboardBackground.entries.firstOrNull { it.name == name } ?: DashboardBackground.OCEAN
+    }
+
+    fun saveDashboardBackground(context: Context, background: DashboardBackground) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putString(KEY_DASHBOARD_BACKGROUND, background.name).apply()
+    }
+
+    fun loadDashboardDimmingPercent(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val default = if (loadDashboardBackground(context) == DashboardBackground.CUSTOM_PHOTO) 20 else 0
+        if (!prefs.contains(KEY_DASHBOARD_DIMMING)) return default
+        return prefs.getInt(KEY_DASHBOARD_DIMMING, default).takeIf { it in DashboardBackground.dimmingPercents } ?: default
+    }
+
+    fun saveDashboardDimmingPercent(context: Context, percent: Int) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putInt(KEY_DASHBOARD_DIMMING, percent).apply()
     }
 
     fun saveBtSuspendDuringCarplay(context: Context, enabled: Boolean) {

@@ -14,4 +14,14 @@
     <string name="settings_microphone_input_all_cabin">Все микрофоны салона (сведение)</string>
     <string name="settings_dashboard_music">Показывать музыку CarPlay на приборной панели и в медиавиджетах (экспериментально)</string>
     <string name="settings_dashboard_music_description">Показывает трек, исполнителя, альбом и обложку CarPlay в музыкальном виджете штатной приборной панели и в музыкальных виджетах экранов водителя и пассажира и очищает их, когда CarPlay завершается. Кнопки виджета управляют CarPlay. Root (Magisk) нужен, только если головное устройство отклонит запрос самого DiPlay. Применяется сразу.</string>
+    <string name="settings_custom_dashboard">Своя приборная панель с картой CarPlay (экспериментально)</string>
+    <string name="settings_custom_dashboard_description">Пока подключён CarPlay, DiPlay рисует на приборной панели свою приборку: карту CarPlay по центру, а вокруг часы, температуру снаружи, данные поездки и музыку вместо боковых блоков штатной приборки. Скорость, контрольные лампы и нижнюю строку прошивка продолжает рисовать поверх. Для прошивок, которые показывают дисплей приборной панели Android в инженерном режиме. Сначала выключите кастомную приборку GMC. Вместе с картой приборной панели на центральном экране CarPlay нужен ещё один видеодекодер. Нужно разрешение «Поверх других приложений». Включение применяется при следующем подключении, выключение сразу.</string>
+    <string name="settings_custom_dashboard_background">Фон приборной панели</string>
+    <string name="settings_custom_dashboard_background_ocean">Океан</string>
+    <string name="settings_custom_dashboard_background_aurora">Аврора</string>
+    <string name="settings_custom_dashboard_background_dusk">Закат</string>
+    <string name="settings_custom_dashboard_background_neon">Неон</string>
+    <string name="settings_custom_dashboard_background_graphite">Графит</string>
+    <string name="settings_custom_dashboard_background_black">Чёрный</string>
+    <string name="settings_custom_dashboard_dimming">Затемнение фона</string>
 </resources>

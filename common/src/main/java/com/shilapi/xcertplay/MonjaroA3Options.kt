@@ -11,6 +11,9 @@ internal data class MonjaroA3Options(
     val hotspotAudioFirewall: Boolean = false,
     val microphoneInput: MicrophoneInput = MicrophoneInput.AUTO,
     val dashboardMusic: Boolean = false,
+    val customDashboard: Boolean = false,
+    val dashboardBackground: DashboardBackground = DashboardBackground.OCEAN,
+    val dashboardDimmingPercent: Int = 0,
 ) {
     companion object {
         fun load(context: Context, monjaroA3: Boolean = GeelyHeadUnit.monjaroA3): MonjaroA3Options {
@@ -21,6 +24,9 @@ internal data class MonjaroA3Options(
                 hotspotAudioFirewall = AirPlayPersistence.loadHotspotAudioFirewall(context),
                 microphoneInput = AirPlayPersistence.loadMicrophoneInput(context),
                 dashboardMusic = AirPlayPersistence.loadDashboardMusic(context),
+                customDashboard = AirPlayPersistence.loadCustomDashboard(context),
+                dashboardBackground = AirPlayPersistence.loadDashboardBackground(context),
+                dashboardDimmingPercent = AirPlayPersistence.loadDashboardDimmingPercent(context),
             )
         }
     }

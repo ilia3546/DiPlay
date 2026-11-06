@@ -14,4 +14,14 @@
     <string name="settings_microphone_input_all_cabin">كل ميكروفونات المقصورة (مزج)</string>
     <string name="settings_dashboard_music">عرض موسيقى CarPlay على لوحة العدادات وأدوات الوسائط (تجريبي)</string>
     <string name="settings_dashboard_music_description">يعرض مقطع CarPlay والفنان والألبوم والغلاف في أداة الموسيقى بلوحة العدادات الأصلية وفي أدوات الموسيقى على شاشتي السائق والراكب، ويمسحها عند انتهاء CarPlay. تتحكم أزرار الأداة في CarPlay. يستخدم صلاحيات root (Magisk) فقط إذا رفضت وحدة الرأس طلب DiPlay نفسه. يُطبَّق فورًا.</string>
+    <string name="settings_custom_dashboard">لوحة عدادات مخصصة مع خريطة CarPlay (تجريبي)</string>
+    <string name="settings_custom_dashboard_description">أثناء اتصال CarPlay يرسم DiPlay لوحة عدادات خاصة به: خريطة CarPlay في الوسط وحولها الساعة ودرجة الحرارة الخارجية والرحلة والموسيقى بدلاً من الأدوات الجانبية للوحة الأصلية. يواصل البرنامج الثابت رسم السرعة ومصابيح التحذير والسطر السفلي فوقها. للبرامج الثابتة التي تعرض شاشة لوحة العدادات في Android في وضع الهندسة. أوقف لوحة العدادات المخصصة من GMC أولاً. مع خريطة لوحة العدادات على الشاشة الوسطى يحتاج CarPlay إلى مفكك ترميز فيديو إضافي. يتطلب إذن \"الظهور فوق التطبيقات الأخرى\". يُطبَّق التشغيل عند الاتصال التالي، والإيقاف فوراً.</string>
+    <string name="settings_custom_dashboard_background">خلفية لوحة العدادات</string>
+    <string name="settings_custom_dashboard_background_ocean">المحيط</string>
+    <string name="settings_custom_dashboard_background_aurora">الشفق القطبي</string>
+    <string name="settings_custom_dashboard_background_dusk">الغروب</string>
+    <string name="settings_custom_dashboard_background_neon">نيون</string>
+    <string name="settings_custom_dashboard_background_graphite">الجرافيت</string>
+    <string name="settings_custom_dashboard_background_black">أسود</string>
+    <string name="settings_custom_dashboard_dimming">تعتيم الخلفية</string>
 </resources>

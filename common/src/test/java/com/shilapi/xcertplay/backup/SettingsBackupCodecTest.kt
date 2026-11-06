@@ -3,6 +3,7 @@ package com.shilapi.xcertplay.backup
 import android.content.Context
 import com.shilapi.xcertplay.AirPlayPersistence
 import com.shilapi.xcertplay.CarPlayPicture
+import com.shilapi.xcertplay.DashboardBackground
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -35,10 +36,14 @@ class SettingsBackupCodecTest {
         AirPlayPersistence.saveDisconnectPhoneBluetooth(context, true)
         AirPlayPersistence.saveHotspotAudioFirewall(context, true)
         AirPlayPersistence.saveDashboardMusic(context, true)
+        AirPlayPersistence.saveCustomDashboard(context, true)
+        AirPlayPersistence.saveDashboardBackground(context, DashboardBackground.AURORA)
+        AirPlayPersistence.saveDashboardDimmingPercent(context, 40)
         val document = JSONObject(String(SettingsBackupCodec.export(context, "0.2.22")))
         val airplay = document.getJSONObject("settings").optJSONObject("xcertplay_airplay") ?: JSONObject()
         for (key in listOf("root_hotspot_details", "disconnect_phone_bluetooth_wireless", "hotspot_audio_firewall",
-            "monjaro_dashboard_music")) {
+            "monjaro_dashboard_music", "monjaro_custom_dashboard", "monjaro_dashboard_background",
+            "monjaro_dashboard_dimming_percent")) {
             assertFalse(key, airplay.has(key))
         }
     }
