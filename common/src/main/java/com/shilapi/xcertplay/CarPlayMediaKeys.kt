@@ -287,6 +287,7 @@ internal object CarPlayMediaKeys {
             transientFocusInterrupted = false
             forwardGrantedFocusLocked()
         }
+        publishClusterPlaybackLocked()
         Log.i(TAG, "audio focus regained=$focusHeld")
     }
 
@@ -366,6 +367,7 @@ internal object CarPlayMediaKeys {
                         transientFocusInterrupted = false
                     }
                 }
+                publishClusterPlaybackLocked()
                 true
             }
         }
@@ -401,9 +403,11 @@ internal object CarPlayMediaKeys {
         focusRequest = null
         focusHeld = false
         transientFocusInterrupted = false
+        publishClusterPlaybackLocked()
     }
 
     private fun publishPlaybackStateLocked() {
+        publishClusterPlaybackLocked()
         val playing = if (nowPlaying.elapsedMillis != null || nowPlaying.title != null) {
             nowPlaying.playing
         } else {
@@ -423,6 +427,9 @@ internal object CarPlayMediaKeys {
                 .build(),
         )
     }
+
+    private fun publishClusterPlaybackLocked() = ClusterPlaybackState.publish(ClusterPlaybackState.Snapshot(
+        nowPlaying.playing, nowPlaying.elapsedMillis, elapsedUpdatedAt, focusHeld))
 
     private fun send(index: Int, source: String) {
         // While the car's video player is on screen the wheel drives it: a CarPlay play/pause would
