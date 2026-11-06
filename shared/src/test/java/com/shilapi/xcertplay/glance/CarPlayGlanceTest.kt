@@ -13,6 +13,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.shadows.ShadowLog
 
 @RunWith(RobolectricTestRunner::class) // Lane guidance logs through android.util.Log.
 class CarPlayGlanceTest {
@@ -274,6 +275,20 @@ class CarPlayGlanceTest {
         assertNull("the session end", CarPlayGlance.snapshot().lanes)
         CarPlayGlance.setConnected(true)
         assertNull(CarPlayGlance.snapshot().lanes)
+    }
+
+    @Test
+    fun theLaneLogShowsTheStripsIndexNextToTheNextManeuvers() {
+        CarPlayGlance.setConnected(true)
+        routeTo(3)
+        CarPlayGlance.onFrame(frame(0x5204) { })
+        ShadowLog.clear()
+        CarPlayGlance.onFrame(frame(0x5204) {
+            u16(1, 4)
+            group(2) { u16(0, 0); u8(1, 2); i16(2, 0) }
+        })
+        val line = ShadowLog.getLogsForTag("DiPlay-Lane").single().msg
+        assertTrue(line, line.startsWith("0x5204 lanes=1 index=4 active=3 "))
     }
 
     @Test

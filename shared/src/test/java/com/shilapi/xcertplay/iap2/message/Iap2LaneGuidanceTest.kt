@@ -52,6 +52,14 @@ class Iap2LaneGuidanceTest {
     }
 
     @Test
+    fun theLaneGuidanceIndexIsReadAsSent() {
+        assertEquals(0L, Iap2LaneGuidance.laneGuidanceIndex(sample))
+        assertEquals(0x1234L, Iap2LaneGuidance.laneGuidanceIndex(hex("00 06 00 01 12 34")))
+        assertEquals(null, Iap2LaneGuidance.laneGuidanceIndex(hex("00 06 00 00 00 2a")))
+        assertEquals(null, Iap2LaneGuidance.laneGuidanceIndex(byteArrayOf(0, 1, 2)))
+    }
+
+    @Test
     fun aMalformedPayloadYieldsNoLanes() {
         assertEquals(emptyList<LaneGuidanceLane>(), Iap2LaneGuidance.parse(byteArrayOf(0, 1, 2)))
     }

@@ -91,16 +91,16 @@ object CarPlayGlance {
             // Lane guidance is a side channel: log it, hand it to whoever draws lanes, and leave
             // the route/now-playing state alone.
             val strip = runCatching { Iap2LaneGuidance.parse(frame.payload) }.getOrDefault(emptyList())
-            if (strip != loggedLanes) {
-                loggedLanes = strip
-                android.util.Log.i(TAG, "0x5204 " + describeLanes(strip, frame.payload))
-            }
-            laneListener?.invoke(strip)
-            val changed = synchronized(this) {
+            val (changed, index) = synchronized(this) {
                 val index = route.currentApple()?.index
                 lanes = if (strip.isEmpty() || index == null) null else LaneStrip(index, strip)
-                publishLocked()
+                publishLocked() to index
             }
+            if (strip != loggedLanes) {
+                loggedLanes = strip
+                android.util.Log.i(TAG, "0x5204 " + describeLanes(strip, frame.payload, index))
+            }
+            laneListener?.invoke(strip)
             changed?.let(::notify)
             return
         }
@@ -148,14 +148,16 @@ object CarPlayGlance {
 
     /**
      * One line per lane strip for the diagnostic report: the parsed fields, and the raw payload once,
-     * so a report from a car we cannot test still shows what the phone actually sent.
+     * so a report from a car we cannot test still shows what the phone actually sent. The strip's lane
+     * guidance index next to the [activeIndex] of the next maneuver shows whether lanes come ahead of their maneuver.
      */
-    private fun describeLanes(lanes: List<LaneGuidanceLane>, payload: ByteArray): String {
+    private fun describeLanes(lanes: List<LaneGuidanceLane>, payload: ByteArray, activeIndex: Int?): String {
         if (lanes.isEmpty()) return "lane strip cleared"
         val strip = lanes.joinToString("; ") {
             "i=${it.index} st=${it.status} a=${it.angle} h=${it.highlightAngle}"
         }
-        return "lanes=${lanes.size} [$strip] raw=" + payload.joinToString("") {
+        val index = Iap2LaneGuidance.laneGuidanceIndex(payload)
+        return "lanes=${lanes.size} index=${index ?: "?"} active=${activeIndex ?: "?"} [$strip] raw=" + payload.joinToString("") {
             "%02x".format(it.toInt() and 0xff)
         }
     }

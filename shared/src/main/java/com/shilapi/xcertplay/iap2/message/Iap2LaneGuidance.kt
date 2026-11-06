@@ -23,6 +23,7 @@ data class LaneGuidanceLane(
 /** Parser for the lane list in iAP2 `0x5204`. */
 object Iap2LaneGuidance {
 
+    private const val LANE_GUIDANCE_INDEX = 0x0001
     private const val LANE_INFORMATION = 0x0002
     private const val FIELD_INDEX = 0x0000
     private const val FIELD_STATUS = 0x0001
@@ -45,6 +46,17 @@ object Iap2LaneGuidance {
                 highlightAngle = fields.first(FIELD_ANGLE_HIGHLIGHT)?.s16(),
             )
         }.sortedBy { it.index }
+    }
+
+    /**
+     * The lane guidance index, outer field 1 of a `0x5204` payload, as an unsigned number; null without it. Whether
+     * it names the maneuver the lanes belong to is not confirmed on a car yet.
+     */
+    fun laneGuidanceIndex(payload: ByteArray): Long? {
+        val bytes = runCatching { Iap2ParameterList.parse(payload) }.getOrNull()?.first(LANE_GUIDANCE_INDEX)?.payload
+            ?: return null
+        if (bytes.isEmpty() || bytes.size > 4) return null
+        return bytes.fold(0L) { value, byte -> (value shl 8) or (byte.toLong() and 0xff) }
     }
 
     private fun Iap2Parameter.u16(): Int =
