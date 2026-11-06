@@ -102,6 +102,11 @@ class HudStateTest {
     private val connected = CarPlayGlance.Snapshot(connected = true, session = 1)
     private val turn = connected.copy(maneuverType = 2, maneuverIndex = 0, distanceMeters = 350, road = "Садовое кольцо")
 
+    private fun glanceIs(next: CarPlayGlance.Snapshot) {
+        glance = next
+        state.glanceChanged()
+    }
+
     private fun tick() = timers.toList().forEach {
         timers.remove(it)
         it.run()
@@ -109,29 +114,29 @@ class HudStateTest {
 
     @Test fun offTheWindowNeverAppears() {
         options = MonjaroA3Options(hudManeuvers = false)
-        state.glanceChanged(turn)
+        glanceIs(turn)
         assertEquals(emptyList<String>(), events)
         assertTrue(drawn.isEmpty())
     }
 
     @Test fun theWindowLivesForTheSessionAndIsEmptyWithoutARoute() {
-        state.glanceChanged(connected)
+        glanceIs(connected)
         assertEquals(listOf("watch", "show"), events)
         assertEquals(listOf<HudFrame?>(null), drawn.map { it.first })
 
-        state.glanceChanged(turn)
+        glanceIs(turn)
         assertEquals(HudManeuver.RIGHT, drawn.last().first?.kind)
-        state.glanceChanged(connected)
+        glanceIs(connected)
         assertNull("the route ended", drawn.last().first)
 
-        state.glanceChanged(CarPlayGlance.Snapshot())
+        glanceIs(CarPlayGlance.Snapshot())
         assertEquals(listOf("watch", "show", "unwatch", "hide"), events)
         assertTrue(timers.isEmpty())
     }
 
     @Test fun turningTheOptionOnDuringASessionShowsTheLineAtOnce() {
         options = MonjaroA3Options(hudManeuvers = false)
-        state.glanceChanged(turn)
+        glanceIs(turn)
         options = MonjaroA3Options(hudManeuvers = true)
         state.settingChanged()
         assertEquals(listOf("watch", "show"), events)
@@ -143,7 +148,7 @@ class HudStateTest {
     }
 
     @Test fun aNewHeightMovesTheShownLineWithoutAnotherWindow() {
-        state.glanceChanged(turn)
+        glanceIs(turn)
         options = options.copy(hudHeight = 310)
         state.settingChanged()
         assertEquals(listOf("watch", "show"), events)
@@ -152,7 +157,7 @@ class HudStateTest {
     }
 
     @Test fun losingThePermissionOrTheDisplayTakesTheWindowAwayAndItComesBack() {
-        state.glanceChanged(turn)
+        glanceIs(turn)
         available = false
         watcher!!()
         assertEquals(listOf("watch", "show", "hide"), events)
@@ -163,7 +168,7 @@ class HudStateTest {
     }
 
     @Test fun aHeadUpDisplayBackUnderANewIdGetsTheWindowAtOnce() {
-        state.glanceChanged(turn)
+        glanceIs(turn)
         hudDisplayId = 12
         watcher!!()
         assertEquals(listOf("watch", "show", "hide", "show"), events)
@@ -174,7 +179,7 @@ class HudStateTest {
 
     @Test fun aRefusedWindowIsTriedAgainOnTheNextChange() {
         showWorks = false
-        state.glanceChanged(turn)
+        glanceIs(turn)
         assertTrue(drawn.isEmpty())
         assertTrue(timers.isEmpty())
         showWorks = true
@@ -184,8 +189,7 @@ class HudStateTest {
     }
 
     @Test fun everySecondTheLineFollowsGuidanceThatExpiredWithoutAFrame() {
-        glance = turn
-        state.glanceChanged(turn)
+        glanceIs(turn)
         tick()
         assertEquals("nothing new, nothing redrawn", 1, drawn.size)
         glance = connected
@@ -194,9 +198,17 @@ class HudStateTest {
         assertEquals(1, timers.size)
     }
 
+    @Test fun aChangeReadsTheGlanceAsItIsWhenItRunsNotAsItWasPosted() {
+        glanceIs(turn)
+        // The session ended while a change from it was still on its way to the main thread.
+        glance = CarPlayGlance.Snapshot()
+        state.glanceChanged()
+        assertEquals(listOf("watch", "show", "unwatch", "hide"), events)
+    }
+
     @Test fun anotherSessionIsAnotherWindowCheck() {
-        state.glanceChanged(turn)
-        state.glanceChanged(turn.copy(session = 2))
+        glanceIs(turn)
+        glanceIs(turn.copy(session = 2))
         assertEquals(listOf("watch", "show"), events)
         assertEquals(1, drawn.size)
     }

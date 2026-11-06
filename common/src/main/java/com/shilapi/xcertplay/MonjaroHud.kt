@@ -66,12 +66,14 @@ internal class HudState(
     private var loggedManeuver: Triple<Long, Int?, Int?>? = null
     private val tick = object : Runnable {
         override fun run() {
-            glanceChanged(glance())
+            glanceChanged()
             if (shown) postDelayed(TICK_MILLIS, this)
         }
     }
 
-    fun glanceChanged(next: CarPlayGlance.Snapshot) {
+    /** Reads [glance] now: a snapshot posted from another thread may be older than one posted after it. */
+    fun glanceChanged() {
+        val next = glance()
         val sessionChanged = next.connected != snapshot.connected || next.session != snapshot.session
         snapshot = next
         if (sessionChanged) update() else redraw()
@@ -293,7 +295,7 @@ internal object MonjaroHud {
             log = { Log.i(TAG, it) },
         )
         state = created
-        CarPlayGlance.observe { snapshot -> main.post { created.glanceChanged(snapshot) } }
+        CarPlayGlance.observe { main.post(created::glanceChanged) }
     }
 
     fun settingChanged() {
