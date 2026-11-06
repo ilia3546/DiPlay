@@ -2257,6 +2257,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             toggle(card, getString(R.string.settings_hud_maneuvers),
                 getString(R.string.settings_hud_maneuvers_description), hudManeuvers) {
                 AirPlayPersistence.saveHudManeuvers(this, it)
+                MonjaroHud.settingChanged()
                 if (it && !CenterMapOverlay.permitted(this)) openOverlayPermission()
                 render()
             }
@@ -2270,6 +2271,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     }
                 }, densities.indexOf(AirPlayPersistence.loadHudDensity(this)), reconnects = false) {
                     AirPlayPersistence.saveHudDensity(this, densities[it])
+                    MonjaroHud.settingChanged()
                 }
                 val heights = MonjaroA3Options.hudHeights
                 choice(card, getString(R.string.settings_hud_height), listOf(R.string.settings_hud_height_highest,
@@ -2277,19 +2279,23 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     R.string.settings_hud_height_lowest).map(::getString),
                     heights.indexOf(AirPlayPersistence.loadHudHeight(this)), reconnects = false) {
                     AirPlayPersistence.saveHudHeight(this, heights[it])
+                    MonjaroHud.settingChanged()
                 }
                 val scales = MonjaroA3Options.hudScalePercents
                 choice(card, getString(R.string.settings_hud_scale), scales.map { getString(R.string.percent_value, it) },
                     scales.indexOf(AirPlayPersistence.loadHudScalePercent(this)), reconnects = false) {
                     AirPlayPersistence.saveHudScalePercent(this, scales[it])
+                    MonjaroHud.settingChanged()
                 }
                 toggle(card, getString(R.string.settings_hud_lanes), getString(R.string.settings_hud_lanes_description),
                     AirPlayPersistence.loadHudLanes(this)) {
                     AirPlayPersistence.saveHudLanes(this, it)
+                    MonjaroHud.settingChanged()
                 }
                 toggle(card, getString(R.string.settings_hud_trip), getString(R.string.settings_hud_trip_description),
                     AirPlayPersistence.loadHudTrip(this)) {
                     AirPlayPersistence.saveHudTrip(this, it)
+                    MonjaroHud.settingChanged()
                 }
             }
         }

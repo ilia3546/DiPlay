@@ -72,14 +72,15 @@ internal object CrashRecord {
 }
 
 /**
- * Installs [CrashRecord] and [MonjaroCustomDashboard] when the process starts, before any activity, receiver or
- * service runs.
+ * Installs [CrashRecord], [MonjaroCustomDashboard] and [MonjaroHud] when the process starts, before any activity,
+ * receiver or service runs.
  */
 class CrashRecordInstaller : ContentProvider() {
     override fun onCreate(): Boolean {
         context?.let {
             CrashRecord.install(it)
             MonjaroCustomDashboard.install(it)
+            MonjaroHud.install(it)
         }
         return true
     }
