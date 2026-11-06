@@ -17,7 +17,7 @@ import android.view.WindowManager
 import android.widget.FrameLayout
 import androidx.annotation.RequiresApi
 
-/** A display as [MonjaroClusterDisplay.choose] sees it; the addresses are null where the platform hides them. */
+/** A display as [PhysicalDisplay.choose] sees it; the addresses are null where the platform hides them. */
 internal data class DisplayDescription(
     val displayId: Int,
     val name: String,
@@ -30,39 +30,39 @@ internal data class DisplayDescription(
         "$displayId:$name ${width}x$height uniqueId=${uniqueId ?: "?"} physicalId=${physicalId ?: "?"}"
 }
 
-/** The display chosen for the custom dashboard, or null and why not. */
+/** The display chosen for a window, or null and why not. */
 internal data class ClusterDisplayChoice(val displayId: Int?, val reason: String)
 
 /**
- * Finds the Android display that firmware in engineering mode shows on the cluster: physical display 130, which
- * is 1920x720 like the centre and passenger displays, so only its address tells it apart.
+ * Finds the one Android display at physical address `local:[physicalId]`, and only at the expected size. A display
+ * without a readable address is never picked: on the Monjaro A3 several displays share a size.
  */
-internal object MonjaroClusterDisplay {
-    const val PHYSICAL_ID = 130L
-    const val WIDTH = 1920
-    const val HEIGHT = 720
-
+internal abstract class PhysicalDisplay(
+    private val physicalId: Long,
+    private val width: Int,
+    private val height: Int,
+) {
     fun choose(displays: List<DisplayDescription>): ClusterDisplayChoice {
         if (displays.all { it.uniqueId == null && it.physicalId == null }) {
             return ClusterDisplayChoice(null, "no display address readable")
         }
         displays.firstOrNull { uniqueIdPhysical(it) != null && it.physicalId != null && uniqueIdPhysical(it) != it.physicalId }
             ?.let { return ClusterDisplayChoice(null, "display ${it.displayId} has two addresses") }
-        val matches = displays.filter { uniqueIdPhysical(it) == PHYSICAL_ID || it.physicalId == PHYSICAL_ID }
+        val matches = displays.filter { uniqueIdPhysical(it) == physicalId || it.physicalId == physicalId }
         val match = when (matches.size) {
-            0 -> return ClusterDisplayChoice(null, "no display at local:$PHYSICAL_ID")
+            0 -> return ClusterDisplayChoice(null, "no display at local:$physicalId")
             1 -> matches.single()
-            else -> return ClusterDisplayChoice(null, "${matches.size} displays at local:$PHYSICAL_ID")
+            else -> return ClusterDisplayChoice(null, "${matches.size} displays at local:$physicalId")
         }
-        if (match.width != WIDTH || match.height != HEIGHT) {
-            return ClusterDisplayChoice(null, "local:$PHYSICAL_ID is ${match.width}x${match.height}, not ${WIDTH}x$HEIGHT")
+        if (match.width != width || match.height != height) {
+            return ClusterDisplayChoice(null, "local:$physicalId is ${match.width}x${match.height}, not ${width}x$height")
         }
-        return ClusterDisplayChoice(match.displayId, "display ${match.displayId} at local:$PHYSICAL_ID")
+        return ClusterDisplayChoice(match.displayId, "display ${match.displayId} at local:$physicalId")
     }
 
     /**
-     * Whether the dashboard window may be shown or stay: permitted, and the cluster display is there and is the
-     * one the shown window, if any, is on. A cluster display removed and added again comes back under a new id.
+     * Whether a window may be shown or stay: permitted, and the display is there and is the one the shown window, if
+     * any, is on. A display removed and added again comes back under a new id.
      */
     fun usable(permitted: Boolean, chosenDisplayId: Int?, shownOnDisplayId: Int?): Boolean =
         permitted && chosenDisplayId != null && (shownOnDisplayId == null || shownOnDisplayId == chosenDisplayId)
@@ -70,19 +70,33 @@ internal object MonjaroClusterDisplay {
     private fun uniqueIdPhysical(display: DisplayDescription): Long? =
         display.uniqueId?.takeIf { it.startsWith("local:") }?.removePrefix("local:")?.toLongOrNull()
 
-    /** `Display.getUniqueId()` and `Display.getAddress()` are hidden APIs. */
-    fun describe(display: Display): DisplayDescription {
-        val size = Point().also {
-            @Suppress("DEPRECATION")
-            display.getRealSize(it)
+    companion object {
+        /** `Display.getUniqueId()` and `Display.getAddress()` are hidden APIs. */
+        fun describe(display: Display): DisplayDescription {
+            val size = Point().also {
+                @Suppress("DEPRECATION")
+                display.getRealSize(it)
+            }
+            val uniqueId = runCatching {
+                Display::class.java.getMethod("getUniqueId").invoke(display) as? String
+            }.getOrNull()
+            val physicalId = runCatching {
+                val address = Display::class.java.getMethod("getAddress").invoke(display) ?: return@runCatching null
+                address.javaClass.getMethod("getPhysicalDisplayId").invoke(address) as? Long
+            }.getOrNull()
+            return DisplayDescription(display.displayId, display.name.orEmpty(), uniqueId, physicalId, size.x, size.y)
         }
-        val uniqueId = runCatching { Display::class.java.getMethod("getUniqueId").invoke(display) as? String }.getOrNull()
-        val physicalId = runCatching {
-            val address = Display::class.java.getMethod("getAddress").invoke(display) ?: return@runCatching null
-            address.javaClass.getMethod("getPhysicalDisplayId").invoke(address) as? Long
-        }.getOrNull()
-        return DisplayDescription(display.displayId, display.name.orEmpty(), uniqueId, physicalId, size.x, size.y)
     }
+}
+
+/**
+ * The Android display that firmware in engineering mode shows on the cluster: physical display 130, which is
+ * 1920x720 like the centre and passenger displays.
+ */
+internal object MonjaroClusterDisplay :
+    PhysicalDisplay(physicalId = 130, width = MonjaroClusterDisplay.WIDTH, height = MonjaroClusterDisplay.HEIGHT) {
+    const val WIDTH = 1920
+    const val HEIGHT = 720
 }
 
 /**
@@ -105,7 +119,7 @@ internal class MonjaroDashboardWindow(
 
     override fun available(): Boolean {
         val permitted = Settings.canDrawOverlays(context)
-        val all = displays?.displays.orEmpty().map(MonjaroClusterDisplay::describe)
+        val all = displays?.displays.orEmpty().map(PhysicalDisplay::describe)
         val choice = MonjaroClusterDisplay.choose(all)
         val report = "custom dashboard overlay=${if (permitted) "allowed" else "missing"} ${choice.reason}; " +
             "displays=${all.joinToString()}"
@@ -146,7 +160,7 @@ internal class MonjaroDashboardWindow(
             log("custom dashboard needs Android 11 window contexts")
             return false
         }
-        val displayId = MonjaroClusterDisplay.choose(displays?.displays.orEmpty().map(MonjaroClusterDisplay::describe))
+        val displayId = MonjaroClusterDisplay.choose(displays?.displays.orEmpty().map(PhysicalDisplay::describe))
             .displayId ?: return false
         val display = displays?.getDisplay(displayId) ?: return false
         return add(display, firstFrame)

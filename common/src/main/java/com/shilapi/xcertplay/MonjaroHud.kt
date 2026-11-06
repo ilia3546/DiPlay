@@ -131,36 +131,9 @@ internal class HudState(
     }
 }
 
-/**
- * Finds the Android display that firmware shows on the head-up display: physical display 132, 800x480. Only the
- * address tells it apart, so a display without one is never picked.
- */
-internal object MonjaroHudDisplay {
-    const val PHYSICAL_ID = 132L
-    const val WIDTH = HudDrawing.WIDTH
-    const val HEIGHT = HudDrawing.HEIGHT
-
-    fun choose(displays: List<DisplayDescription>): ClusterDisplayChoice {
-        if (displays.all { it.uniqueId == null && it.physicalId == null }) {
-            return ClusterDisplayChoice(null, "no display address readable")
-        }
-        displays.firstOrNull { uniqueIdPhysical(it) != null && it.physicalId != null && uniqueIdPhysical(it) != it.physicalId }
-            ?.let { return ClusterDisplayChoice(null, "display ${it.displayId} has two addresses") }
-        val matches = displays.filter { uniqueIdPhysical(it) == PHYSICAL_ID || it.physicalId == PHYSICAL_ID }
-        val match = when (matches.size) {
-            0 -> return ClusterDisplayChoice(null, "no display at local:$PHYSICAL_ID")
-            1 -> matches.single()
-            else -> return ClusterDisplayChoice(null, "${matches.size} displays at local:$PHYSICAL_ID")
-        }
-        if (match.width != WIDTH || match.height != HEIGHT) {
-            return ClusterDisplayChoice(null, "local:$PHYSICAL_ID is ${match.width}x${match.height}, not ${WIDTH}x$HEIGHT")
-        }
-        return ClusterDisplayChoice(match.displayId, "display ${match.displayId} at local:$PHYSICAL_ID")
-    }
-
-    private fun uniqueIdPhysical(display: DisplayDescription): Long? =
-        display.uniqueId?.takeIf { it.startsWith("local:") }?.removePrefix("local:")?.toLongOrNull()
-}
+/** The Android display that firmware shows on the head-up display: physical display 132, 800x480. */
+internal object MonjaroHudDisplay :
+    PhysicalDisplay(physicalId = 132, width = HudDrawing.WIDTH, height = HudDrawing.HEIGHT)
 
 /** Draws one [HudFrame] in the HUD's 800x480 pixels, scaled to fit the view. */
 internal class HudLineView(context: Context) : View(context) {
@@ -205,7 +178,7 @@ internal class MonjaroHudWindow(
 
     override fun available(): Boolean {
         val permitted = Settings.canDrawOverlays(context)
-        val all = displays?.displays.orEmpty().map(MonjaroClusterDisplay::describe)
+        val all = displays?.displays.orEmpty().map(PhysicalDisplay::describe)
         val choice = MonjaroHudDisplay.choose(all)
         val report = "HUD overlay=${if (permitted) "allowed" else "missing"} ${choice.reason}; displays=${all.joinToString()}"
         if (report != reported) {
@@ -245,7 +218,7 @@ internal class MonjaroHudWindow(
             log("HUD needs Android 11 window contexts")
             return false
         }
-        val displayId = MonjaroHudDisplay.choose(displays?.displays.orEmpty().map(MonjaroClusterDisplay::describe))
+        val displayId = MonjaroHudDisplay.choose(displays?.displays.orEmpty().map(PhysicalDisplay::describe))
             .displayId ?: return false
         val display = displays?.getDisplay(displayId) ?: return false
         return add(display)
