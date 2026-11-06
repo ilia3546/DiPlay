@@ -59,4 +59,7 @@
     <string name="custom_dashboard_unit_minutes">min</string>
     <string name="custom_dashboard_unit_litres_per_100_km">L/100 km</string>
     <string name="custom_dashboard_arrival">llegada</string>
+    <string name="hud_unit_meters">m</string>
+    <string name="hud_unit_kilometres">km</string>
+    <string name="hud_unit_minutes">min</string>
 </resources>

@@ -212,7 +212,7 @@ class HudDrawingReferenceTest {
         connected = true, maneuverType = 2, maneuverIndex = 0, distanceMeters = meters, road = "На демонстрационную улицу",
         remainingMeters = remainingMeters, remainingSeconds = remainingSeconds,
         lanes = lanes.takeIf { it.isNotEmpty() }?.let { CarPlayGlance.LaneStrip(0, it) },
-    ))!!
+    ), HudUnits("м", "км", "мин", ','))!!
 
     @Test fun theLineKeepsItsBaselinesSpacingAndTextRoles() {
         val frame = frame(300, listOf(LaneGuidanceLane(0, 2, 0, 90)), remainingMeters = 4200, remainingSeconds = 720)

@@ -20,6 +20,7 @@ import com.shilapi.xcertplay.hud.AndroidHudCanvas
 import com.shilapi.xcertplay.hud.HudDrawing
 import com.shilapi.xcertplay.hud.HudFrame
 import com.shilapi.xcertplay.hud.HudSettings
+import com.shilapi.xcertplay.hud.HudUnits
 
 /** The HUD line window on the head-up display, as [HudState] drives it. Main thread. */
 internal interface HudWindow {
@@ -53,6 +54,7 @@ internal class HudState(
     private val options: () -> MonjaroA3Options,
     private val window: HudWindow,
     private val glance: () -> CarPlayGlance.Snapshot,
+    private val units: () -> HudUnits,
     private val postDelayed: (delayMillis: Long, Runnable) -> Unit,
     private val cancel: (Runnable) -> Unit,
     private val log: (String) -> Unit = {},
@@ -120,7 +122,7 @@ internal class HudState(
 
     private fun redraw() {
         if (!shown) return
-        val frame = HudFrame.from(snapshot)
+        val frame = HudFrame.from(snapshot, units())
         val maneuver = Triple(snapshot.session, snapshot.maneuverIndex, snapshot.maneuverType)
         if (frame != null && maneuver != loggedManeuver) {
             loggedManeuver = maneuver
@@ -290,6 +292,7 @@ internal object MonjaroHud {
             options = { MonjaroA3Options.load(app) },
             window = MonjaroHudWindow(app) { Log.i(TAG, it) },
             glance = CarPlayGlance::snapshot,
+            units = { HudUnits.of(AppLocale.wrap(app)) },
             postDelayed = { delayMillis, task -> main.postDelayed(task, delayMillis) },
             cancel = main::removeCallbacks,
             log = { Log.i(TAG, it) },

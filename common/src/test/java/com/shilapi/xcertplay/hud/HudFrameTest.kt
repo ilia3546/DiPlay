@@ -4,27 +4,31 @@ import com.shilapi.xcertplay.glance.CarPlayGlance
 import com.shilapi.xcertplay.iap2.message.Iap2LaneGuidance
 import com.shilapi.xcertplay.iap2.message.LaneGuidanceLane
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class HudFrameTest {
+    private val ru = HudUnits("м", "км", "мин", ',')
+    private val en = HudUnits("m", "km", "min", '.')
     private val route = CarPlayGlance.Snapshot(
         connected = true, maneuverType = 2, maneuverIndex = 4, distanceMeters = 350, road = "Садовое кольцо",
     )
 
     @Test fun noRouteIsNoLine() {
-        assertNull(HudFrame.from(CarPlayGlance.Snapshot()))
-        assertNull(HudFrame.from(CarPlayGlance.Snapshot(connected = true, distanceMeters = 350, road = "Садовое кольцо")))
+        assertNull(HudFrame.from(CarPlayGlance.Snapshot(), ru))
+        assertNull(HudFrame.from(CarPlayGlance.Snapshot(connected = true, distanceMeters = 350, road = "Садовое кольцо"), ru))
     }
 
     @Test fun aRightTurnIn350MetresOntoTheStreet() {
-        val frame = HudFrame.from(route)!!
+        val frame = HudFrame.from(route, ru)!!
         assertEquals(HudManeuver.RIGHT, frame.kind)
         assertEquals("350", frame.number)
         assertEquals("м", frame.unit)
         assertEquals("Садовое кольцо", frame.instructionLabel)
         assertEquals(0, frame.exitNumber)
-        assertEquals("", frame.tripSummary)
+        assertFalse(frame.hasTrip)
     }
 
     @Test fun everyManeuverTypeHasItsSign() {
@@ -50,50 +54,61 @@ class HudFrameTest {
     }
 
     @Test fun aRoundaboutExitCarriesItsNumberAndOnlyThere() {
-        assertEquals(3, HudFrame.from(route.copy(maneuverType = 30))!!.exitNumber)
-        assertEquals(1, HudFrame.from(route.copy(maneuverType = 28))!!.exitNumber)
-        assertEquals(19, HudFrame.from(route.copy(maneuverType = 46))!!.exitNumber)
-        assertEquals(0, HudFrame.from(route.copy(maneuverType = 7))!!.exitNumber)
-        assertEquals(0, HudFrame.from(route.copy(maneuverType = 6))!!.exitNumber)
-        assertEquals(0, HudFrame.from(route.copy(maneuverType = 47))!!.exitNumber)
+        assertEquals(3, HudFrame.from(route.copy(maneuverType = 30), ru)!!.exitNumber)
+        assertEquals(1, HudFrame.from(route.copy(maneuverType = 28), ru)!!.exitNumber)
+        assertEquals(19, HudFrame.from(route.copy(maneuverType = 46), ru)!!.exitNumber)
+        assertEquals(0, HudFrame.from(route.copy(maneuverType = 7), ru)!!.exitNumber)
+        assertEquals(0, HudFrame.from(route.copy(maneuverType = 6), ru)!!.exitNumber)
+        assertEquals(0, HudFrame.from(route.copy(maneuverType = 47), ru)!!.exitNumber)
     }
 
     @Test fun theSignDoesNotDependOnTheDrivingSide() {
         for (type in listOf(4, 6, 7, 8, 30)) {
-            assertEquals(HudFrame.sign(type), HudFrame.from(route.copy(maneuverType = type, drivingSide = 1))!!.kind)
+            assertEquals(HudFrame.sign(type), HudFrame.from(route.copy(maneuverType = type, drivingSide = 1), ru)!!.kind)
         }
     }
 
     @Test fun distancesUseACommaAndANarrowSpaceFromFiveDigits() {
-        assertEquals("0" to "м", HudFrame.distance(0))
-        assertEquals("990" to "м", HudFrame.distance(994))
-        assertEquals("1" to "км", HudFrame.distance(1000))
-        assertEquals("1,5" to "км", HudFrame.distance(1500))
-        assertEquals("9,9" to "км", HudFrame.distance(9900))
-        assertEquals("10" to "км", HudFrame.distance(9999))
-        assertEquals("12" to "км", HudFrame.distance(12_345))
-        assertEquals("9999" to "км", HudFrame.distance(9_999_000))
-        assertEquals("10\u202f000" to "км", HudFrame.distance(10_000_000))
-        assertEquals("100\u202f000" to "км", HudFrame.distance(100_000_000))
+        assertEquals("0" to "м", HudFrame.distance(0, ru))
+        assertEquals("990" to "м", HudFrame.distance(994, ru))
+        assertEquals("1" to "км", HudFrame.distance(1000, ru))
+        assertEquals("1,5" to "км", HudFrame.distance(1500, ru))
+        assertEquals("9,9" to "км", HudFrame.distance(9900, ru))
+        assertEquals("10" to "км", HudFrame.distance(9999, ru))
+        assertEquals("12" to "км", HudFrame.distance(12_345, ru))
+        assertEquals("9999" to "км", HudFrame.distance(9_999_000, ru))
+        assertEquals("10\u202f000" to "км", HudFrame.distance(10_000_000, ru))
+        assertEquals("100\u202f000" to "км", HudFrame.distance(100_000_000, ru))
     }
 
     @Test fun metresRoundToTheNearestTenAndTheLastFiveMakeAKilometre() {
-        assertEquals("0" to "м", HudFrame.distance(4))
-        assertEquals("10" to "м", HudFrame.distance(5))
-        assertEquals("350" to "м", HudFrame.distance(346))
-        assertEquals("350" to "м", HudFrame.distance(354))
-        assertEquals("1" to "км", HudFrame.distance(995))
-        assertEquals("1" to "км", HudFrame.distance(999))
-        assertEquals("350", HudFrame.from(route.copy(distanceMeters = 347))!!.number)
+        assertEquals("0" to "м", HudFrame.distance(4, ru))
+        assertEquals("10" to "м", HudFrame.distance(5, ru))
+        assertEquals("350" to "м", HudFrame.distance(346, ru))
+        assertEquals("350" to "м", HudFrame.distance(354, ru))
+        assertEquals("1" to "км", HudFrame.distance(995, ru))
+        assertEquals("1" to "км", HudFrame.distance(999, ru))
+        assertEquals("350", HudFrame.from(route.copy(distanceMeters = 347), ru)!!.number)
     }
 
     @Test fun theTripShowsMinutesAndDistanceEachWhenKnown() {
-        val both = HudFrame.from(route.copy(remainingSeconds = 720, remainingMeters = 4200))!!
-        assertEquals("12 мин · 4,2 км", both.tripSummary)
-        assertEquals("<1 мин", HudFrame.from(route.copy(remainingSeconds = 59))!!.tripSummary)
-        assertEquals("1 мин", HudFrame.from(route.copy(remainingSeconds = 60))!!.tripSummary)
-        assertEquals("850 м", HudFrame.from(route.copy(remainingMeters = 850))!!.tripSummary)
+        assertEquals(listOf("12", "мин", "4,2", "км"),
+            trip(HudFrame.from(route.copy(remainingSeconds = 720, remainingMeters = 4200), ru)!!))
+        assertEquals(listOf("<1", "мин", "", ""), trip(HudFrame.from(route.copy(remainingSeconds = 59), ru)!!))
+        assertEquals(listOf("1", "мин", "", ""), trip(HudFrame.from(route.copy(remainingSeconds = 60), ru)!!))
+        assertEquals(listOf("", "мин", "850", "м"), trip(HudFrame.from(route.copy(remainingMeters = 850), ru)!!))
+        assertTrue(HudFrame.from(route.copy(remainingMeters = 850), ru)!!.hasTrip)
     }
+
+    @Test fun englishUnitsAndADecimalPoint() {
+        val frame = HudFrame.from(route.copy(distanceMeters = 1500, remainingSeconds = 720, remainingMeters = 12_345), en)!!
+        assertEquals("1.5" to "km", frame.number to frame.unit)
+        assertEquals(listOf("12", "min", "12", "km"), trip(frame))
+        assertEquals("350" to "m", HudFrame.distance(346, en))
+        assertEquals("10\u202f000" to "km", HudFrame.distance(10_000_000, en))
+    }
+
+    private fun trip(frame: HudFrame) = listOf(frame.tripMinutes, frame.minutesUnit, frame.tripNumber, frame.tripUnit)
 
     @Test fun anglesSnapToTheNearestOfNineArrowsOnBothSides() {
         val expected = mapOf(
@@ -136,7 +151,7 @@ class HudFrameTest {
             " 00 15 00 02 00 06 00 00 00 01 00 05 00 01 00 00 06 00 02 00 00" +
             " 00 1b 00 02 00 06 00 00 00 02 00 05 00 01 02 00 06 00 02 00 00" +
             " 00 06 00 03 00 5a").split(" ").map { it.toInt(16).toByte() }.toByteArray()
-        val frame = HudFrame.from(route.copy(lanes = CarPlayGlance.LaneStrip(4, Iap2LaneGuidance.parse(sample))))!!
+        val frame = HudFrame.from(route.copy(lanes = CarPlayGlance.LaneStrip(4, Iap2LaneGuidance.parse(sample))), ru)!!
         assertEquals(listOf(
             HudLane(listOf(HudLaneDirection.LEFT), null, false),
             HudLane(listOf(HudLaneDirection.STRAIGHT), null, false),
@@ -146,9 +161,9 @@ class HudFrameTest {
 
     @Test fun lanesOfAnotherManeuverAreNotShown() {
         val lanes = listOf(LaneGuidanceLane(0, 2, 0, null))
-        assertEquals(1, HudFrame.from(route.copy(lanes = CarPlayGlance.LaneStrip(4, lanes)))!!.lanes.size)
-        assertEquals(emptyList<HudLane>(), HudFrame.from(route.copy(lanes = CarPlayGlance.LaneStrip(3, lanes)))!!.lanes)
+        assertEquals(1, HudFrame.from(route.copy(lanes = CarPlayGlance.LaneStrip(4, lanes)), ru)!!.lanes.size)
+        assertEquals(emptyList<HudLane>(), HudFrame.from(route.copy(lanes = CarPlayGlance.LaneStrip(3, lanes)), ru)!!.lanes)
         assertEquals(emptyList<HudLane>(),
-            HudFrame.from(route.copy(maneuverIndex = null, lanes = CarPlayGlance.LaneStrip(4, lanes)))!!.lanes)
+            HudFrame.from(route.copy(maneuverIndex = null, lanes = CarPlayGlance.LaneStrip(4, lanes)), ru)!!.lanes)
     }
 }

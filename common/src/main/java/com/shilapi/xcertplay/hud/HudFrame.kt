@@ -29,21 +29,19 @@ data class HudFrame(
     @JvmField val instructionLabel: String,
     @JvmField val lanes: List<HudLane>,
     @JvmField val tripMinutes: String,
+    @JvmField val minutesUnit: String,
     @JvmField val tripNumber: String,
     @JvmField val tripUnit: String,
 ) {
-    @JvmField val tripSummary: String = listOfNotNull(
-        tripMinutes.takeIf { it.isNotEmpty() }?.let { "$it мин" },
-        tripNumber.takeIf { it.isNotEmpty() }?.let { "$it $tripUnit" },
-    ).joinToString(" · ")
+    @JvmField val hasTrip: Boolean = tripMinutes.isNotEmpty() || tripNumber.isNotEmpty()
 
     companion object {
-        /** The line for the next maneuver in [glance], or null without a route. */
-        fun from(glance: CarPlayGlance.Snapshot): HudFrame? {
+        /** The line for the next maneuver in [glance] with [units], or null without a route. */
+        fun from(glance: CarPlayGlance.Snapshot, units: HudUnits): HudFrame? {
             val type = glance.maneuverType ?: return null
-            val (number, unit) = distance(glance.distanceMeters.coerceAtLeast(0).toLong())
+            val (number, unit) = distance(glance.distanceMeters.coerceAtLeast(0).toLong(), units)
             val strip = glance.lanes?.takeIf { glance.maneuverIndex != null && it.maneuverIndex == glance.maneuverIndex }
-            val trip = glance.remainingMeters?.let(::distance)
+            val trip = glance.remainingMeters?.let { distance(it, units) }
             return HudFrame(
                 kind = sign(type),
                 exitNumber = if (type in 28..46) type - 27 else 0,
@@ -52,6 +50,7 @@ data class HudFrame(
                 instructionLabel = glance.road,
                 lanes = strip?.lanes.orEmpty().map(::lane),
                 tripMinutes = glance.remainingSeconds?.let { if (it < 60) "<1" else (it / 60).toString() }.orEmpty(),
+                minutesUnit = units.minutes,
                 tripNumber = trip?.first.orEmpty(),
                 tripUnit = trip?.second.orEmpty(),
             )
@@ -109,17 +108,16 @@ data class HudFrame(
         }
 
         /**
-         * Metres to the nearest 10 below 1 km, kilometres with one decimal below 10 km, a decimal comma, and a narrow
-         * no-break space between thousands from five digits on.
+         * Metres to the nearest 10 below 1 km, kilometres with one decimal below 10 km, the decimal separator of
+         * [units], and a narrow no-break space between thousands from five digits on.
          */
-        fun distance(meters: Long): Pair<String, String> {
+        fun distance(meters: Long, units: HudUnits): Pair<String, String> {
             val rounded = if (meters < 1000) (meters + 5) / 10 * 10 else meters
             val kilometres = rounded >= 1000
             val value = if (kilometres) rounded / 1000.0 else rounded.toDouble()
             var text = String.format(Locale.ROOT, if (kilometres && value < 10) "%.1f" else "%.0f", value)
             if (text.endsWith(".0")) text = text.dropLast(2)
-            text = text.replace('.', ',')
-            val whole = text.indexOf(',').let { if (it < 0) text.length else it }
+            val whole = text.indexOf('.').let { if (it < 0) text.length else it }
             if (whole >= 5) {
                 val grouped = StringBuilder(text)
                 var i = whole - 3
@@ -129,7 +127,7 @@ data class HudFrame(
                 }
                 text = grouped.toString()
             }
-            return text to if (kilometres) "км" else "м"
+            return text.replace('.', units.decimalSeparator) to if (kilometres) units.kilometres else units.meters
         }
     }
 }

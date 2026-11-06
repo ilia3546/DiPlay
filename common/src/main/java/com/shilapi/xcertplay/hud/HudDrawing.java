@@ -32,7 +32,7 @@ public final class HudDrawing {
             separator(canvas,bx+(lanes.length-1)*pitch+lane+gap/2,top,bottom,k,true);
             tripX=bx+(lanes.length-1)*pitch+lane+gap/2+14*k;
         }
-        if(settings.showTrip && !frame.tripSummary.isEmpty())trip(canvas,frame,(float)tripX,(float)(rowY+lane/2+.355*trip),trip,(float)(right-tripX));
+        if(settings.showTrip && frame.hasTrip)trip(canvas,frame,(float)tripX,(float)(rowY+lane/2+.355*trip),trip,(float)(right-tripX));
     }
     public static void lane(HudCanvas canvas,HudLane lane,double x,double y,double size){
         HudLaneDirection highlight=lane.preferred ? lane.highlighted : null;
@@ -48,7 +48,7 @@ public final class HudDrawing {
     }
     private static void trip(HudCanvas canvas,HudFrame frame,float x,float baseline,float size,float available){
         boolean time=!frame.tripMinutes.isEmpty(),distance=!frame.tripNumber.isEmpty();
-        String[] spans={frame.tripMinutes,time ? "\u00a0мин" : "",time && distance ? "\u00a0\u00a0·\u00a0\u00a0" : "",frame.tripNumber,distance ? "\u00a0"+frame.tripUnit : ""};
+        String[] spans={frame.tripMinutes,time ? "\u00a0"+frame.minutesUnit : "",time && distance ? "\u00a0\u00a0·\u00a0\u00a0" : "",frame.tripNumber,distance ? "\u00a0"+frame.tripUnit : ""};
         int[] colors={WHITE,MUTED,MUTED,WHITE,MUTED};float width=0;
         for(String value:spans)width+=canvas.measure(value,size,false);
         if(width>available)return;

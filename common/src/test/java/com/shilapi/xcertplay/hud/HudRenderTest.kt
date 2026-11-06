@@ -10,12 +10,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /** The HUD line drawn by Android's canvas, 800x480 on black as the HUD shows it, for a look at the real glyphs. */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [29], manifest = Config.NONE)
+@Config(sdk = [29], manifest = Config.NONE, qualifiers = "ru")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class HudRenderTest {
     private val route = CarPlayGlance.Snapshot(connected = true, maneuverIndex = 0)
@@ -54,7 +55,7 @@ class HudRenderTest {
             try {
                 val canvas = Canvas(bitmap)
                 canvas.drawColor(Color.BLACK)
-                HudDrawing.draw(AndroidHudCanvas(canvas), HudFrame.from(glance)!!, settings)
+                HudDrawing.draw(AndroidHudCanvas(canvas), HudFrame.from(glance, HudUnits.of(RuntimeEnvironment.getApplication()))!!, settings)
                 val pixels = IntArray(bitmap.width * bitmap.height).also {
                     bitmap.getPixels(it, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
                 }

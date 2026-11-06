@@ -4,6 +4,7 @@ import com.shilapi.xcertplay.glance.CarPlayGlance
 import com.shilapi.xcertplay.hud.HudFrame
 import com.shilapi.xcertplay.hud.HudManeuver
 import com.shilapi.xcertplay.hud.HudSettings
+import com.shilapi.xcertplay.hud.HudUnits
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -92,6 +93,7 @@ class HudStateTest {
         options = { options },
         window = window,
         glance = { glance },
+        units = { HudUnits("м", "км", "мин", ',') },
         postDelayed = { delayMillis, task ->
             assertEquals(HudState.TICK_MILLIS, delayMillis)
             timers += task
