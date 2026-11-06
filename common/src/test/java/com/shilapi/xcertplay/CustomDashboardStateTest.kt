@@ -74,13 +74,19 @@ class CustomDashboardStateTest {
         pendingFrame = null
     }
 
-    private fun startAndDraw() {
+    /** As a CarPlay screen does: the option is read while the AirPlay configuration is built, then iOS connects. */
+    private fun connect() {
+        state.sessionStarting()
         state.connectedChanged(true)
+    }
+
+    private fun startAndDraw() {
+        connect()
         drawFirstFrame()
     }
 
     @Test fun theModeIsEnteredOnlyAfterTheWindowsFirstFrame() {
-        state.connectedChanged(true)
+        connect()
         assertEquals(listOf("session", "watch", "show"), events)
         drawFirstFrame()
         assertEquals(listOf("session", "watch", "show", "enter"), events)
@@ -88,7 +94,7 @@ class CustomDashboardStateTest {
     }
 
     @Test fun aSessionThatEndsBeforeTheFirstFrameNeverEnters() {
-        state.connectedChanged(true)
+        connect()
         val frame = pendingFrame!!
         state.connectedChanged(false)
         advance(CustomDashboardState.SESSION_END_GRACE_MILLIS)
@@ -113,7 +119,7 @@ class CustomDashboardStateTest {
         events.clear()
         state.connectedChanged(false)
         advance(1_000)
-        state.connectedChanged(true)
+        connect()
         advance(CustomDashboardState.SESSION_END_GRACE_MILLIS)
         assertFalse(events.contains("exit"))
         assertFalse(events.contains("hide"))
@@ -122,11 +128,11 @@ class CustomDashboardStateTest {
     }
 
     @Test fun aLaterSessionShowsANewWindowAndIgnoresTheOldFrame() {
-        state.connectedChanged(true)
+        connect()
         val oldFrame = pendingFrame!!
         state.connectedChanged(false)
         advance(CustomDashboardState.SESSION_END_GRACE_MILLIS)
-        state.connectedChanged(true)
+        connect()
         oldFrame()
         assertFalse(events.contains("enter"))
         drawFirstFrame()
@@ -145,14 +151,14 @@ class CustomDashboardStateTest {
 
     @Test fun turningTheOptionOffLeavesAtOnceAndTurningItOnWaitsForTheNextSession() {
         flag = false
-        state.connectedChanged(true)
+        connect()
         assertEquals(emptyList<String>(), events)
         flag = true
         state.settingChanged()
         assertEquals(emptyList<String>(), events)
         state.connectedChanged(false)
         advance(CustomDashboardState.SESSION_END_GRACE_MILLIS)
-        state.connectedChanged(true)
+        connect()
         drawFirstFrame()
         assertEquals(listOf("session", "watch", "show", "enter"), events)
     }
@@ -171,7 +177,7 @@ class CustomDashboardStateTest {
 
     @Test fun aWindowThatCannotBeShownNeverEnters() {
         showWorks = false
-        state.connectedChanged(true)
+        connect()
         assertEquals(listOf("session", "watch", "show"), events)
         state.connectedChanged(false)
         advance(CustomDashboardState.SESSION_END_GRACE_MILLIS)
@@ -193,15 +199,52 @@ class CustomDashboardStateTest {
         AirPlayPersistence.saveCustomDashboard(context, true)
         try {
             enabled = { MonjaroA3Options.load(context).customDashboard }
-            state.connectedChanged(true)
+            connect()
             drawFirstFrame()
             assertEquals(emptyList<String>(), events)
             ShadowBuild.setProduct("geely_fx11")
             ShadowBuild.setModel("KX11-A3-L1")
             state.connectedChanged(false)
             advance(CustomDashboardState.SESSION_END_GRACE_MILLIS)
-            state.connectedChanged(true)
+            connect()
             assertEquals(listOf("session", "watch", "show"), events)
+        } finally {
+            context.getSharedPreferences("xcertplay_airplay", 0).edit().clear().commit()
+        }
+    }
+
+    @Test fun theStreamAndTheWindowShareOneReadingOfTheOption() {
+        assertTrue(state.sessionStarting())
+        flag = false
+        state.connectedChanged(true)
+        assertTrue("the stream was configured for the dashboard", state.sessionEnabled)
+        assertEquals(listOf("session", "watch", "show"), events)
+        state.settingChanged()
+        assertFalse(state.sessionEnabled)
+        assertEquals(listOf("session", "watch", "show", "unwatch", "exit", "hide"), events)
+    }
+
+    @Test fun turningTheOptionOnAfterTheConfigurationWaitsForTheNextSession() {
+        flag = false
+        assertFalse(state.sessionStarting())
+        flag = true
+        state.connectedChanged(true)
+        assertFalse(state.sessionEnabled)
+        assertEquals(emptyList<String>(), events)
+    }
+
+    @Test fun onlyAMonjaroA3WithTheOptionConfiguresTheDashboardStream() {
+        val context: Context = RuntimeEnvironment.getApplication()
+        try {
+            enabled = { MonjaroA3Options.load(context).customDashboard }
+            AirPlayPersistence.saveCustomDashboard(context, true)
+            assertFalse("another head unit", state.sessionStarting())
+            ShadowBuild.setProduct("geely_fx11")
+            ShadowBuild.setModel("KX11-A3-L1")
+            assertTrue(state.sessionStarting())
+            AirPlayPersistence.saveCustomDashboard(context, false)
+            assertFalse(state.sessionStarting())
+            assertFalse(state.sessionEnabled)
         } finally {
             context.getSharedPreferences("xcertplay_airplay", 0).edit().clear().commit()
         }

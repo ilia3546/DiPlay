@@ -35,7 +35,8 @@ internal interface DashboardWindow {
 
 /**
  * The custom dashboard during a CarPlay session: the window on the cluster display, and engineering mode once the
- * window drew its first frame. The option is read when a session starts; turning it off, losing the overlay
+ * window drew its first frame. The option is read once per session, by [sessionStarting] while its AirPlay
+ * configuration is built, so the cluster stream and the window agree; turning it off, losing the overlay
  * permission or the display, and [terminate] take the dashboard away at once, while a session end waits
  * [SESSION_END_GRACE_MILLIS] so that a reconnect does not leave and enter the mode again. Main thread only.
  */
@@ -51,7 +52,10 @@ internal class CustomDashboardState(
 ) {
     private var connected = false
     private var sessionActive = false
-    private var sessionEnabled = false
+
+    /** Whether the session being configured or running has the custom dashboard. */
+    var sessionEnabled = false
+        private set
     private var terminating = false
     private var watching = false
     private var generation = 0L
@@ -63,13 +67,18 @@ internal class CustomDashboardState(
         update()
     }
 
+    fun sessionStarting(): Boolean {
+        sessionEnabled = enabled()
+        update()
+        return sessionEnabled
+    }
+
     fun connectedChanged(next: Boolean) {
         if (next == connected) return
         connected = next
         if (next) {
             cancel(sessionEnd)
             sessionActive = true
-            sessionEnabled = enabled()
             if (sessionEnabled) sessionStarted()
             update()
         } else if (sessionActive) {
@@ -162,6 +171,12 @@ internal object MonjaroCustomDashboard {
     }
 
     fun releaseStale(context: Context) = mode.releaseStale(context.applicationContext)
+
+    /** Main thread, while the next session's AirPlay configuration is built: whether it has the custom dashboard. */
+    fun sessionStarting(): Boolean = state?.sessionStarting() ?: false
+
+    /** Main thread: whether the running session has the custom dashboard, until the option is turned off. */
+    val sessionEnabled: Boolean get() = state?.sessionEnabled ?: false
 
     fun settingChanged() {
         main.post {

@@ -9,11 +9,12 @@ import android.view.View
 
 /**
  * Keeps a [MonjaroDashboardView] current while it is in its window: the clock, the background and dimming from
- * the settings, and the outside temperature from [EcarxCarData].
+ * the settings, the outside temperature from [EcarxCarData], and the map stream's stops.
  */
 internal class MonjaroDashboardSources(private val view: MonjaroDashboardView) : View.OnAttachStateChangeListener {
     private val app = view.context.applicationContext
     private var stopObservingSettings: (() -> Unit)? = null
+    private val streamChanged: (Boolean) -> Unit = { active -> if (!active) view.map.video.streamStopped() }
     private val time = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) = showTime()
     }
@@ -28,6 +29,7 @@ internal class MonjaroDashboardSources(private val view: MonjaroDashboardView) :
         showBackground()
         stopObservingSettings = MonjaroCustomDashboard.observeSettings(::showBackground)
         EcarxCarData.start(app, view::showTemperature)
+        MapMirrors.addStreamListener(streamChanged)
     }
 
     override fun onViewDetachedFromWindow(detached: View) {
@@ -35,6 +37,7 @@ internal class MonjaroDashboardSources(private val view: MonjaroDashboardView) :
         stopObservingSettings?.invoke()
         stopObservingSettings = null
         EcarxCarData.stop()
+        MapMirrors.removeStreamListener(streamChanged)
     }
 
     private fun showTime() = view.showTime(System.currentTimeMillis(), DateFormat.is24HourFormat(app))

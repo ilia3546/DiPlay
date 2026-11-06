@@ -1373,7 +1373,9 @@ open class CarPlayHostActivity : ComponentActivity() {
         }
         // Handed back after CarPlay left; the next cluster stream takes the cluster again.
         if (clusterReleasedWhileIdle) return
-        clusterSurface?.let { sink?.setSurface(SCREEN_TYPE_ALT, it) }
+        if (clusterStreamOwner() == ClusterStreamOwner.CLUSTER_DISPLAY) {
+            clusterSurface?.let { sink?.setSurface(SCREEN_TYPE_ALT, it) }
+        }
         if (AdbClusterRouter.enabled(this)) {
             ClusterActivityOutput.bind(this, taskId) { onClusterSurface(it) }
             ClusterActivityOutput.setStreamActive(SCREEN_TYPE_ALT in activeScreenStreamTypes)
@@ -1549,7 +1551,9 @@ open class CarPlayHostActivity : ComponentActivity() {
                 !adbClusterConfigured && controller != null) {
                 ClusterActivityOutput.setStreamActive(false)
                 reconnectAfterLoss("DiLink 4 cluster confirmed; requesting its native stream")
-            } else if (clusterOutputReady()) sink?.setSurface(SCREEN_TYPE_ALT, surface)
+            } else if (clusterOutputReady() && clusterStreamOwner() != ClusterStreamOwner.CUSTOM_DASHBOARD) {
+                sink?.setSurface(SCREEN_TYPE_ALT, surface)
+            }
         }
         updateClusterMapShown()
     }
@@ -1579,6 +1583,14 @@ open class CarPlayHostActivity : ComponentActivity() {
         adbClusterConfigured = false
         clusterStreamOnDisplay = false
         requestedSmallWindowForStream = null
+        if (MonjaroCustomDashboard.sessionStarting()) {
+            clusterStreamOnDisplay = true
+            return DashboardMapStream.config.also {
+                MapMirrors.streamAspect = it.widthPixels.toDouble() / it.heightPixels
+                appendLog("Custom dashboard: requesting stream 111 at ${it.widthPixels}x${it.heightPixels} for the " +
+                    "${MonjaroDashboardLayout.map.width}x${MonjaroDashboardLayout.map.height} map; safeArea=${it.safeArea}")
+            }
+        }
         if (!AirPlayPersistence.loadClusterMapEnabled(this)) return null
         // 已选择的 ADB 路由使用固定尺寸，无需启动仪表 Activity 才能准备流参数。
         if (AdbClusterRouter.enabled(this)) {
@@ -5692,6 +5704,7 @@ open class CarPlayHostActivity : ComponentActivity() {
         sink = renderer
         currentSurface?.let(::attachSurface)
         MapMirrors.reapply()
+        DashboardMapStream.reapply(renderer)
         val media = createMediaEngine(renderer)
         val pairings = AirPlayPersistence.loadPairings(this) { id, key ->
             AirPlayPersistence.savePairing(this, id, key)
@@ -6524,12 +6537,18 @@ open class CarPlayHostActivity : ComponentActivity() {
 
     private fun attachSurface(surface: Surface) {
         sink?.setSurface(SCREEN_TYPE_MAIN, surface)
-        if (AirPlayPersistence.loadClusterMapEnabled(this)) {
-            if (clusterOutputReady()) clusterSurface?.let { sink?.setSurface(SCREEN_TYPE_ALT, it) }
-        } else {
-            sink?.setSurface(SCREEN_TYPE_ALT, surface)
+        when (clusterStreamOwner()) {
+            ClusterStreamOwner.CLUSTER_DISPLAY -> clusterSurface?.let { sink?.setSurface(SCREEN_TYPE_ALT, it) }
+            ClusterStreamOwner.MAIN_SURFACE -> sink?.setSurface(SCREEN_TYPE_ALT, surface)
+            ClusterStreamOwner.CUSTOM_DASHBOARD, ClusterStreamOwner.NONE -> Unit
         }
     }
+
+    private fun clusterStreamOwner(): ClusterStreamOwner = ClusterStreamOwner.of(
+        customDashboard = MonjaroCustomDashboard.sessionEnabled,
+        clusterMapEnabled = AirPlayPersistence.loadClusterMapEnabled(this),
+        clusterSurfaceReady = clusterOutputReady() && clusterSurface != null,
+    )
 
     private fun onHostTouch(view: View, event: MotionEvent): Boolean {
         if (menuOpen) return true

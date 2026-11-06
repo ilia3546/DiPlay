@@ -17,6 +17,7 @@ import com.shilapi.xcertplay.MonjaroDashboardLayout as L
 internal class DashboardMapCard(context: Context) : FrameLayout(context) {
     val surfaceContainer = FrameLayout(context)
     val overlays = FrameLayout(context)
+    val video = DashboardMapVideo(context)
     private val shadow = DashboardShadow(L.MAP_RADIUS, L.MAP_SHADOW_DY, L.MAP_SHADOW_BLUR, L.MAP_SHADOW)
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = L.MAP_EMPTY }
     private val border = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -41,6 +42,7 @@ internal class DashboardMapCard(context: Context) : FrameLayout(context) {
             leftMargin = L.MAP_BORDER
             topMargin = L.MAP_BORDER
         })
+        surfaceContainer.addView(video, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
     }
 
     override fun draw(canvas: Canvas) {

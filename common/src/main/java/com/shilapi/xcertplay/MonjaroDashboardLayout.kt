@@ -1,5 +1,7 @@
 package com.shilapi.xcertplay
 
+import com.shilapi.xcertplay.airplay.AirPlayInsets
+
 /**
  * Where the custom dashboard draws, in pixels of the 1920x720 cluster display: design v2 with side blocks A.
  * The firmware draws the speed, warning lights and bottom line over the gaps between these blocks.
@@ -38,6 +40,12 @@ internal object MonjaroDashboardLayout {
     const val MAP_RADIUS = 28f
     const val MAP_SHADOW_DY = 18f
     const val MAP_SHADOW_BLUR = 50f
+
+    /**
+     * Where the iPhone keeps the car marker and route, in percent of the map: below the maneuver and arrival cards,
+     * away from the sides.
+     */
+    val MAP_SAFE_AREA_PERCENT = AirPlayInsets(top = 25, bottom = 0, left = 8, right = 8)
 
     /** Over the map, in display pixels; drawn by the map stage. */
     val maneuverCard = Box(left = 626, top = 202, width = 330)
