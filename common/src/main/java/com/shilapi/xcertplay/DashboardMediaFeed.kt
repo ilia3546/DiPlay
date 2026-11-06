@@ -67,6 +67,7 @@ internal class DashboardMediaFeed(private val block: DashboardMediaBlock) {
         val track = !info.title.isNullOrBlank() || !info.artist.isNullOrBlank()
         val signals = DashboardMediaSignals(
             carPlayFocus = playback.focusHeld,
+            carPlayFocusDisabled = AirPlayPersistence.loadDisableMediaKeyAudioFocus(block.context),
             carPlayPlaying = playback.playing,
             carPlayTrack = track,
             radioPlaying = heard.radio,

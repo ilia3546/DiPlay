@@ -51,6 +51,16 @@ class DashboardMediaSourceTest {
         assertEquals(DashboardMediaSource.UNKNOWN, source(DashboardMediaSignals()))
     }
 
+    @Test fun withoutTheFocusCarPlayIsShownWhileItPlaysAndNothingElseDoes() {
+        val playing = DashboardMediaSignals(carPlayFocusDisabled = true, carPlayPlaying = true, carPlayTrack = true)
+        assertEquals(DashboardMediaSource.CARPLAY, source(playing))
+        assertEquals("paused without the focus", DashboardMediaSource.UNKNOWN, source(playing.copy(carPlayPlaying = false)))
+        assertEquals(DashboardMediaSource.UNKNOWN, source(playing.copy(radioPlaying = true)))
+        assertEquals(DashboardMediaSource.UNKNOWN, source(playing.copy(bluetoothPlaying = true)))
+        assertEquals(DashboardMediaSource.UNKNOWN, source(playing.copy(usbPlaying = true)))
+        assertEquals(DashboardMediaSource.RADIO, source(playing.copy(carPlayPlaying = false, radioPlaying = true)))
+    }
+
     @Test fun progressRunsOnFromTheLastPositionWhilePlaying() {
         assertEquals(0.5f, DashboardProgress.of(60_000, 1_000, 200_000, true, 41_000)!!, 1e-6f)
         assertEquals("paused", 0.3f, DashboardProgress.of(60_000, 1_000, 200_000, false, 41_000)!!, 1e-6f)
