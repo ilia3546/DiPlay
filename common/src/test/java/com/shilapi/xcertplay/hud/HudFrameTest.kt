@@ -66,7 +66,7 @@ class HudFrameTest {
 
     @Test fun distancesUseACommaAndANarrowSpaceFromFiveDigits() {
         assertEquals("0" to "м", HudFrame.distance(0))
-        assertEquals("999" to "м", HudFrame.distance(999))
+        assertEquals("990" to "м", HudFrame.distance(994))
         assertEquals("1" to "км", HudFrame.distance(1000))
         assertEquals("1,5" to "км", HudFrame.distance(1500))
         assertEquals("9,9" to "км", HudFrame.distance(9900))
@@ -75,6 +75,16 @@ class HudFrameTest {
         assertEquals("9999" to "км", HudFrame.distance(9_999_000))
         assertEquals("10\u202f000" to "км", HudFrame.distance(10_000_000))
         assertEquals("100\u202f000" to "км", HudFrame.distance(100_000_000))
+    }
+
+    @Test fun metresRoundToTheNearestTenAndTheLastFiveMakeAKilometre() {
+        assertEquals("0" to "м", HudFrame.distance(4))
+        assertEquals("10" to "м", HudFrame.distance(5))
+        assertEquals("350" to "м", HudFrame.distance(346))
+        assertEquals("350" to "м", HudFrame.distance(354))
+        assertEquals("1" to "км", HudFrame.distance(995))
+        assertEquals("1" to "км", HudFrame.distance(999))
+        assertEquals("350", HudFrame.from(route.copy(distanceMeters = 347))!!.number)
     }
 
     @Test fun theTripShowsMinutesAndDistanceEachWhenKnown() {

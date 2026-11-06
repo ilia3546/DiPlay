@@ -109,12 +109,13 @@ data class HudFrame(
         }
 
         /**
-         * Metres below 1 km, kilometres with one decimal below 10 km, a decimal comma, and a narrow no-break space
-         * between thousands from five digits on.
+         * Metres to the nearest 10 below 1 km, kilometres with one decimal below 10 km, a decimal comma, and a narrow
+         * no-break space between thousands from five digits on.
          */
         fun distance(meters: Long): Pair<String, String> {
-            val kilometres = meters >= 1000
-            val value = if (kilometres) meters / 1000.0 else meters.toDouble()
+            val rounded = if (meters < 1000) (meters + 5) / 10 * 10 else meters
+            val kilometres = rounded >= 1000
+            val value = if (kilometres) rounded / 1000.0 else rounded.toDouble()
             var text = String.format(Locale.ROOT, if (kilometres && value < 10) "%.1f" else "%.0f", value)
             if (text.endsWith(".0")) text = text.dropLast(2)
             text = text.replace('.', ',')
