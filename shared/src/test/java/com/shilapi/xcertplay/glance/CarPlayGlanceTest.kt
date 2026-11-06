@@ -226,10 +226,6 @@ class CarPlayGlanceTest {
         assertEquals(3, strip.maneuverIndex)
         assertEquals(listOf(0, 1, 2), strip.lanes.map { it.index })
 
-        val late = mutableListOf<CarPlayGlance.LaneStrip?>()
-        val stop = CarPlayGlance.observeLanes { late += it }
-        stop()
-        assertEquals(listOf<CarPlayGlance.LaneStrip?>(strip), late)
         val snapshots = mutableListOf<CarPlayGlance.Snapshot>()
         CarPlayGlance.observe { snapshots += it }()
         assertEquals(strip, snapshots.single().lanes)
@@ -270,28 +266,5 @@ class CarPlayGlanceTest {
             advance(30_000_000_000L)
             assertNull(CarPlayGlance.snapshot().lanes)
         }
-    }
-
-    @Test
-    fun twoLaneObserversHearEachChangeOnceUntilTheyLeave() {
-        CarPlayGlance.setConnected(true)
-        routeTo(3)
-        val first = mutableListOf<Int?>()
-        val second = mutableListOf<Int?>()
-        val stopFirst = CarPlayGlance.observeLanes { first += it?.lanes?.size }
-        val stopSecond = CarPlayGlance.observeLanes { second += it?.lanes?.size }
-
-        threeLanes()
-        // Apple Maps repeats the strip while the overlap lasts; a repeat is not a change.
-        threeLanes()
-        // The distance changes, the strip does not.
-        CarPlayGlance.onFrame(frame(0x5201) { u8(1, 1); u32(0x0a, 200); u16List(0x0d, listOf(3)) })
-        stopFirst()
-        CarPlayGlance.onFrame(frame(0x5204) { })
-        stopSecond()
-        threeLanes()
-
-        assertEquals(listOf(null, 3), first)
-        assertEquals(listOf(null, 3, null), second)
     }
 }

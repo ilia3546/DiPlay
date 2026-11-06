@@ -51,7 +51,6 @@ object CarPlayGlance {
     @Volatile var listener: ((Snapshot) -> Unit)? = null
 
     private val observers = CopyOnWriteArraySet<(Snapshot) -> Unit>()
-    private val laneObservers = CopyOnWriteArraySet<(LaneStrip?) -> Unit>()
 
     /**
      * Calls [observer] with the current snapshot now and with each new one, on the thread that changed it, until
@@ -73,16 +72,6 @@ object CarPlayGlance {
      */
     fun observeConnection(post: (Runnable) -> Unit, observer: (Boolean) -> Unit): () -> Unit =
         observe { post(Runnable { observer(isConnected) }) }
-
-    /**
-     * Calls [observer] with the current lane strip now and with each change, on the thread that changed it, until the
-     * returned function runs; null when there is none.
-     */
-    fun observeLanes(observer: (LaneStrip?) -> Unit): () -> Unit {
-        laneObservers.add(observer)
-        observer(synchronized(this) { last.lanes })
-        return { laneObservers.remove(observer) }
-    }
 
     /** Lane guidance from 0x5204, on the iAP2 thread; empty when the lane strip goes away. */
     @Volatile var laneListener: ((List<LaneGuidanceLane>) -> Unit)? = null
@@ -157,15 +146,12 @@ object CarPlayGlance {
         }
     }
 
-    private fun notify(changed: Published) {
-        listener?.invoke(changed.snapshot)
-        observers.forEach { it(changed.snapshot) }
-        if (changed.lanesChanged) laneObservers.forEach { it(changed.snapshot.lanes) }
+    private fun notify(changed: Snapshot) {
+        listener?.invoke(changed)
+        observers.forEach { it(changed) }
     }
 
-    private class Published(val snapshot: Snapshot, val lanesChanged: Boolean)
-
-    private fun publishLocked(): Published? {
+    private fun publishLocked(): Snapshot? {
         val maneuver = route.currentApple()
         if (lanes?.maneuverIndex != maneuver?.index) lanes = null
         val current = song.current()
@@ -185,8 +171,7 @@ object CarPlayGlance {
             lanes = lanes,
         )
         if (next == last) return null
-        val lanesChanged = next.lanes != last.lanes
         last = next
-        return Published(next, lanesChanged)
+        return next
     }
 }
