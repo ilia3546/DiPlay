@@ -9,6 +9,7 @@ import android.graphics.Paint
 import android.graphics.Shader
 import android.net.Uri
 import android.view.View
+import com.shilapi.xcertplay.hud.ClusterTurnGuidance
 import java.io.File
 import java.util.TimeZone
 import org.junit.After
@@ -90,6 +91,18 @@ class CustomDashboardRenderTest {
             showTemperature(6.4f)
             media.show(DashboardMedia.Track("Hymn", "Charlotte de Witte", null, 0.38f))
         }
+    }
+
+    @Test fun theRouteCardsOverTheEmptyMap() {
+        val frame = render("map-route") {
+            showBackground(DashboardBackground.OCEAN, 0) { null }
+            showTemperature(6.4f)
+            map.showRoute(DashboardRoute(ClusterTurnGuidance.fromApple(2, 0, 350, "Садовое кольцо"),
+                arrivalEpochSeconds = evening / 1000 + 18 * 60, remainingSeconds = 1_080, remainingMeters = 9_400),
+                is24Hour = true, zone = moscow)
+        }
+        assertEquals("the maneuver tile", Color.rgb(0x2f, 0x7b, 0xff), frame.getPixel(642, 248))
+        assertEquals("the map below the cards", Color.rgb(0x12, 0x18, 0x21), frame.getPixel(960, 500))
     }
 
     private fun render(name: String?, setUp: MonjaroDashboardView.() -> Unit): Bitmap {

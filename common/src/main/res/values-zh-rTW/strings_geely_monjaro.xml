@@ -40,4 +40,5 @@
     <string name="custom_dashboard_unit_hours">小時</string>
     <string name="custom_dashboard_unit_minutes">分鐘</string>
     <string name="custom_dashboard_unit_litres_per_100_km">公升/百公里</string>
+    <string name="custom_dashboard_arrival">抵達</string>
 </resources>

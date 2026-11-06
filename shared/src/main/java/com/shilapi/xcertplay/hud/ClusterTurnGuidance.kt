@@ -15,5 +15,9 @@ data class ClusterTurnGuidance(
         internal fun from(frame: BydClusterFrame): ClusterTurnGuidance {
             return ClusterTurnGuidance(frame.icon, frame.roundaboutExit, frame.distanceMeters, frame.road)
         }
+
+        /** The instruction for an Apple RouteGuidanceManeuverType, as [com.shilapi.xcertplay.glance.CarPlayGlance] gives it. */
+        fun fromApple(type: Int, drivingSide: Int, distanceMeters: Int, road: String): ClusterTurnGuidance =
+            from(BydClusterFrame.from(BydAppleManeuver(distanceMeters, type, drivingSide, road)))
     }
 }

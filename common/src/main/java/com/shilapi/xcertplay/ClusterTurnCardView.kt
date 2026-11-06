@@ -151,10 +151,10 @@ internal class ClusterTurnCardView(context: Context) : View(context) {
         distancePaint.textSize = h * 0.30f
         roadPaint.textSize = h * 0.17f
         canvas.drawText(
-            ellipsize(distanceLabel(next.distanceMeters), textWidth, distancePaint),
+            ellipsize(distanceLabel(context, next.distanceMeters), textWidth, distancePaint),
             textLeft, card.top + h * 0.44f, distancePaint,
         )
-        val road = roadLabel(next)
+        val road = roadLabel(context, next)
         if (road.isNotEmpty()) {
             canvas.drawText(
                 ellipsize(road, textWidth, roadPaint),
@@ -241,40 +241,43 @@ internal class ClusterTurnCardView(context: Context) : View(context) {
         }
     }
 
-    private fun glyphRes(icon: Int): Int = when (icon) {
-        2 -> R.drawable.ic_turn_card_turn_left
-        3 -> R.drawable.ic_turn_card_turn_right
-        4 -> R.drawable.ic_turn_card_turn_slight_left
-        5 -> R.drawable.ic_turn_card_turn_slight_right
-        6 -> R.drawable.ic_turn_card_turn_sharp_left
-        7 -> R.drawable.ic_turn_card_turn_sharp_right
-        8 -> R.drawable.ic_turn_card_u_turn_left
-        19 -> R.drawable.ic_turn_card_u_turn_right
-        11, 12, 17, 18 -> R.drawable.ic_turn_card_roundabout_right
-        15 -> R.drawable.ic_turn_card_sports_score
-        else -> R.drawable.ic_turn_card_straight
-    }
-
-    private fun distanceLabel(meters: Int): String = when {
-        meters <= 20 -> context.getString(R.string.turn_card_now)
-        meters < 1000 -> context.getString(R.string.turn_card_distance_m, meters)
-        else -> context.getString(
-            R.string.turn_card_distance_km, meters / 100 / 10f,
-        )
-    }
-
-    private fun roadLabel(next: ClusterTurnGuidance): String =
-        if (next.roundaboutExit in 1..9) {
-            context.getString(R.string.turn_card_exit, next.roundaboutExit)
-        } else {
-            next.road
-        }
-
     private fun ellipsize(text: String, maxWidth: Float, paint: Paint): String {
         if (paint.measureText(text) <= maxWidth) return text
         val ellipsis = "…"
         var end = text.length
         while (end > 0 && paint.measureText(text.take(end) + ellipsis) > maxWidth) end--
         return if (end == 0) ellipsis else text.take(end) + ellipsis
+    }
+
+    internal companion object {
+        /** The Material Symbols glyph for an AMap NEW_ICON code. */
+        fun glyphRes(icon: Int): Int = when (icon) {
+            2 -> R.drawable.ic_turn_card_turn_left
+            3 -> R.drawable.ic_turn_card_turn_right
+            4 -> R.drawable.ic_turn_card_turn_slight_left
+            5 -> R.drawable.ic_turn_card_turn_slight_right
+            6 -> R.drawable.ic_turn_card_turn_sharp_left
+            7 -> R.drawable.ic_turn_card_turn_sharp_right
+            8 -> R.drawable.ic_turn_card_u_turn_left
+            19 -> R.drawable.ic_turn_card_u_turn_right
+            11, 12, 17, 18 -> R.drawable.ic_turn_card_roundabout_right
+            15 -> R.drawable.ic_turn_card_sports_score
+            else -> R.drawable.ic_turn_card_straight
+        }
+
+        fun distanceLabel(context: Context, meters: Int): String = when {
+            meters <= 20 -> context.getString(R.string.turn_card_now)
+            meters < 1000 -> context.getString(R.string.turn_card_distance_m, meters)
+            else -> context.getString(
+                R.string.turn_card_distance_km, meters / 100 / 10f,
+            )
+        }
+
+        fun roadLabel(context: Context, next: ClusterTurnGuidance): String =
+            if (next.roundaboutExit in 1..9) {
+                context.getString(R.string.turn_card_exit, next.roundaboutExit)
+            } else {
+                next.road
+            }
     }
 }

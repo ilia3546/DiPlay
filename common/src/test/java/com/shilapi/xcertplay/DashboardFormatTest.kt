@@ -29,6 +29,18 @@ class DashboardFormatTest {
         assertEquals("--", DashboardFormat.minutesOfHour(null))
     }
 
+    @Test fun theArrivalIsATimeByTheClockAndTheRestIsMinutesAndKilometres() {
+        val arrival = evening / 1000 + 18 * 60
+        assertEquals("22:34", DashboardFormat.arrival(arrival, moscow, is24Hour = true, Locale.US))
+        assertEquals("10:34", DashboardFormat.arrival(arrival, moscow, is24Hour = false, Locale.US))
+        assertEquals("18", DashboardFormat.remainingMinutes(18 * 60 + 29, Locale.US))
+        assertEquals("19", DashboardFormat.remainingMinutes(18 * 60 + 30, Locale.US))
+        assertEquals("0", DashboardFormat.remainingMinutes(20, Locale.US))
+        assertEquals("125", DashboardFormat.remainingMinutes(125 * 60, Locale.US))
+        assertEquals("9,4", DashboardFormat.remainingKm(9_400, Locale.forLanguageTag("ru-RU")))
+        assertEquals("0.3", DashboardFormat.remainingKm(320, Locale.US))
+    }
+
     @Test fun tripNumbersFollowTheDesign() {
         assertEquals("9.7", DashboardFormat.decimal(9.72, Locale.US))
         assertEquals("15,9", DashboardFormat.decimal(15.9, Locale.forLanguageTag("ru-RU")))

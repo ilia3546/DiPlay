@@ -27,4 +27,12 @@ internal object DashboardFormat {
 
     fun minutesOfHour(minutes: Int?, locale: Locale = Locale.getDefault()): String =
         if (minutes == null) UNKNOWN else String.format(locale, "%02d", minutes % 60)
+
+    fun arrival(epochSeconds: Long?, zone: TimeZone, is24Hour: Boolean, locale: Locale = Locale.getDefault()): String =
+        if (epochSeconds == null) UNKNOWN else clock(epochSeconds * 1000, zone, is24Hour, locale)
+
+    fun remainingMinutes(seconds: Long?, locale: Locale = Locale.getDefault()): String =
+        if (seconds == null) UNKNOWN else String.format(locale, "%d", (seconds + 30) / 60)
+
+    fun remainingKm(meters: Long?, locale: Locale = Locale.getDefault()): String = decimal(meters?.div(1000.0), locale)
 }

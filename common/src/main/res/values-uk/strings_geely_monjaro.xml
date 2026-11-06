@@ -40,4 +40,5 @@
     <string name="custom_dashboard_unit_hours">год</string>
     <string name="custom_dashboard_unit_minutes">хв</string>
     <string name="custom_dashboard_unit_litres_per_100_km">л/100 км</string>
+    <string name="custom_dashboard_arrival">прибуття</string>
 </resources>

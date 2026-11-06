@@ -4,20 +4,25 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Outline
 import android.graphics.Paint
+import android.view.Gravity
 import android.view.View
 import android.view.ViewOutlineProvider
 import android.widget.FrameLayout
 import com.shilapi.xcertplay.MonjaroDashboardLayout as L
+import java.util.TimeZone
 
 /**
  * The centre card of the dashboard: a rounded, bordered frame around the map. The CarPlay map's view goes into
  * [surfaceContainer], the cards drawn over the map into [overlays]; both fill the map's 700x404 pixels and are
- * clipped to its corners. Without a map the card shows its neutral colour.
+ * clipped to its corners. Without a map the card shows its neutral colour. While CarPlay guides, the next turn
+ * and the arrival sit over the map.
  */
 internal class DashboardMapCard(context: Context) : FrameLayout(context) {
     val surfaceContainer = FrameLayout(context)
-    val overlays = FrameLayout(context)
+    val overlays = FrameLayout(context).apply { clipChildren = false }
     val video = DashboardMapVideo(context)
+    private val maneuver = DashboardManeuverCard(context)
+    private val arrival = DashboardArrivalCard(context)
     private val shadow = DashboardShadow(L.MAP_RADIUS, L.MAP_SHADOW_DY, L.MAP_SHADOW_BLUR, L.MAP_SHADOW)
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = L.MAP_EMPTY }
     private val border = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -43,6 +48,26 @@ internal class DashboardMapCard(context: Context) : FrameLayout(context) {
             topMargin = L.MAP_BORDER
         })
         surfaceContainer.addView(video, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        overlays.addView(maneuver, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT,
+            Gravity.TOP or Gravity.START).apply {
+            leftMargin = L.maneuverCard.left - L.map.left
+            topMargin = L.maneuverCard.top - L.map.top
+        })
+        overlays.addView(arrival, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT,
+            Gravity.TOP or Gravity.END).apply {
+            rightMargin = L.map.left + L.map.width - (L.arrivalCard.left + L.arrivalCard.width)
+            topMargin = L.arrivalCard.top - L.map.top
+        })
+        showRoute(null, is24Hour = true)
+    }
+
+    fun showRoute(route: DashboardRoute?, is24Hour: Boolean, zone: TimeZone = TimeZone.getDefault()) {
+        val visibility = if (route == null) GONE else VISIBLE
+        maneuver.visibility = visibility
+        arrival.visibility = visibility
+        if (route == null) return
+        maneuver.show(route.turn)
+        arrival.show(route, is24Hour, zone)
     }
 
     override fun draw(canvas: Canvas) {

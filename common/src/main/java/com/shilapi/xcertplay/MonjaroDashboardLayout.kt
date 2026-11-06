@@ -47,9 +47,30 @@ internal object MonjaroDashboardLayout {
      */
     val MAP_SAFE_AREA_PERCENT = AirPlayInsets(top = 25, bottom = 0, left = 8, right = 8)
 
-    /** Over the map, in display pixels; drawn by the map stage. */
+    /** Over the map, in display pixels; [width] is the widest the card grows. */
     val maneuverCard = Box(left = 626, top = 202, width = 330)
+    const val MANEUVER_PADDING_START = 12
+    const val MANEUVER_PADDING_END = 24
+    const val MANEUVER_PADDING_VERTICAL = 12
+    const val MANEUVER_RADIUS = 20f
+    const val MANEUVER_GAP = 16
+    const val MANEUVER_ICON_SIZE = 58
+    const val MANEUVER_ICON_RADIUS = 14f
+    const val MANEUVER_GLYPH_SIZE = 34
+    const val MANEUVER_DISTANCE_TEXT = 32f
+    const val MANEUVER_ROAD_TEXT = 19f
+    const val MANEUVER_ROAD_GAP = 2
+    const val MANEUVER_SHADOW_DY = 10f
+    const val MANEUVER_SHADOW_BLUR = 30f
+
+    /** Over the map, in display pixels, anchored on its right edge 626 px from the display's right. */
     val arrivalCard = Box(left = WIDTH - 626 - 230, top = 208, width = 230)
+    const val ARRIVAL_PADDING_HORIZONTAL = 20
+    const val ARRIVAL_PADDING_VERTICAL = 12
+    const val ARRIVAL_RADIUS = 18f
+    const val ARRIVAL_GAP = 18
+    const val ARRIVAL_VALUE_TEXT = 24f
+    const val ARRIVAL_LABEL_TEXT = 14f
 
     val media = Box(left = 1370, top = 200, width = 400)
     const val ARTWORK_SIZE = 200
@@ -72,6 +93,9 @@ internal object MonjaroDashboardLayout {
     const val LABEL = 0xFFB9C3D0.toInt()
     const val SECONDARY = 0xFFC9D2DE.toInt()
     const val MAP_EMPTY = 0xFF121821.toInt()
+    const val ROUTE_CARD = 0xE610141B.toInt()
+    const val ROUTE_CARD_SHADOW = 0x66000000
+    const val MANEUVER_ICON = 0xFF2F7BFF.toInt()
     const val MAP_BORDER_COLOR = 0x24FFFFFF
     const val TEXT_SHADOW = 0x73000000
     const val MAP_SHADOW = 0x73000000

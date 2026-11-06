@@ -40,4 +40,5 @@
     <string name="custom_dashboard_unit_hours">ч</string>
     <string name="custom_dashboard_unit_minutes">мин</string>
     <string name="custom_dashboard_unit_litres_per_100_km">л/100 км</string>
+    <string name="custom_dashboard_arrival">прибытие</string>
 </resources>

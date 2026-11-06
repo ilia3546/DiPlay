@@ -40,4 +40,5 @@
     <string name="custom_dashboard_unit_hours">sa</string>
     <string name="custom_dashboard_unit_minutes">dk</string>
     <string name="custom_dashboard_unit_litres_per_100_km">L/100 km</string>
+    <string name="custom_dashboard_arrival">varış</string>
 </resources>
