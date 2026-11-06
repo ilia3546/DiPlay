@@ -31,6 +31,7 @@
     <string name="settings_custom_dashboard_background_carbon">Carbono</string>
     <string name="settings_custom_dashboard_background_black">Negro</string>
     <string name="settings_custom_dashboard_background_photo">Tu foto…</string>
+    <string name="settings_custom_dashboard_change_photo">Cambiar foto</string>
     <string name="settings_custom_dashboard_dimming">Oscurecimiento del fondo</string>
     <string name="custom_dashboard_trip">Viaje actual</string>
     <string name="custom_dashboard_trip_distance">Distancia</string>

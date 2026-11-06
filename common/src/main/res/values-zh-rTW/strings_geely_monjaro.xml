@@ -31,6 +31,7 @@
     <string name="settings_custom_dashboard_background_carbon">碳纖維</string>
     <string name="settings_custom_dashboard_background_black">黑色</string>
     <string name="settings_custom_dashboard_background_photo">自己的照片…</string>
+    <string name="settings_custom_dashboard_change_photo">更換照片</string>
     <string name="settings_custom_dashboard_dimming">背景變暗</string>
     <string name="custom_dashboard_trip">本次行程</string>
     <string name="custom_dashboard_trip_distance">里程</string>

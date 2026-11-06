@@ -2201,6 +2201,17 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 render()
             }
             if (customDashboard) {
+                val pickPhoto = {
+                    launchCarButtonImagePicker(
+                        openDocument = { dashboardPhotoDocumentPicker.launch(arrayOf("image/*")) },
+                        getContent = { dashboardPhotoPicker.launch("image/*") },
+                        documentPickerIsSystem = documentPickerIsSystem(),
+                    ).onFailure {
+                        toast(getString(R.string.this_head_unit_has_no_image_picker))
+                        render()
+                    }
+                }
+                val background = AirPlayPersistence.loadDashboardBackground(this)
                 val backgrounds = DashboardBackground.entries
                 choice(card, getString(R.string.settings_custom_dashboard_background), backgrounds.map { background ->
                     when (background) {
@@ -2219,21 +2230,19 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                         DashboardBackground.BLACK -> getString(R.string.settings_custom_dashboard_background_black)
                         DashboardBackground.CUSTOM_PHOTO -> getString(R.string.settings_custom_dashboard_background_photo)
                     }
-                }, backgrounds.indexOf(AirPlayPersistence.loadDashboardBackground(this)).coerceAtLeast(0), reconnects = false) {
+                }, backgrounds.indexOf(background).coerceAtLeast(0), reconnects = false) {
                     if (backgrounds[it] == DashboardBackground.CUSTOM_PHOTO) {
-                        launchCarButtonImagePicker(
-                            openDocument = { dashboardPhotoDocumentPicker.launch(arrayOf("image/*")) },
-                            getContent = { dashboardPhotoPicker.launch("image/*") },
-                            documentPickerIsSystem = documentPickerIsSystem(),
-                        ).onFailure {
-                            toast(getString(R.string.this_head_unit_has_no_image_picker))
-                            render()
-                        }
+                        pickPhoto()
                     } else {
                         AirPlayPersistence.saveDashboardBackground(this, backgrounds[it])
                         MonjaroCustomDashboard.settingChanged()
                         render()
                     }
+                }
+                if (background == DashboardBackground.CUSTOM_PHOTO) {
+                    card.addView(button(getString(R.string.settings_custom_dashboard_change_photo), false) { pickPhoto() },
+                        matchButton(0, 60))
+                    card.addView(space(12))
                 }
                 val dimmings = DashboardBackground.dimmingPercents
                 choice(card, getString(R.string.settings_custom_dashboard_dimming),

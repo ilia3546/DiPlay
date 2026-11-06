@@ -31,6 +31,7 @@
     <string name="settings_custom_dashboard_background_carbon">Karbon</string>
     <string name="settings_custom_dashboard_background_black">Siyah</string>
     <string name="settings_custom_dashboard_background_photo">Kendi fotoğrafınız…</string>
+    <string name="settings_custom_dashboard_change_photo">Fotoğrafı değiştir</string>
     <string name="settings_custom_dashboard_dimming">Arka plan karartma</string>
     <string name="custom_dashboard_trip">Mevcut yolculuk</string>
     <string name="custom_dashboard_trip_distance">Mesafe</string>

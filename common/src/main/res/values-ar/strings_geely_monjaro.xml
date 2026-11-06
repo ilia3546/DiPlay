@@ -31,6 +31,7 @@
     <string name="settings_custom_dashboard_background_carbon">الكربون</string>
     <string name="settings_custom_dashboard_background_black">أسود</string>
     <string name="settings_custom_dashboard_background_photo">صورتك…</string>
+    <string name="settings_custom_dashboard_change_photo">تغيير الصورة</string>
     <string name="settings_custom_dashboard_dimming">تعتيم الخلفية</string>
     <string name="custom_dashboard_trip">الرحلة الحالية</string>
     <string name="custom_dashboard_trip_distance">المسافة</string>

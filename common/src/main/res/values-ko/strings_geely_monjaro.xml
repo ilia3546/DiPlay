@@ -31,6 +31,7 @@
     <string name="settings_custom_dashboard_background_carbon">카본</string>
     <string name="settings_custom_dashboard_background_black">블랙</string>
     <string name="settings_custom_dashboard_background_photo">내 사진…</string>
+    <string name="settings_custom_dashboard_change_photo">사진 변경</string>
     <string name="settings_custom_dashboard_dimming">배경 어둡게</string>
     <string name="custom_dashboard_trip">현재 주행</string>
     <string name="custom_dashboard_trip_distance">주행 거리</string>

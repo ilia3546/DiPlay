@@ -31,6 +31,7 @@
     <string name="settings_custom_dashboard_background_carbon">Карбон</string>
     <string name="settings_custom_dashboard_background_black">Чорний</string>
     <string name="settings_custom_dashboard_background_photo">Власне фото…</string>
+    <string name="settings_custom_dashboard_change_photo">Змінити фото</string>
     <string name="settings_custom_dashboard_dimming">Затемнення фону</string>
     <string name="custom_dashboard_trip">Поточна поїздка</string>
     <string name="custom_dashboard_trip_distance">Пробіг</string>
