@@ -72,6 +72,13 @@ internal object MonjaroDashboardLayout {
     const val ARRIVAL_VALUE_TEXT = 24f
     const val ARRIVAL_LABEL_TEXT = 14f
 
+    /** The parked map: its blurred frame is the video scaled down by this factor, refreshed this often. */
+    const val PARKED_BLUR_DOWNSCALE = 8
+    const val PARKED_BLUR_REFRESH_MILLIS = 500L
+    const val PARKED_FADE_MILLIS = 300L
+    const val PARKED_DIM_CENTRE = 0x99000000.toInt()
+    const val PARKED_DIM_EDGE = 0x26000000
+
     val media = Box(left = 1370, top = 200, width = 400)
     const val ARTWORK_SIZE = 200
     const val ARTWORK_RADIUS = 18f

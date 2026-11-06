@@ -39,9 +39,15 @@ internal object EcarxWheelSpeed : VehicleSpeedSource {
     private const val GEAR_EVERY_READS = 4
     private const val MAX_SAMPLES = 40
 
+    /** One poll's speed and gear, null where unread; [elapsedMillis] is on the monotonic clock since boot. */
+    data class Motion(val elapsedMillis: Long, val metersPerSecond: Double?, val gear: VehicleGear?)
+
     private var context: Context? = null
     private var sensor: Any? = null
     private var executor: ScheduledExecutorService? = null
+    private var speedSourceStarted = false
+    private var followers = 0
+    @Volatile private var latest: Motion? = null
     private val samples = ArrayList<VehicleSpeedSample>()
     private var gear: VehicleGear? = null
     private var reads = 0
@@ -67,19 +73,53 @@ internal object EcarxWheelSpeed : VehicleSpeedSource {
 
     @Synchronized
     override fun start() {
-        if (executor != null) return
+        speedSourceStarted = true
         samples.clear()
+        startPolling()
+    }
+
+    override fun stop() {
+        synchronized(this) { speedSourceStarted = false }
+        stopWhenUnused()
+    }
+
+    /** Polls for [motion] until the returned function runs, with the same reads as the iPhone's wheel speed. */
+    fun follow(appContext: Context): () -> Unit {
+        synchronized(this) {
+            attach(appContext)
+            followers++
+            startPolling()
+        }
+        var followed = true
+        return {
+            synchronized(this) {
+                if (followed) followers--
+                followed = false
+            }
+            stopWhenUnused()
+        }
+    }
+
+    /** The latest poll while [follow] or [start] keeps polling. */
+    fun motion(): Motion? = latest
+
+    @Synchronized
+    private fun startPolling() {
+        if (executor != null) return
         gear = null
         reads = 0
         firstSampleLogged = false
+        latest = null
         executor = Executors.newSingleThreadScheduledExecutor { runnable ->
             Thread(runnable, "diplay-ecarx-speed").apply { isDaemon = true }
         }.also { it.scheduleWithFixedDelay(::poll, 0, READ_MILLIS, TimeUnit.MILLISECONDS) }
         Log.i(TAG, "wheel speed started")
     }
 
-    override fun stop() {
-        val running = synchronized(this) { executor.also { executor = null } } ?: return
+    private fun stopWhenUnused() {
+        val running = synchronized(this) {
+            if (speedSourceStarted || followers > 0) null else executor.also { executor = null }
+        } ?: return
         running.shutdown()
         Log.i(TAG, "wheel speed stopped")
     }
@@ -111,8 +151,10 @@ internal object EcarxWheelSpeed : VehicleSpeedSource {
             if (changed) Log.i(TAG, "gear $next (event $event)")
         }
         val before = SystemClock.elapsedRealtime()
-        val raw = runCatching { call(sensor, "getSensorLatestValue", SENSOR_TYPE_CAR_SPEED) as Float }.getOrNull() ?: return
-        val speed = metersPerSecond(raw) ?: return
+        val raw = runCatching { call(sensor, "getSensorLatestValue", SENSOR_TYPE_CAR_SPEED) as Float }.getOrNull()
+        val speed = raw?.let(::metersPerSecond)
+        latest = Motion(SystemClock.elapsedRealtime(), speed, synchronized(this) { gear })
+        if (raw == null || speed == null) return
         val sample = VehicleSpeedSample((before + SystemClock.elapsedRealtime()) / 2, speed)
         synchronized(this) {
             if (samples.size == MAX_SAMPLES) samples.removeAt(0)

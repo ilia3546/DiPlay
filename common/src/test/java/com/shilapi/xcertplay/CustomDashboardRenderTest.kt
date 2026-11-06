@@ -1,5 +1,6 @@
 package com.shilapi.xcertplay
 
+import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -8,17 +9,21 @@ import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Shader
 import android.net.Uri
+import android.os.Looper
 import android.view.View
 import com.shilapi.xcertplay.hud.ClusterTurnGuidance
 import java.io.File
+import java.time.Duration
 import java.util.TimeZone
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
@@ -105,8 +110,24 @@ class CustomDashboardRenderTest {
         assertEquals("the map below the cards", Color.rgb(0x12, 0x18, 0x21), frame.getPixel(960, 500))
     }
 
-    private fun render(name: String?, setUp: MonjaroDashboardView.() -> Unit): Bitmap {
-        val view = MonjaroDashboardView(context).apply {
+    @Test fun theParkedMapIsDimmedTowardTheCentre() {
+        val frame = render("map-parked", attached = true) {
+            showBackground(DashboardBackground.OCEAN, 0) { null }
+            showTemperature(6.4f)
+            map.video.showParked(true)
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(MonjaroDashboardLayout.PARKED_FADE_MILLIS * 2))
+        }
+        val centre = Color.red(frame.getPixel(960, 390)) + Color.blue(frame.getPixel(960, 390))
+        val edge = Color.red(frame.getPixel(660, 560)) + Color.blue(frame.getPixel(660, 560))
+        assertTrue(centre < edge)
+        assertTrue(edge < 0x12 + 0x21)
+    }
+
+    /** [attached] puts the view in an activity's window first, so that its animations run. */
+    private fun render(name: String?, attached: Boolean = false, setUp: MonjaroDashboardView.() -> Unit): Bitmap {
+        val view = MonjaroDashboardView(context)
+        if (attached) Robolectric.buildActivity(Activity::class.java).setup().visible().get().setContentView(view)
+        view.apply {
             showTime(evening, is24Hour = true, zone = moscow)
             setUp()
         }
