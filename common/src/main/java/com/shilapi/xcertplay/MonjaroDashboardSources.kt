@@ -22,6 +22,8 @@ internal class MonjaroDashboardSources(private val view: MonjaroDashboardView) :
     private val main = Handler(Looper.getMainLooper())
     private var stopObservingSettings: (() -> Unit)? = null
     private var stopObservingGlance: (() -> Unit)? = null
+    private var stopObservingConnection: (() -> Unit)? = null
+    private var stopObservingStream: (() -> Unit)? = null
     private var stopFollowingSpeed: (() -> Unit)? = null
     private val parking = DashboardParking()
     private val media = DashboardMediaFeed(view.media)
@@ -53,9 +55,13 @@ internal class MonjaroDashboardSources(private val view: MonjaroDashboardView) :
         showBackground()
         stopObservingSettings = MonjaroCustomDashboard.observeSettings(::showBackground)
         EcarxCarData.start(app, view::showTemperature)
-        stopObservingGlance = CarPlayGlance.observe { snapshot -> main.post { showRoute(snapshot) } }
+        // A snapshot delivered late may be older than the glance; the post reads it again.
+        stopObservingGlance = CarPlayGlance.observe { main.post { showRoute(CarPlayGlance.snapshot()) } }
         routeTick.run()
-        MapMirrors.addStreamListener(streamChanged)
+        stopObservingStream = DashboardMapStream.observeStream(streamChanged)
+        stopObservingConnection = CarPlayGlance.observeConnection(main::post) { connected ->
+            if (!connected) view.map.video.streamStopped()
+        }
         stopFollowingSpeed = EcarxWheelSpeed.follow(app)
         parkingTick.run()
         media.start()
@@ -69,7 +75,10 @@ internal class MonjaroDashboardSources(private val view: MonjaroDashboardView) :
         stopObservingGlance?.invoke()
         stopObservingGlance = null
         main.removeCallbacks(routeTick)
-        MapMirrors.removeStreamListener(streamChanged)
+        stopObservingStream?.invoke()
+        stopObservingStream = null
+        stopObservingConnection?.invoke()
+        stopObservingConnection = null
         stopFollowingSpeed?.invoke()
         stopFollowingSpeed = null
         main.removeCallbacks(parkingTick)

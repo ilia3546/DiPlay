@@ -6,6 +6,7 @@ import com.shilapi.xcertplay.iap2.message.LaneGuidanceLane
 import com.shilapi.xcertplay.hud.BydHudRouteState
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -47,6 +48,20 @@ class CarPlayGlanceTest {
         assertEquals(listOf(false, true), first)
         assertEquals(listOf(false, true, false), second)
         assertEquals(listOf(true, false, true), listened)
+    }
+
+    @Test
+    fun aConnectionObserverEndsOnTheCurrentLevelWhenChangesArriveOutOfOrder() {
+        val posted = mutableListOf<Runnable>()
+        val seen = mutableListOf<Boolean>()
+        val stop = CarPlayGlance.observeConnection(posted::add) { seen += it }
+        posted.removeAt(0).run()
+        CarPlayGlance.setConnected(true)
+        CarPlayGlance.setConnected(false)
+        posted.reversed().forEach(Runnable::run)
+        stop()
+        assertEquals(listOf(false, false, false), seen)
+        assertFalse(CarPlayGlance.isConnected)
     }
 
     @Test

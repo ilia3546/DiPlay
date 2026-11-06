@@ -50,6 +50,17 @@ object CarPlayGlance {
         return { observers.remove(observer) }
     }
 
+    /** Whether a CarPlay session is active now, whatever the snapshots still on their way say. */
+    val isConnected: Boolean get() = synchronized(this) { connected }
+
+    /**
+     * Follows [isConnected] on another thread: [post] moves each change there, and [observer] reads the level
+     * only when it runs. Changes of two threads are notified outside the lock and may arrive in either order;
+     * the last call still has the current level.
+     */
+    fun observeConnection(post: (Runnable) -> Unit, observer: (Boolean) -> Unit): () -> Unit =
+        observe { post(Runnable { observer(isConnected) }) }
+
     /** Lane guidance from 0x5204, on the iAP2 thread; empty when the lane strip goes away. */
     @Volatile var laneListener: ((List<LaneGuidanceLane>) -> Unit)? = null
 

@@ -196,7 +196,7 @@ internal object MonjaroCustomDashboard {
             log = { Log.i(TAG, it) },
         )
         state = created
-        CarPlayGlance.observe { snapshot -> main.post { created.connectedChanged(snapshot.connected) } }
+        CarPlayGlance.observeConnection(main::post, created::connectedChanged)
     }
 
     fun releaseStale(context: Context) = mode.releaseStale(context.applicationContext)

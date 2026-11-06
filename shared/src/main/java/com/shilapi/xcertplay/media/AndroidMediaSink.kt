@@ -28,6 +28,7 @@ import com.shilapi.xcertplay.hud.BydBluetoothSuspend
 import java.io.Closeable
 import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
@@ -257,6 +258,7 @@ class AndroidMediaSink(
     private val activeScreenTypes = mutableSetOf<Int>()
     private var defaultSurface = surface
     @Volatile private var screenStreamActiveChanged = onScreenStreamActiveChanged
+    private val screenStreamObservers = CopyOnWriteArraySet<(Int, Boolean) -> Unit>()
     private val surfaces = ConcurrentHashMap<Int, Surface>()
     private val videoDecoders = ConcurrentHashMap<Int, VideoDecoder>()
     // Surface capture, worker publication, retirement and detach snapshots share one ownership boundary.
@@ -477,6 +479,18 @@ class AndroidMediaSink(
         }
     }
 
+    /**
+     * Like [setScreenStreamActiveChangedListener], for any number of observers that outlive the screen hosting the
+     * session: [observer] hears the active streams at once and each change until the returned function runs.
+     */
+    fun observeScreenStreams(observer: (Int, Boolean) -> Unit): () -> Unit {
+        synchronized(screenStateLock) {
+            screenStreamObservers.add(observer)
+            activeScreenTypes.forEach { observer(it, true) }
+        }
+        return { screenStreamObservers.remove(observer) }
+    }
+
     override fun onVideoCodec(type: Int, codec: VideoCodec) {
         synchronized(videoOwnershipLock) {
             if (!videoClosed) pendingVideoCodec[type] = codec
@@ -528,6 +542,7 @@ class AndroidMediaSink(
         synchronized(screenStateLock) {
             if (active) activeScreenTypes.add(type) else activeScreenTypes.remove(type)
             screenStreamActiveChanged?.invoke(type, active)
+            screenStreamObservers.forEach { it(type, active) }
         }
     }
 
@@ -669,9 +684,13 @@ class AndroidMediaSink(
             }
         }
         synchronized(screenStateLock) {
-            activeScreenTypes.forEach { screenStreamActiveChanged?.invoke(it, false) }
+            activeScreenTypes.forEach { type ->
+                screenStreamActiveChanged?.invoke(type, false)
+                screenStreamObservers.forEach { it(type, false) }
+            }
             activeScreenTypes.clear()
             screenStreamActiveChanged = null
+            screenStreamObservers.clear()
         }
         videoRecoveryHandlers.clear()
         videoDiagnosticHandlers.clear()
