@@ -1551,7 +1551,8 @@ open class CarPlayHostActivity : ComponentActivity() {
                 !adbClusterConfigured && controller != null) {
                 ClusterActivityOutput.setStreamActive(false)
                 reconnectAfterLoss("DiLink 4 cluster confirmed; requesting its native stream")
-            } else if (clusterOutputReady() && clusterStreamOwner() != ClusterStreamOwner.CUSTOM_DASHBOARD) {
+            } else if (clusterOutputReady() &&
+                clusterStreamOwner().let { it != ClusterStreamOwner.CUSTOM_DASHBOARD && it != ClusterStreamOwner.NONE }) {
                 sink?.setSurface(SCREEN_TYPE_ALT, surface)
             }
         }
@@ -6545,6 +6546,7 @@ open class CarPlayHostActivity : ComponentActivity() {
     }
 
     private fun clusterStreamOwner(): ClusterStreamOwner = ClusterStreamOwner.of(
+        customDashboardStream = MonjaroCustomDashboard.sessionStream,
         customDashboard = MonjaroCustomDashboard.sessionEnabled,
         clusterMapEnabled = AirPlayPersistence.loadClusterMapEnabled(this),
         clusterSurfaceReady = clusterOutputReady() && clusterSurface != null,

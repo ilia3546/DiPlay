@@ -56,6 +56,10 @@ internal class CustomDashboardState(
     /** Whether the session being configured or running has the custom dashboard. */
     var sessionEnabled = false
         private set
+
+    /** Whether the session's cluster stream was sized for the dashboard; turning the option off keeps it so. */
+    var sessionStream = false
+        private set
     private var terminating = false
     private var watching = false
     private var generation = 0L
@@ -69,6 +73,7 @@ internal class CustomDashboardState(
 
     fun sessionStarting(): Boolean {
         sessionEnabled = enabled()
+        sessionStream = sessionEnabled
         update()
         return sessionEnabled
     }
@@ -177,6 +182,9 @@ internal object MonjaroCustomDashboard {
 
     /** Main thread: whether the running session has the custom dashboard, until the option is turned off. */
     val sessionEnabled: Boolean get() = state?.sessionEnabled ?: false
+
+    /** Main thread: whether the running session's cluster stream was sized for the dashboard. */
+    val sessionStream: Boolean get() = state?.sessionStream ?: false
 
     fun settingChanged() {
         main.post {

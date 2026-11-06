@@ -221,7 +221,13 @@ class CustomDashboardStateTest {
         assertEquals(listOf("session", "watch", "show"), events)
         state.settingChanged()
         assertFalse(state.sessionEnabled)
+        assertTrue("the stream stays sized for the dashboard", state.sessionStream)
         assertEquals(listOf("session", "watch", "show", "unwatch", "exit", "hide"), events)
+        state.connectedChanged(false)
+        advance(CustomDashboardState.SESSION_END_GRACE_MILLIS)
+        assertTrue(state.sessionStream)
+        assertFalse("the next session reads the option again", state.sessionStarting())
+        assertFalse(state.sessionStream)
     }
 
     @Test fun turningTheOptionOnAfterTheConfigurationWaitsForTheNextSession() {
@@ -230,6 +236,7 @@ class CustomDashboardStateTest {
         flag = true
         state.connectedChanged(true)
         assertFalse(state.sessionEnabled)
+        assertFalse(state.sessionStream)
         assertEquals(emptyList<String>(), events)
     }
 
