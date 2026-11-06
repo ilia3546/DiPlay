@@ -120,16 +120,30 @@ object CarPlayGlance {
         val changed = synchronized(this) {
             if (connected == next) return
             connected = next
-            if (next) {
-                session++
-            } else {
-                route.clear()
-                song.clear()
-                lanes = null
-            }
+            if (next) session++ else clearSessionLocked()
             publishLocked()
         }
         changed?.let(::notify)
+    }
+
+    /**
+     * An AirPlay session became active. One that replaces the active session is another session too: it drops the
+     * route, lanes and song of the session it replaces.
+     */
+    fun sessionStarted() {
+        val changed = synchronized(this) {
+            if (connected) clearSessionLocked()
+            connected = true
+            session++
+            publishLocked()
+        }
+        changed?.let(::notify)
+    }
+
+    private fun clearSessionLocked() {
+        route.clear()
+        song.clear()
+        lanes = null
     }
 
     /**

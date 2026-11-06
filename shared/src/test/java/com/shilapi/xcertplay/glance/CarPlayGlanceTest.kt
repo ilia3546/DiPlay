@@ -218,6 +218,32 @@ class CarPlayGlanceTest {
     }
 
     @Test
+    fun aSessionThatReplacesTheActiveOneIsAnotherSessionWithoutTheOldRoute() {
+        CarPlayGlance.sessionStarted()
+        val first = CarPlayGlance.snapshot().session
+        routeTo(3)
+        threeLanes()
+        CarPlayGlance.onFrame(frame(0x5001) { group(0) { string(1, "Song") } })
+        assertEquals("Song", CarPlayGlance.snapshot().song)
+
+        CarPlayGlance.sessionStarted()
+        val replaced = CarPlayGlance.snapshot()
+        assertTrue(replaced.connected)
+        assertEquals(first + 1, replaced.session)
+        assertNull(replaced.maneuverType)
+        assertNull(replaced.maneuverIndex)
+        assertNull(replaced.lanes)
+        assertNull(replaced.song)
+    }
+
+    @Test
+    fun theFirstSessionKeepsGuidanceThatCameBeforeIt() {
+        routeTo(3)
+        CarPlayGlance.sessionStarted()
+        assertEquals(3, CarPlayGlance.snapshot().maneuverIndex)
+    }
+
+    @Test
     fun theLaneStripBelongsToTheManeuverItArrivedOnAndReplaysToLateObservers() {
         CarPlayGlance.setConnected(true)
         routeTo(3)
