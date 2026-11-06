@@ -5,6 +5,7 @@ import com.shilapi.xcertplay.hud.ClusterSongState
 import com.shilapi.xcertplay.iap2.message.Iap2LaneGuidance
 import com.shilapi.xcertplay.iap2.message.LaneGuidanceLane
 import com.shilapi.xcertplay.iap2.wire.Iap2Frame
+import java.util.concurrent.CopyOnWriteArraySet
 
 /**
  * What CarPlay is doing, at a glance, for widgets and other screens outside CarPlay: the next
@@ -37,6 +38,18 @@ object CarPlayGlance {
     /** Called with each new snapshot, on the thread that changed it. */
     @Volatile var listener: ((Snapshot) -> Unit)? = null
 
+    private val observers = CopyOnWriteArraySet<(Snapshot) -> Unit>()
+
+    /**
+     * Calls [observer] with the current snapshot now and with each new one, on the thread that changed it, until
+     * the returned function runs. Unlike [listener], any number of observers may follow the glance.
+     */
+    fun observe(observer: (Snapshot) -> Unit): () -> Unit {
+        observers.add(observer)
+        observer(synchronized(this) { last })
+        return { observers.remove(observer) }
+    }
+
     /** Lane guidance from 0x5204, on the iAP2 thread; empty when the lane strip goes away. */
     @Volatile var laneListener: ((List<LaneGuidanceLane>) -> Unit)? = null
 
@@ -46,7 +59,7 @@ object CarPlayGlance {
     /** Refresh time-dependent guidance even when no new metadata frame has arrived. */
     fun snapshot(): Snapshot {
         val (changed, current) = synchronized(this) { publishLocked() to last }
-        changed?.let { listener?.invoke(it) }
+        changed?.let(::notify)
         return current
     }
 
@@ -71,7 +84,7 @@ object CarPlayGlance {
             }
             publishLocked()
         }
-        changed?.let { listener?.invoke(it) }
+        changed?.let(::notify)
     }
 
     fun setConnected(next: Boolean) {
@@ -84,7 +97,7 @@ object CarPlayGlance {
             }
             publishLocked()
         }
-        changed?.let { listener?.invoke(it) }
+        changed?.let(::notify)
     }
 
     /**
@@ -99,6 +112,11 @@ object CarPlayGlance {
         return "lanes=${lanes.size} [$strip] raw=" + payload.joinToString("") {
             "%02x".format(it.toInt() and 0xff)
         }
+    }
+
+    private fun notify(changed: Snapshot) {
+        listener?.invoke(changed)
+        observers.forEach { it(changed) }
     }
 
     private fun publishLocked(): Snapshot? {

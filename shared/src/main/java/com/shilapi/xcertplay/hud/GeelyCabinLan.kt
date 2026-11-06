@@ -10,6 +10,8 @@ import com.shilapi.xcertplay.network.RootShell
  */
 internal object GeelyCabinLan {
     const val MUSIC = 0x1001
+    const val ENGINEERING_MODE = 0x1005
+    const val ENGINEERING_MODE_SWITCH = 0x10
     private const val CABIN_LAN_MSG_COMMON = 1114113
     private const val SERVICE = "com.desaysv.ivi.vds.cabinlan.service.CabinLanService"
     private val HELPER_FAILURE = Regex("FAILED [A-Za-z0-9_$]{1,80}")

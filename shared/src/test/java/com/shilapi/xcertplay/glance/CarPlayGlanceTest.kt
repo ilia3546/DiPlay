@@ -29,6 +29,27 @@ class CarPlayGlanceTest {
     fun clear() = reset()
 
     @Test
+    fun everyObserverAndTheListenerFollowTheSessionUntilTheyLeave() {
+        val listened = mutableListOf<Boolean>()
+        val first = mutableListOf<Boolean>()
+        val second = mutableListOf<Boolean>()
+        CarPlayGlance.listener = { listened += it.connected }
+        val stopFirst = CarPlayGlance.observe { first += it.connected }
+        val stopSecond = CarPlayGlance.observe { second += it.connected }
+        assertEquals("an observer hears the current state at once", listOf(false), first)
+
+        CarPlayGlance.setConnected(true)
+        stopFirst()
+        CarPlayGlance.setConnected(false)
+        stopSecond()
+        CarPlayGlance.setConnected(true)
+
+        assertEquals(listOf(false, true), first)
+        assertEquals(listOf(false, true, false), second)
+        assertEquals(listOf(true, false, true), listened)
+    }
+
+    @Test
     fun followsTheNextTurnAndTheSong() {
         val seen = mutableListOf<CarPlayGlance.Snapshot>()
         CarPlayGlance.listener = { seen += it }

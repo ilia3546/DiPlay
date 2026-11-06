@@ -33,6 +33,7 @@ internal object CrashRecord {
                 file.parentFile?.mkdirs()
                 file.writeText(format(thread.name, error, System.currentTimeMillis()))
             }
+            runCatching { MonjaroCustomDashboard.exitNow() }
             previous?.uncaughtException(thread, error)
         }
     }
@@ -70,10 +71,16 @@ internal object CrashRecord {
     }
 }
 
-/** Installs [CrashRecord] when the process starts, before any activity, receiver or service runs. */
+/**
+ * Installs [CrashRecord] and [MonjaroCustomDashboard] when the process starts, before any activity, receiver or
+ * service runs.
+ */
 class CrashRecordInstaller : ContentProvider() {
     override fun onCreate(): Boolean {
-        context?.let(CrashRecord::install)
+        context?.let {
+            CrashRecord.install(it)
+            MonjaroCustomDashboard.install(it)
+        }
         return true
     }
 

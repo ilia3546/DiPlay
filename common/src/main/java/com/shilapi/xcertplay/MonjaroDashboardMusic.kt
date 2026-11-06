@@ -5,8 +5,6 @@ import android.os.Handler
 import android.os.Looper
 import com.shilapi.xcertplay.hud.DashboardMusic
 import com.shilapi.xcertplay.hud.GeelyDashboardMusic
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 /**
  * Feeds the CarPlay track to the stock Monjaro A3 dashboard and media widgets while a CarPlay session is
@@ -65,16 +63,9 @@ internal object MonjaroDashboardMusic {
         }
     }
 
-    /** Waits off the main thread for the dashboard work asked for so far, such as the empty card at shutdown. */
-    fun awaitIdle(timeoutMillis: Long): Boolean {
-        val idle = CountDownLatch(1)
-        main.post { dashboard.whenIdle(idle::countDown) }
-        return try {
-            idle.await(timeoutMillis, TimeUnit.MILLISECONDS)
-        } catch (_: InterruptedException) {
-            Thread.currentThread().interrupt()
-            false
-        }
+    /** Runs [done] on the dashboard worker once the work asked for so far, such as the empty card at shutdown, is done. */
+    fun whenIdle(done: () -> Unit) {
+        main.post { dashboard.whenIdle(done) }
     }
 
     private fun refresh() {

@@ -393,6 +393,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         // A previous run may have been killed while it held the cluster projection; hand it back
         // before showing anything, so the cluster is not left on DiPlay's last frame.
         GeelyClusterProjection.releaseStale(applicationContext)
+        MonjaroCustomDashboard.releaseStale(applicationContext)
         PhoneAudioRoute.attach(applicationContext)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         if (Build.VERSION.SDK_INT >= 28) {
@@ -2171,6 +2172,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             toggle(card, getString(R.string.settings_custom_dashboard),
                 getString(R.string.settings_custom_dashboard_description), customDashboard) {
                 AirPlayPersistence.saveCustomDashboard(this, it)
+                MonjaroCustomDashboard.settingChanged()
                 if (it) {
                     if (!CenterMapOverlay.permitted(this)) openOverlayPermission()
                     markReconnectNeeded()
