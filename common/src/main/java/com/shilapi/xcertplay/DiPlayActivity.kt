@@ -345,6 +345,27 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         refreshCarButton()
         carButtonSaved()
     }
+    private val dashboardPhotoPicker = registerForActivityResult(ActivityResultContracts.GetContent(), ::saveDashboardPhoto)
+    private val dashboardPhotoDocumentPicker =
+        registerForActivityResult(ActivityResultContracts.OpenDocument(), ::saveDashboardPhoto)
+    private fun saveDashboardPhoto(uri: Uri?) {
+        if (uri == null) {
+            render()
+            return
+        }
+        Thread({
+            val saved = DashboardPhoto.save(applicationContext, uri)
+            if (saved) {
+                AirPlayPersistence.saveDashboardBackground(applicationContext, DashboardBackground.CUSTOM_PHOTO)
+                MonjaroCustomDashboard.settingChanged()
+            }
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                if (!saved) toast(getString(R.string.could_not_save_image))
+                render()
+            }
+        }, "diplay-dashboard-photo").start()
+    }
     private val export = registerForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
         if (uri != null) exportDiagnostics(uri)
     }
@@ -2180,7 +2201,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 render()
             }
             if (customDashboard) {
-                val backgrounds = DashboardBackground.presets
+                val backgrounds = DashboardBackground.entries
                 choice(card, getString(R.string.settings_custom_dashboard_background), backgrounds.map { background ->
                     when (background) {
                         DashboardBackground.OCEAN -> getString(R.string.settings_custom_dashboard_background_ocean)
@@ -2196,12 +2217,23 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                         DashboardBackground.VIOLET -> getString(R.string.settings_custom_dashboard_background_violet)
                         DashboardBackground.CARBON -> getString(R.string.settings_custom_dashboard_background_carbon)
                         DashboardBackground.BLACK -> getString(R.string.settings_custom_dashboard_background_black)
-                        DashboardBackground.CUSTOM_PHOTO -> background.name
+                        DashboardBackground.CUSTOM_PHOTO -> getString(R.string.settings_custom_dashboard_background_photo)
                     }
                 }, backgrounds.indexOf(AirPlayPersistence.loadDashboardBackground(this)).coerceAtLeast(0), reconnects = false) {
-                    AirPlayPersistence.saveDashboardBackground(this, backgrounds[it])
-                    MonjaroCustomDashboard.settingChanged()
-                    render()
+                    if (backgrounds[it] == DashboardBackground.CUSTOM_PHOTO) {
+                        launchCarButtonImagePicker(
+                            openDocument = { dashboardPhotoDocumentPicker.launch(arrayOf("image/*")) },
+                            getContent = { dashboardPhotoPicker.launch("image/*") },
+                            documentPickerIsSystem = documentPickerIsSystem(),
+                        ).onFailure {
+                            toast(getString(R.string.this_head_unit_has_no_image_picker))
+                            render()
+                        }
+                    } else {
+                        AirPlayPersistence.saveDashboardBackground(this, backgrounds[it])
+                        MonjaroCustomDashboard.settingChanged()
+                        render()
+                    }
                 }
                 val dimmings = DashboardBackground.dimmingPercents
                 choice(card, getString(R.string.settings_custom_dashboard_dimming),

@@ -1,8 +1,13 @@
 package com.shilapi.xcertplay
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.LinearGradient
+import android.graphics.Paint
+import android.graphics.Shader
+import android.net.Uri
 import android.view.View
 import java.io.File
 import java.util.TimeZone
@@ -28,6 +33,7 @@ class CustomDashboardRenderTest {
 
     @After fun clean() {
         context.getSharedPreferences("xcertplay_airplay", 0).edit().clear().commit()
+        DashboardPhoto.file(context).delete()
     }
 
     @Test fun everyPresetRendersAroundAnEmptyMapCard() {
@@ -49,6 +55,29 @@ class CustomDashboardRenderTest {
         val bright = Color.blue(plain.getPixel(960, 660))
         assertTrue(bright > 0)
         assertTrue(Color.blue(dimmed.getPixel(960, 660)) < bright)
+    }
+
+    @Test fun aSavedPhotoFillsTheDashboard() {
+        val source = File(context.cacheDir, "landscape.png")
+        val picture = Bitmap.createBitmap(2400, 1800, Bitmap.Config.ARGB_8888)
+        Canvas(picture).apply {
+            drawPaint(Paint().apply {
+                shader = LinearGradient(0f, 0f, 0f, 1800f, intArrayOf(Color.rgb(250, 170, 90), Color.rgb(60, 90, 160),
+                    Color.rgb(20, 60, 40)), floatArrayOf(0f, 0.55f, 1f), Shader.TileMode.CLAMP)
+            })
+            drawCircle(1700f, 700f, 160f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(255, 240, 200) })
+        }
+        source.outputStream().use { picture.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        picture.recycle()
+        assertTrue(DashboardPhoto.save(context, Uri.fromFile(source)))
+        val saved = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(DashboardPhoto.file(context).path, saved)
+        assertEquals(1920 to 720, saved.outWidth to saved.outHeight)
+        assertEquals("image/jpeg", saved.outMimeType)
+        AirPlayPersistence.saveDashboardBackground(context, DashboardBackground.CUSTOM_PHOTO)
+        val dimming = AirPlayPersistence.loadDashboardDimmingPercent(context)
+        assertEquals(20, dimming)
+        render("photo-dimmed-20") { showBackground(DashboardBackground.CUSTOM_PHOTO, dimming) { DashboardPhoto.load(context) } }
     }
 
     @Test fun theTemperatureAndAPlayingTrack() {

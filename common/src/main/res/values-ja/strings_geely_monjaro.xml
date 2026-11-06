@@ -30,6 +30,7 @@
     <string name="settings_custom_dashboard_background_violet">薄暮</string>
     <string name="settings_custom_dashboard_background_carbon">カーボン</string>
     <string name="settings_custom_dashboard_background_black">ブラック</string>
+    <string name="settings_custom_dashboard_background_photo">自分の写真…</string>
     <string name="settings_custom_dashboard_dimming">背景の暗さ</string>
     <string name="custom_dashboard_trip">現在のトリップ</string>
     <string name="custom_dashboard_trip_distance">走行距離</string>

@@ -30,6 +30,7 @@
     <string name="settings_custom_dashboard_background_violet">Crepuscolo</string>
     <string name="settings_custom_dashboard_background_carbon">Carbonio</string>
     <string name="settings_custom_dashboard_background_black">Nero</string>
+    <string name="settings_custom_dashboard_background_photo">La tua foto…</string>
     <string name="settings_custom_dashboard_dimming">Oscuramento dello sfondo</string>
     <string name="custom_dashboard_trip">Viaggio attuale</string>
     <string name="custom_dashboard_trip_distance">Distanza</string>

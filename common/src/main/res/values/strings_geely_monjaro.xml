@@ -30,6 +30,7 @@
     <string name="settings_custom_dashboard_background_violet">Twilight</string>
     <string name="settings_custom_dashboard_background_carbon">Carbon</string>
     <string name="settings_custom_dashboard_background_black">Black</string>
+    <string name="settings_custom_dashboard_background_photo">Your photo…</string>
     <string name="settings_custom_dashboard_dimming">Background dimming</string>
     <string name="custom_dashboard_trip">Current trip</string>
     <string name="custom_dashboard_trip_distance">Distance</string>

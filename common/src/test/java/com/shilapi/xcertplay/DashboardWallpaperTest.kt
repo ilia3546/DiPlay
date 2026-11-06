@@ -45,4 +45,12 @@ class DashboardWallpaperTest {
         assertEquals(Rect(0, 0, 1920, 720), centerCrop(1920, 720, 1920, 720))
         assertEquals(Rect(367, 0, 633, 100), centerCrop(1000, 100, 1920, 720))
     }
+
+    @Test fun aPictureIsDecodedAtTheSmallestSizeThatStillFillsTheDashboard() {
+        assertEquals(2, DashboardPhoto.sampleSize(4000, 3000, 1920, 720))
+        assertEquals(1, DashboardPhoto.sampleSize(1920, 720, 1920, 720))
+        assertEquals(1, DashboardPhoto.sampleSize(800, 600, 1920, 720))
+        assertEquals(4, DashboardPhoto.sampleSize(8000, 6000, 1920, 720))
+        assertEquals(1, DashboardPhoto.sampleSize(3000, 1000, 1920, 720))
+    }
 }
