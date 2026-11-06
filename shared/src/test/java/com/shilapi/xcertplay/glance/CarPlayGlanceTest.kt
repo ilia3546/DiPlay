@@ -192,4 +192,106 @@ class CarPlayGlanceTest {
         assertTrue(strips[1].isEmpty())
         assertEquals(before, CarPlayGlance.snapshot())
     }
+
+    private fun routeTo(index: Int, type: Int = 2) {
+        CarPlayGlance.onFrame(frame(0x5202) { u16(1, index); u8(3, type) })
+        CarPlayGlance.onFrame(frame(0x5201) { u8(1, 1); u32(0x0a, 300); u16List(0x0d, listOf(index)) })
+    }
+
+    private fun threeLanes() = CarPlayGlance.onFrame(frame(0x5204) {
+        group(2) { u16(0, 0); u8(1, 0); i16(2, -90) }
+        group(2) { u16(0, 1); u8(1, 0); i16(2, 0) }
+        group(2) { u16(0, 2); u8(1, 2); i16(2, 0); i16(3, 90) }
+    })
+
+    @Test
+    fun theSnapshotCarriesTheManeuverIndexAndTheSession() {
+        CarPlayGlance.setConnected(true)
+        val first = CarPlayGlance.snapshot().session
+        routeTo(4)
+        assertEquals(4, CarPlayGlance.snapshot().maneuverIndex)
+        CarPlayGlance.setConnected(false)
+        assertEquals(0L, CarPlayGlance.snapshot().session)
+        assertNull(CarPlayGlance.snapshot().maneuverIndex)
+        CarPlayGlance.setConnected(true)
+        assertEquals(first + 1, CarPlayGlance.snapshot().session)
+    }
+
+    @Test
+    fun theLaneStripBelongsToTheManeuverItArrivedOnAndReplaysToLateObservers() {
+        CarPlayGlance.setConnected(true)
+        routeTo(3)
+        threeLanes()
+        val strip = CarPlayGlance.snapshot().lanes!!
+        assertEquals(3, strip.maneuverIndex)
+        assertEquals(listOf(0, 1, 2), strip.lanes.map { it.index })
+
+        val late = mutableListOf<CarPlayGlance.LaneStrip?>()
+        val stop = CarPlayGlance.observeLanes { late += it }
+        stop()
+        assertEquals(listOf<CarPlayGlance.LaneStrip?>(strip), late)
+        val snapshots = mutableListOf<CarPlayGlance.Snapshot>()
+        CarPlayGlance.observe { snapshots += it }()
+        assertEquals(strip, snapshots.single().lanes)
+    }
+
+    @Test
+    fun anEmptyStripANewManeuverAndTheSessionEndClearTheLanes() {
+        CarPlayGlance.setConnected(true)
+        routeTo(3)
+        threeLanes()
+        CarPlayGlance.onFrame(frame(0x5204) { })
+        assertNull("an empty strip", CarPlayGlance.snapshot().lanes)
+
+        threeLanes()
+        routeTo(4)
+        assertNull("the next maneuver", CarPlayGlance.snapshot().lanes)
+
+        threeLanes()
+        CarPlayGlance.setConnected(false)
+        assertNull("the session end", CarPlayGlance.snapshot().lanes)
+        CarPlayGlance.setConnected(true)
+        assertNull(CarPlayGlance.snapshot().lanes)
+    }
+
+    @Test
+    fun aStripWithoutAManeuverIsNotKept() {
+        CarPlayGlance.setConnected(true)
+        threeLanes()
+        assertNull(CarPlayGlance.snapshot().lanes)
+    }
+
+    @Test
+    fun expiredGuidanceTakesItsLanesAlong() {
+        withRouteClock { advance ->
+            CarPlayGlance.setConnected(true)
+            routeTo(3)
+            threeLanes()
+            advance(30_000_000_000L)
+            assertNull(CarPlayGlance.snapshot().lanes)
+        }
+    }
+
+    @Test
+    fun twoLaneObserversHearEachChangeOnceUntilTheyLeave() {
+        CarPlayGlance.setConnected(true)
+        routeTo(3)
+        val first = mutableListOf<Int?>()
+        val second = mutableListOf<Int?>()
+        val stopFirst = CarPlayGlance.observeLanes { first += it?.lanes?.size }
+        val stopSecond = CarPlayGlance.observeLanes { second += it?.lanes?.size }
+
+        threeLanes()
+        // Apple Maps repeats the strip while the overlap lasts; a repeat is not a change.
+        threeLanes()
+        // The distance changes, the strip does not.
+        CarPlayGlance.onFrame(frame(0x5201) { u8(1, 1); u32(0x0a, 200); u16List(0x0d, listOf(3)) })
+        stopFirst()
+        CarPlayGlance.onFrame(frame(0x5204) { })
+        stopSecond()
+        threeLanes()
+
+        assertEquals(listOf(null, 3), first)
+        assertEquals(listOf(null, 3, null), second)
+    }
 }

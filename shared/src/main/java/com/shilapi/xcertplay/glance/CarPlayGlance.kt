@@ -9,14 +9,20 @@ import java.util.concurrent.CopyOnWriteArraySet
 
 /**
  * What CarPlay is doing, at a glance, for widgets and other screens outside CarPlay: the next
- * maneuver from iAP2 route guidance (0x5201/0x5202) and the song from NowPlayingUpdate (0x5001).
+ * maneuver from iAP2 route guidance (0x5201/0x5202) with its lanes (0x5204), and the song from
+ * NowPlayingUpdate (0x5001).
  * Fed by every CarPlay session, whatever the BYD output settings.
  */
 object CarPlayGlance {
-    /** One state of the glance; [maneuverType] is Apple's RouteGuidanceManeuverType, null without a route. */
+    /**
+     * One state of the glance; [maneuverType] is Apple's RouteGuidanceManeuverType, null without a route.
+     * [session] counts the sessions of the process while one is connected, and is 0 between them.
+     */
     data class Snapshot(
         val connected: Boolean = false,
+        val session: Long = 0,
         val maneuverType: Int? = null,
+        val maneuverIndex: Int? = null,
         val drivingSide: Int = 0,
         val distanceMeters: Int = 0,
         val road: String = "",
@@ -25,7 +31,11 @@ object CarPlayGlance {
         val remainingMeters: Long? = null,
         val song: String? = null,
         val playing: Boolean = false,
+        val lanes: LaneStrip? = null,
     )
+
+    /** The last lane strip from 0x5204, with the index of the maneuver that was next when it arrived. */
+    data class LaneStrip(val maneuverIndex: Int, val lanes: List<LaneGuidanceLane>)
 
     private const val LANE_GUIDANCE_UPDATE = 0x5204
     private const val TAG = "DiPlay-Lane"
@@ -33,12 +43,15 @@ object CarPlayGlance {
     private val route = BydHudRouteState()
     private val song = ClusterSongState()
     private var connected = false
+    private var session = 0L
+    private var lanes: LaneStrip? = null
     private var last = Snapshot()
 
     /** Called with each new snapshot, on the thread that changed it. */
     @Volatile var listener: ((Snapshot) -> Unit)? = null
 
     private val observers = CopyOnWriteArraySet<(Snapshot) -> Unit>()
+    private val laneObservers = CopyOnWriteArraySet<(LaneStrip?) -> Unit>()
 
     /**
      * Calls [observer] with the current snapshot now and with each new one, on the thread that changed it, until
@@ -61,6 +74,16 @@ object CarPlayGlance {
     fun observeConnection(post: (Runnable) -> Unit, observer: (Boolean) -> Unit): () -> Unit =
         observe { post(Runnable { observer(isConnected) }) }
 
+    /**
+     * Calls [observer] with the current lane strip now and with each change, on the thread that changed it, until the
+     * returned function runs; null when there is none.
+     */
+    fun observeLanes(observer: (LaneStrip?) -> Unit): () -> Unit {
+        laneObservers.add(observer)
+        observer(synchronized(this) { last.lanes })
+        return { laneObservers.remove(observer) }
+    }
+
     /** Lane guidance from 0x5204, on the iAP2 thread; empty when the lane strip goes away. */
     @Volatile var laneListener: ((List<LaneGuidanceLane>) -> Unit)? = null
 
@@ -78,12 +101,18 @@ object CarPlayGlance {
         if (frame.messageId == LANE_GUIDANCE_UPDATE) {
             // Lane guidance is a side channel: log it, hand it to whoever draws lanes, and leave
             // the route/now-playing state alone.
-            val lanes = runCatching { Iap2LaneGuidance.parse(frame.payload) }.getOrDefault(emptyList())
-            if (lanes != loggedLanes) {
-                loggedLanes = lanes
-                android.util.Log.i(TAG, "0x5204 " + describeLanes(lanes, frame.payload))
+            val strip = runCatching { Iap2LaneGuidance.parse(frame.payload) }.getOrDefault(emptyList())
+            if (strip != loggedLanes) {
+                loggedLanes = strip
+                android.util.Log.i(TAG, "0x5204 " + describeLanes(strip, frame.payload))
             }
-            laneListener?.invoke(lanes)
+            laneListener?.invoke(strip)
+            val changed = synchronized(this) {
+                val index = route.currentApple()?.index
+                lanes = if (strip.isEmpty() || index == null) null else LaneStrip(index, strip)
+                publishLocked()
+            }
+            changed?.let(::notify)
             return
         }
         val changed = synchronized(this) {
@@ -102,9 +131,12 @@ object CarPlayGlance {
         val changed = synchronized(this) {
             if (connected == next) return
             connected = next
-            if (!next) {
+            if (next) {
+                session++
+            } else {
                 route.clear()
                 song.clear()
+                lanes = null
             }
             publishLocked()
         }
@@ -125,17 +157,23 @@ object CarPlayGlance {
         }
     }
 
-    private fun notify(changed: Snapshot) {
-        listener?.invoke(changed)
-        observers.forEach { it(changed) }
+    private fun notify(changed: Published) {
+        listener?.invoke(changed.snapshot)
+        observers.forEach { it(changed.snapshot) }
+        if (changed.lanesChanged) laneObservers.forEach { it(changed.snapshot.lanes) }
     }
 
-    private fun publishLocked(): Snapshot? {
+    private class Published(val snapshot: Snapshot, val lanesChanged: Boolean)
+
+    private fun publishLocked(): Published? {
         val maneuver = route.currentApple()
+        if (lanes?.maneuverIndex != maneuver?.index) lanes = null
         val current = song.current()
         val next = Snapshot(
             connected = connected,
+            session = if (connected) session else 0,
             maneuverType = maneuver?.type,
+            maneuverIndex = maneuver?.index,
             drivingSide = maneuver?.drivingSide ?: 0,
             distanceMeters = maneuver?.distanceMeters ?: 0,
             road = maneuver?.road.orEmpty(),
@@ -144,9 +182,11 @@ object CarPlayGlance {
             remainingMeters = maneuver?.remainingMeters,
             song = current?.text,
             playing = current?.playing ?: false,
+            lanes = lanes,
         )
         if (next == last) return null
+        val lanesChanged = next.lanes != last.lanes
         last = next
-        return next
+        return Published(next, lanesChanged)
     }
 }

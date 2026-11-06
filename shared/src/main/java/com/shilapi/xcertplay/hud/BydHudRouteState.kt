@@ -18,6 +18,8 @@ internal data class BydAppleManeuver(
     val remainingSeconds: Long? = null,
     val remainingMeters: Long? = null,
     val arrivalEpochSeconds: Long? = null,
+    /** The maneuver's place in the route's maneuver list (0x5202 field 1). */
+    val index: Int? = null,
 )
 
 internal enum class BydHudRouteChange {
@@ -82,7 +84,7 @@ internal class BydHudRouteState(
         val maneuver = activeManeuver() ?: return null
         return BydAppleManeuver(
             distanceMeters, maneuver.type, maneuver.drivingSide,
-            roadFor(maneuver), remainingSeconds, remainingMeters, arrivalEpochSeconds,
+            roadFor(maneuver), remainingSeconds, remainingMeters, arrivalEpochSeconds, activeIndex,
         )
     }
 
