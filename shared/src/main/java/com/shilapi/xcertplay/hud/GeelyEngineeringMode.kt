@@ -57,7 +57,8 @@ internal class EngineeringModeLink(
     /** Runs a task on the same worker after the delay. */
     private val schedule: (delayMillis: Long, Runnable) -> Unit,
     private val sendEnter: (json: String) -> Boolean,
-    private val sendExit: (json: String) -> Boolean,
+    /** Gives the root helper up to [rootTimeoutMillis] once the app's own process was refused. */
+    private val sendExit: (json: String, rootTimeoutMillis: Long) -> Boolean,
     private val claim: EngineeringModeClaim,
     private val supported: () -> Boolean,
     private val newSession: () -> Unit = {},
@@ -91,10 +92,13 @@ internal class EngineeringModeLink(
         }
     })
 
-    /** On the caller's thread: for a crashing process, whose worker may never run again. */
+    /**
+     * On the caller's thread: for a crashing process, whose worker may never run again. The root helper gets
+     * [CRASH_EXIT_ROOT_TIMEOUT_MILLIS], not the time a first root prompt needs, so the crash is not held up.
+     */
     fun exitNow() {
         if (!supported() || !claim.held) return
-        if (sendExit(GeelyEngineeringModeMessages.switch(false))) claim.set(false)
+        if (sendExit(GeelyEngineeringModeMessages.switch(false), CRASH_EXIT_ROOT_TIMEOUT_MILLIS)) claim.set(false)
     }
 
     /** Runs [done] on the worker once the work asked for before this call is done. */
@@ -134,7 +138,7 @@ internal class EngineeringModeLink(
         heldInProcess = false
         entered = false
         if (!supported() || !claim.held) return
-        if (sendExit(GeelyEngineeringModeMessages.switch(false))) {
+        if (sendExit(GeelyEngineeringModeMessages.switch(false), RootShell.DEFAULT_TIMEOUT_MILLIS)) {
             claim.set(false)
             log("engineering mode left")
             return
@@ -148,6 +152,7 @@ internal class EngineeringModeLink(
     companion object {
         const val EXIT_RETRIES = 3
         const val EXIT_RETRY_MILLIS = 2_000L
+        const val CRASH_EXIT_ROOT_TIMEOUT_MILLIS = 3_000L
     }
 }
 
@@ -199,14 +204,14 @@ object GeelyEngineeringMode : EngineeringMode {
     private fun create(app: Context): EngineeringModeLink {
         val apk = app.applicationInfo.sourceDir.orEmpty()
         val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val root = { json: String ->
+        val root = { json: String, timeoutMillis: Long ->
             GeelyCabinLan.rootFailure(RootShell.runWithInput(
                 GeelyCabinLan.rootCommand(apk, GeelyCabinLan.ENGINEERING_MODE, GeelyCabinLan.ENGINEERING_MODE_SWITCH),
-                json.toByteArray(Charsets.UTF_8)))
+                json.toByteArray(Charsets.UTF_8), timeoutMillis))
         }
         val sender = GeelyCabinLan.Sender(
             direct = GeelyCabinLan::sendDirect,
-            root = { _, _, json -> root(json) },
+            root = { _, _, json -> root(json, RootShell.DEFAULT_TIMEOUT_MILLIS) },
             log = { Log.i(TAG, it) },
         )
         return EngineeringModeLink(
@@ -215,7 +220,7 @@ object GeelyEngineeringMode : EngineeringMode {
             sendEnter = { json ->
                 sender.send(GeelyCabinLan.ENGINEERING_MODE, GeelyCabinLan.ENGINEERING_MODE_SWITCH, json)
             },
-            sendExit = { json -> sendAroundBackOff(json, root) },
+            sendExit = { json, rootTimeoutMillis -> sendAroundBackOff(json) { root(it, rootTimeoutMillis) } },
             claim = object : EngineeringModeClaim {
                 override val held: Boolean get() = prefs.getBoolean(KEY_CLAIMED, false)
 

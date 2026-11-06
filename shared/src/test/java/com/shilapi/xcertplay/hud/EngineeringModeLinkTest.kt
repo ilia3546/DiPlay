@@ -1,5 +1,6 @@
 package com.shilapi.xcertplay.hud
 
+import com.shilapi.xcertplay.network.RootShell
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -12,6 +13,7 @@ class EngineeringModeLinkTest {
     private val delayed = mutableListOf<Pair<Long, Runnable>>()
     private val events = mutableListOf<String>()
     private val logs = mutableListOf<String>()
+    private val rootTimeouts = mutableListOf<Long>()
     private var supported = true
     private var enterWorks = true
     private var exitWorks = true
@@ -37,8 +39,9 @@ class EngineeringModeLinkTest {
             onEnter()
             enterWorks
         },
-        sendExit = { json ->
+        sendExit = { json, rootTimeoutMillis ->
             events += "send $json"
+            rootTimeouts += rootTimeoutMillis
             exitWorks
         },
         claim = claim,
@@ -171,6 +174,18 @@ class EngineeringModeLinkTest {
         runWorker()
         link.exitNow()
         assertEquals(listOf("claim true", "send $enter", "send $exit", "claim false"), events)
+    }
+
+    @Test fun aCrashGivesTheRootHelperAShortTimeoutAndAnOrdinaryExitTheFullOne() {
+        link.enter { true }
+        runWorker()
+        link.exit()
+        runWorker()
+        link.enter { true }
+        runWorker()
+        link.exitNow()
+        assertEquals(listOf(RootShell.DEFAULT_TIMEOUT_MILLIS, EngineeringModeLink.CRASH_EXIT_ROOT_TIMEOUT_MILLIS), rootTimeouts)
+        assertTrue(EngineeringModeLink.CRASH_EXIT_ROOT_TIMEOUT_MILLIS <= 3_000L)
     }
 
     @Test fun nothingIsSentOnAnyOtherHeadUnit() {
