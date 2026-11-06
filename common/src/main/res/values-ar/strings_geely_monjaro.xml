@@ -22,6 +22,21 @@
     <string name="settings_custom_dashboard_background_dusk">الغروب</string>
     <string name="settings_custom_dashboard_background_neon">نيون</string>
     <string name="settings_custom_dashboard_background_graphite">الجرافيت</string>
+    <string name="settings_custom_dashboard_background_midnight">منتصف الليل</string>
+    <string name="settings_custom_dashboard_background_forest">الغابة</string>
+    <string name="settings_custom_dashboard_background_dunes">الكثبان</string>
+    <string name="settings_custom_dashboard_background_magma">الحمم</string>
+    <string name="settings_custom_dashboard_background_ice">الجليد</string>
+    <string name="settings_custom_dashboard_background_violet">الشفق</string>
+    <string name="settings_custom_dashboard_background_carbon">الكربون</string>
     <string name="settings_custom_dashboard_background_black">أسود</string>
     <string name="settings_custom_dashboard_dimming">تعتيم الخلفية</string>
+    <string name="custom_dashboard_trip">الرحلة الحالية</string>
+    <string name="custom_dashboard_trip_distance">المسافة</string>
+    <string name="custom_dashboard_trip_time">مدة القيادة</string>
+    <string name="custom_dashboard_trip_consumption">متوسط الاستهلاك</string>
+    <string name="custom_dashboard_unit_km">كم</string>
+    <string name="custom_dashboard_unit_hours">س</string>
+    <string name="custom_dashboard_unit_minutes">د</string>
+    <string name="custom_dashboard_unit_litres_per_100_km">لتر/100 كم</string>
 </resources>

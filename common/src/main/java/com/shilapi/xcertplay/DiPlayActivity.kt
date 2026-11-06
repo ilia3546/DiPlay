@@ -2188,17 +2188,27 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                         DashboardBackground.DUSK -> getString(R.string.settings_custom_dashboard_background_dusk)
                         DashboardBackground.NEON -> getString(R.string.settings_custom_dashboard_background_neon)
                         DashboardBackground.GRAPHITE -> getString(R.string.settings_custom_dashboard_background_graphite)
+                        DashboardBackground.MIDNIGHT -> getString(R.string.settings_custom_dashboard_background_midnight)
+                        DashboardBackground.FOREST -> getString(R.string.settings_custom_dashboard_background_forest)
+                        DashboardBackground.DUNES -> getString(R.string.settings_custom_dashboard_background_dunes)
+                        DashboardBackground.MAGMA -> getString(R.string.settings_custom_dashboard_background_magma)
+                        DashboardBackground.ICE -> getString(R.string.settings_custom_dashboard_background_ice)
+                        DashboardBackground.VIOLET -> getString(R.string.settings_custom_dashboard_background_violet)
+                        DashboardBackground.CARBON -> getString(R.string.settings_custom_dashboard_background_carbon)
                         DashboardBackground.BLACK -> getString(R.string.settings_custom_dashboard_background_black)
                         DashboardBackground.CUSTOM_PHOTO -> background.name
                     }
                 }, backgrounds.indexOf(AirPlayPersistence.loadDashboardBackground(this)).coerceAtLeast(0), reconnects = false) {
                     AirPlayPersistence.saveDashboardBackground(this, backgrounds[it])
+                    MonjaroCustomDashboard.settingChanged()
+                    render()
                 }
                 val dimmings = DashboardBackground.dimmingPercents
                 choice(card, getString(R.string.settings_custom_dashboard_dimming),
                     dimmings.map { getString(R.string.percent_value, it) },
                     dimmings.indexOf(AirPlayPersistence.loadDashboardDimmingPercent(this)).coerceAtLeast(0), reconnects = false) {
                     AirPlayPersistence.saveDashboardDimmingPercent(this, dimmings[it])
+                    MonjaroCustomDashboard.settingChanged()
                 }
             }
         }

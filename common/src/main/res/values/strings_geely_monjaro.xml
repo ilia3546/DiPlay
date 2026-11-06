@@ -22,6 +22,21 @@
     <string name="settings_custom_dashboard_background_dusk">Dusk</string>
     <string name="settings_custom_dashboard_background_neon">Neon</string>
     <string name="settings_custom_dashboard_background_graphite">Graphite</string>
+    <string name="settings_custom_dashboard_background_midnight">Midnight</string>
+    <string name="settings_custom_dashboard_background_forest">Forest</string>
+    <string name="settings_custom_dashboard_background_dunes">Dunes</string>
+    <string name="settings_custom_dashboard_background_magma">Magma</string>
+    <string name="settings_custom_dashboard_background_ice">Ice</string>
+    <string name="settings_custom_dashboard_background_violet">Twilight</string>
+    <string name="settings_custom_dashboard_background_carbon">Carbon</string>
     <string name="settings_custom_dashboard_background_black">Black</string>
     <string name="settings_custom_dashboard_dimming">Background dimming</string>
+    <string name="custom_dashboard_trip">Current trip</string>
+    <string name="custom_dashboard_trip_distance">Distance</string>
+    <string name="custom_dashboard_trip_time">Driving time</string>
+    <string name="custom_dashboard_trip_consumption">Avg. consumption</string>
+    <string name="custom_dashboard_unit_km">km</string>
+    <string name="custom_dashboard_unit_hours">h</string>
+    <string name="custom_dashboard_unit_minutes">min</string>
+    <string name="custom_dashboard_unit_litres_per_100_km">L/100 km</string>
 </resources>

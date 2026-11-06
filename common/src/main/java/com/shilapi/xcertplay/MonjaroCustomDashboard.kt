@@ -8,6 +8,7 @@ import android.view.View
 import com.shilapi.xcertplay.glance.CarPlayGlance
 import com.shilapi.xcertplay.hud.EngineeringMode
 import com.shilapi.xcertplay.hud.GeelyEngineeringMode
+import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -135,9 +136,10 @@ internal object MonjaroCustomDashboard {
     private const val TAG = "DiPlay-CustomDashboard"
     private val main = Handler(Looper.getMainLooper())
     internal var mode: EngineeringMode = GeelyEngineeringMode
-    @Volatile var content: MonjaroDashboardContent = MonjaroDashboardContent { View(it) }
+    @Volatile var content: MonjaroDashboardContent = MonjaroDashboardContent(MonjaroDashboardSources::create)
     @Volatile private var app: Context? = null
     private var state: CustomDashboardState? = null
+    private val settingsObservers = CopyOnWriteArraySet<() -> Unit>()
 
     /** At process start, on the main thread, before any activity, receiver or service runs. */
     fun install(context: Context) {
@@ -162,7 +164,16 @@ internal object MonjaroCustomDashboard {
     fun releaseStale(context: Context) = mode.releaseStale(context.applicationContext)
 
     fun settingChanged() {
-        main.post { state?.settingChanged() }
+        main.post {
+            state?.settingChanged()
+            settingsObservers.forEach { it() }
+        }
+    }
+
+    /** Calls [observer] on the main thread after each [settingChanged], until the returned function runs. */
+    fun observeSettings(observer: () -> Unit): () -> Unit {
+        settingsObservers.add(observer)
+        return { settingsObservers.remove(observer) }
     }
 
     /** The process is about to be killed. */

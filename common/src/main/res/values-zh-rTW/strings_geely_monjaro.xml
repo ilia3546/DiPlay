@@ -22,6 +22,21 @@
     <string name="settings_custom_dashboard_background_dusk">黃昏</string>
     <string name="settings_custom_dashboard_background_neon">霓虹</string>
     <string name="settings_custom_dashboard_background_graphite">石墨</string>
+    <string name="settings_custom_dashboard_background_midnight">午夜</string>
+    <string name="settings_custom_dashboard_background_forest">森林</string>
+    <string name="settings_custom_dashboard_background_dunes">沙丘</string>
+    <string name="settings_custom_dashboard_background_magma">岩漿</string>
+    <string name="settings_custom_dashboard_background_ice">冰</string>
+    <string name="settings_custom_dashboard_background_violet">暮色</string>
+    <string name="settings_custom_dashboard_background_carbon">碳纖維</string>
     <string name="settings_custom_dashboard_background_black">黑色</string>
     <string name="settings_custom_dashboard_dimming">背景變暗</string>
+    <string name="custom_dashboard_trip">本次行程</string>
+    <string name="custom_dashboard_trip_distance">里程</string>
+    <string name="custom_dashboard_trip_time">行駛時間</string>
+    <string name="custom_dashboard_trip_consumption">平均油耗</string>
+    <string name="custom_dashboard_unit_km">公里</string>
+    <string name="custom_dashboard_unit_hours">小時</string>
+    <string name="custom_dashboard_unit_minutes">分鐘</string>
+    <string name="custom_dashboard_unit_litres_per_100_km">公升/百公里</string>
 </resources>

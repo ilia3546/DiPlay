@@ -22,6 +22,21 @@
     <string name="settings_custom_dashboard_background_dusk">夕暮れ</string>
     <string name="settings_custom_dashboard_background_neon">ネオン</string>
     <string name="settings_custom_dashboard_background_graphite">グラファイト</string>
+    <string name="settings_custom_dashboard_background_midnight">真夜中</string>
+    <string name="settings_custom_dashboard_background_forest">森</string>
+    <string name="settings_custom_dashboard_background_dunes">砂丘</string>
+    <string name="settings_custom_dashboard_background_magma">マグマ</string>
+    <string name="settings_custom_dashboard_background_ice">氷</string>
+    <string name="settings_custom_dashboard_background_violet">薄暮</string>
+    <string name="settings_custom_dashboard_background_carbon">カーボン</string>
     <string name="settings_custom_dashboard_background_black">ブラック</string>
     <string name="settings_custom_dashboard_dimming">背景の暗さ</string>
+    <string name="custom_dashboard_trip">現在のトリップ</string>
+    <string name="custom_dashboard_trip_distance">走行距離</string>
+    <string name="custom_dashboard_trip_time">走行時間</string>
+    <string name="custom_dashboard_trip_consumption">平均燃費</string>
+    <string name="custom_dashboard_unit_km">km</string>
+    <string name="custom_dashboard_unit_hours">時間</string>
+    <string name="custom_dashboard_unit_minutes">分</string>
+    <string name="custom_dashboard_unit_litres_per_100_km">L/100km</string>
 </resources>

@@ -6,6 +6,13 @@ enum class DashboardBackground {
     DUSK,
     NEON,
     GRAPHITE,
+    MIDNIGHT,
+    FOREST,
+    DUNES,
+    MAGMA,
+    ICE,
+    VIOLET,
+    CARBON,
     BLACK,
     CUSTOM_PHOTO;
 

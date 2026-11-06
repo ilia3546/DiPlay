@@ -22,6 +22,21 @@
     <string name="settings_custom_dashboard_background_dusk">노을</string>
     <string name="settings_custom_dashboard_background_neon">네온</string>
     <string name="settings_custom_dashboard_background_graphite">그래파이트</string>
+    <string name="settings_custom_dashboard_background_midnight">한밤중</string>
+    <string name="settings_custom_dashboard_background_forest">숲</string>
+    <string name="settings_custom_dashboard_background_dunes">사구</string>
+    <string name="settings_custom_dashboard_background_magma">마그마</string>
+    <string name="settings_custom_dashboard_background_ice">얼음</string>
+    <string name="settings_custom_dashboard_background_violet">황혼</string>
+    <string name="settings_custom_dashboard_background_carbon">카본</string>
     <string name="settings_custom_dashboard_background_black">블랙</string>
     <string name="settings_custom_dashboard_dimming">배경 어둡게</string>
+    <string name="custom_dashboard_trip">현재 주행</string>
+    <string name="custom_dashboard_trip_distance">주행 거리</string>
+    <string name="custom_dashboard_trip_time">주행 시간</string>
+    <string name="custom_dashboard_trip_consumption">평균 연비</string>
+    <string name="custom_dashboard_unit_km">km</string>
+    <string name="custom_dashboard_unit_hours">시간</string>
+    <string name="custom_dashboard_unit_minutes">분</string>
+    <string name="custom_dashboard_unit_litres_per_100_km">L/100km</string>
 </resources>

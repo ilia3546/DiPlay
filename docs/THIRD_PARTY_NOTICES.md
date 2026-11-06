@@ -40,6 +40,10 @@ DiPlay vendors [Concentus](https://github.com/lostromb/concentus), Logan Strombe
 
 Concentus uses the Opus BSD-style license. The full copyright notices, redistribution conditions and disclaimer are retained in [the vendored LICENSE file](../shared/src/main/java/org/concentus/LICENSE). The [vendoring notes](../shared/src/main/java/org/concentus/README.md) identify the source commit.
 
+## Onest font
+
+The custom dashboard of the Monjaro A3 card draws its text in [Onest](https://github.com/googlefonts/onest), Copyright 2021 The Onest Project Authors. Onest is licensed under the SIL Open Font License, Version 1.1. The unmodified variable font file and the full license text are in `common/src/main/assets/fonts/onest/`.
+
 ## Experimental authentication data
 
 The public preview APK includes an accessory certificate/key pair recovered from public Carlinkit C2Air Allwinner V821 firmware during the owner's local investigation. These data are not newly generated Apple-issued credentials for DiPlay and are not relicensed as project source code. They are bundled in the preview APK to reproduce the offline experiment; continued acceptance and suitability for general distribution are unresolved. The source archive does not contain the private key, and the separate Android APK-signing key is never distributed.
