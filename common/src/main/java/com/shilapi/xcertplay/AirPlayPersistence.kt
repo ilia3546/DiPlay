@@ -13,6 +13,7 @@ import com.shilapi.xcertplay.airplay.AirPlayIdentity
 import com.shilapi.xcertplay.airplay.PairingStore
 import com.shilapi.xcertplay.airplay.SafeAreaCodec
 import com.shilapi.xcertplay.airplay.SafeAreaRect
+import com.shilapi.xcertplay.hud.HudSettings
 import com.shilapi.xcertplay.media.MicrophoneInput
 import com.shilapi.xcertplay.orchestration.ManualHotspotBand
 import com.shilapi.xcertplay.orchestration.ManualHotspotSecurity
@@ -140,6 +141,12 @@ object AirPlayPersistence {
     private const val KEY_CUSTOM_DASHBOARD = "monjaro_custom_dashboard"
     private const val KEY_DASHBOARD_BACKGROUND = "monjaro_dashboard_background"
     private const val KEY_DASHBOARD_DIMMING = "monjaro_dashboard_dimming_percent"
+    private const val KEY_HUD_MANEUVERS = "monjaro_hud_maneuvers"
+    private const val KEY_HUD_DENSITY = "monjaro_hud_density"
+    private const val KEY_HUD_HEIGHT = "monjaro_hud_height"
+    private const val KEY_HUD_SCALE = "monjaro_hud_scale_percent"
+    private const val KEY_HUD_LANES = "monjaro_hud_lanes"
+    private const val KEY_HUD_TRIP = "monjaro_hud_trip"
     private const val KEY_BT_SUSPEND_DELAY = "bt_suspend_delay_seconds"
     private const val KEY_LOCATION_REPORTING_ENABLED = "location_reporting_enabled"
     private const val KEY_EXTERNAL_CONTROLLER = "external_controller"
@@ -643,6 +650,58 @@ object AirPlayPersistence {
     fun saveDashboardDimmingPercent(context: Context, percent: Int) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putInt(KEY_DASHBOARD_DIMMING, percent).apply()
+    }
+
+    fun loadHudManeuvers(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_HUD_MANEUVERS, false)
+
+    fun saveHudManeuvers(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putBoolean(KEY_HUD_MANEUVERS, enabled).apply()
+    }
+
+    fun loadHudDensity(context: Context): HudSettings.Variant {
+        val name = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_HUD_DENSITY, null)
+        return HudSettings.Variant.entries.firstOrNull { it.name == name } ?: HudSettings.Variant.BALANCED
+    }
+
+    fun saveHudDensity(context: Context, density: HudSettings.Variant) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putString(KEY_HUD_DENSITY, density.name).apply()
+    }
+
+    fun loadHudHeight(context: Context): Int =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(KEY_HUD_HEIGHT, HudSettings.DEFAULT_Y)
+            .takeIf { it in MonjaroA3Options.hudHeights } ?: HudSettings.DEFAULT_Y
+
+    fun saveHudHeight(context: Context, height: Int) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putInt(KEY_HUD_HEIGHT, height).apply()
+    }
+
+    fun loadHudScalePercent(context: Context): Int =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(KEY_HUD_SCALE, HudSettings.DEFAULT_SCALE)
+            .takeIf { it in MonjaroA3Options.hudScalePercents } ?: HudSettings.DEFAULT_SCALE
+
+    fun saveHudScalePercent(context: Context, percent: Int) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putInt(KEY_HUD_SCALE, percent).apply()
+    }
+
+    fun loadHudLanes(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_HUD_LANES, true)
+
+    fun saveHudLanes(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putBoolean(KEY_HUD_LANES, enabled).apply()
+    }
+
+    fun loadHudTrip(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_HUD_TRIP, true)
+
+    fun saveHudTrip(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putBoolean(KEY_HUD_TRIP, enabled).apply()
     }
 
     fun saveBtSuspendDuringCarplay(context: Context, enabled: Boolean) {

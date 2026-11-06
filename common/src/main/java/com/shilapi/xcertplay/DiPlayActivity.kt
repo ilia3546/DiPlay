@@ -66,6 +66,7 @@ import com.shilapi.xcertplay.telecom.PhoneAudioRoute
 import com.shilapi.xcertplay.hud.BydVehicleField
 import com.shilapi.xcertplay.hud.BydVehicleFieldStore
 import com.shilapi.xcertplay.hud.BydVehicleProbeOutcome
+import com.shilapi.xcertplay.hud.HudSettings
 import com.shilapi.xcertplay.host.R
 import com.shilapi.xcertplay.media.AmbientColorMode
 import com.shilapi.xcertplay.media.AmbientColorSpeed
@@ -2250,6 +2251,45 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     dimmings.indexOf(AirPlayPersistence.loadDashboardDimmingPercent(this)).coerceAtLeast(0), reconnects = false) {
                     AirPlayPersistence.saveDashboardDimmingPercent(this, dimmings[it])
                     MonjaroCustomDashboard.settingChanged()
+                }
+            }
+            val hudManeuvers = AirPlayPersistence.loadHudManeuvers(this)
+            toggle(card, getString(R.string.settings_hud_maneuvers),
+                getString(R.string.settings_hud_maneuvers_description), hudManeuvers) {
+                AirPlayPersistence.saveHudManeuvers(this, it)
+                if (it && !CenterMapOverlay.permitted(this)) openOverlayPermission()
+                render()
+            }
+            if (hudManeuvers) {
+                val densities = HudSettings.Variant.entries
+                choice(card, getString(R.string.settings_hud_density), densities.map { density ->
+                    when (density) {
+                        HudSettings.Variant.COMPACT -> getString(R.string.settings_hud_density_compact)
+                        HudSettings.Variant.BALANCED -> getString(R.string.settings_hud_density_balanced)
+                        HudSettings.Variant.BOLD -> getString(R.string.settings_hud_density_large)
+                    }
+                }, densities.indexOf(AirPlayPersistence.loadHudDensity(this)), reconnects = false) {
+                    AirPlayPersistence.saveHudDensity(this, densities[it])
+                }
+                val heights = MonjaroA3Options.hudHeights
+                choice(card, getString(R.string.settings_hud_height), listOf(R.string.settings_hud_height_highest,
+                    R.string.settings_hud_height_high, R.string.settings_hud_height_middle, R.string.settings_hud_height_low,
+                    R.string.settings_hud_height_lowest).map(::getString),
+                    heights.indexOf(AirPlayPersistence.loadHudHeight(this)), reconnects = false) {
+                    AirPlayPersistence.saveHudHeight(this, heights[it])
+                }
+                val scales = MonjaroA3Options.hudScalePercents
+                choice(card, getString(R.string.settings_hud_scale), scales.map { getString(R.string.percent_value, it) },
+                    scales.indexOf(AirPlayPersistence.loadHudScalePercent(this)), reconnects = false) {
+                    AirPlayPersistence.saveHudScalePercent(this, scales[it])
+                }
+                toggle(card, getString(R.string.settings_hud_lanes), getString(R.string.settings_hud_lanes_description),
+                    AirPlayPersistence.loadHudLanes(this)) {
+                    AirPlayPersistence.saveHudLanes(this, it)
+                }
+                toggle(card, getString(R.string.settings_hud_trip), getString(R.string.settings_hud_trip_description),
+                    AirPlayPersistence.loadHudTrip(this)) {
+                    AirPlayPersistence.saveHudTrip(this, it)
                 }
             }
         }

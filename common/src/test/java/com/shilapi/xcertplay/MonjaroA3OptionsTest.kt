@@ -1,9 +1,11 @@
 package com.shilapi.xcertplay
 
 import android.content.Context
+import com.shilapi.xcertplay.hud.HudSettings
 import com.shilapi.xcertplay.media.MicrophoneInput
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -25,6 +27,12 @@ class MonjaroA3OptionsTest {
         AirPlayPersistence.saveCustomDashboard(context, true)
         AirPlayPersistence.saveDashboardBackground(context, DashboardBackground.NEON)
         AirPlayPersistence.saveDashboardDimmingPercent(context, 40)
+        AirPlayPersistence.saveHudManeuvers(context, true)
+        AirPlayPersistence.saveHudDensity(context, HudSettings.Variant.BOLD)
+        AirPlayPersistence.saveHudHeight(context, 260)
+        AirPlayPersistence.saveHudScalePercent(context, 80)
+        AirPlayPersistence.saveHudLanes(context, false)
+        AirPlayPersistence.saveHudTrip(context, false)
     }
 
     @Test fun everyOptionIsOffByDefault() {
@@ -43,7 +51,36 @@ class MonjaroA3OptionsTest {
         ShadowBuild.setModel("KX11-A3-L1")
         assertEquals(MonjaroA3Options(rootHotspotDetails = true, disconnectPhoneBluetooth = true, hotspotAudioFirewall = true,
             microphoneInput = MicrophoneInput.ALL_CABIN_MICROPHONES, dashboardMusic = true, customDashboard = true,
-            dashboardBackground = DashboardBackground.NEON, dashboardDimmingPercent = 40), MonjaroA3Options.load(context))
+            dashboardBackground = DashboardBackground.NEON, dashboardDimmingPercent = 40, hudManeuvers = true,
+            hudDensity = HudSettings.Variant.BOLD, hudHeight = 260, hudScalePercent = 80, hudLanes = false, hudTrip = false),
+            MonjaroA3Options.load(context))
+    }
+
+    @Test fun theHudIsOffAndDrawsTheBalancedLineAt215And65PercentWithLanesAndTripByDefault() {
+        val options = MonjaroA3Options.load(context, monjaroA3 = true)
+        assertFalse(options.hudManeuvers)
+        val settings = options.hudSettings
+        assertEquals(HudSettings.Variant.BALANCED, settings.variant)
+        assertEquals(215, settings.centerY)
+        assertEquals(65, settings.scalePercent)
+        assertTrue(settings.showLanes)
+        assertTrue(settings.showTrip)
+    }
+
+    @Test fun everyHudPresetIsInsideTheDrawingRange() {
+        assertEquals(listOf(120, 170, 215, 260, 310), MonjaroA3Options.hudHeights)
+        assertEquals(listOf(50, 65, 80, 100), MonjaroA3Options.hudScalePercents)
+        for (height in MonjaroA3Options.hudHeights) for (scale in MonjaroA3Options.hudScalePercents) {
+            HudSettings(HudSettings.Variant.BOLD, height, scale, true, true)
+        }
+    }
+
+    @Test fun anUnknownSavedHudPresetFallsBackToTheDefault() {
+        AirPlayPersistence.saveHudHeight(context, 200)
+        AirPlayPersistence.saveHudScalePercent(context, 70)
+        val options = MonjaroA3Options.load(context, monjaroA3 = true)
+        assertEquals(215, options.hudHeight)
+        assertEquals(65, options.hudScalePercent)
     }
 
     @Test fun theCustomDashboardIsOffOnTheOceanPresetWithoutDimmingByDefault() {
