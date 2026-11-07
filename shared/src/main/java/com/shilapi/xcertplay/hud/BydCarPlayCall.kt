@@ -7,6 +7,7 @@ import android.util.Log
 import com.shilapi.xcertplay.compat.Base64Compat
 import com.shilapi.xcertplay.iap2.body.Iap2BodyReader
 import com.shilapi.xcertplay.iap2.wire.Iap2Frame
+import com.shilapi.xcertplay.network.GeelyHeadUnit
 import com.shilapi.xcertplay.telecom.PhoneAudioRoute
 import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.Executors
@@ -235,7 +236,7 @@ object BydCarPlayCall {
     private fun carCard(): CarPlayCallCard? = current()?.copy(number = "")
 
     fun onFrame(frame: Iap2Frame) {
-        trace.line(frame)?.let { Log.i(TAG, it) }
+        if (GeelyHeadUnit.monjaroA3) trace.line(frame)?.let { Log.i(TAG, it) }
         val (changed, card) = synchronized(state) { state.accept(frame) to carCard() }
         if (changed) {
             Log.i(TAG, "CarPlay call ${card?.phase ?: "ended"}")

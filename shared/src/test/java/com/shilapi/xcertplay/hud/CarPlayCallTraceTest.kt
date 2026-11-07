@@ -48,6 +48,18 @@ class CarPlayCallTraceTest {
     }
 
     @Test
+    fun aCommunicationsUpdateThatOnlyMovesTheSignalIsNotLoggedAgain() {
+        fun communications(signal: Int, muted: Boolean) = Iap2Messages.buildRaw(CarPlayCallState.COMMUNICATIONS_UPDATE) {
+            u8(0, signal)
+            bool(8, muted)
+        }
+        assertEquals("CommunicationsUpdate 0x4158 0=3 8=0", trace.line(communications(3, false)))
+        assertNull(trace.line(communications(4, false)))
+        assertNull(trace.line(communications(2, false)))
+        assertEquals("CommunicationsUpdate 0x4158 0=2 8=1", trace.line(communications(2, true)))
+    }
+
+    @Test
     fun theSessionAsksForTheCallLabelDisconnectReasonAndMuteStatus() {
         fun requested(messageId: Int) = Iap2ParameterList.parse(
             Iap2ControlMessages.subscriptions().single { it.messageId == messageId }.payload,

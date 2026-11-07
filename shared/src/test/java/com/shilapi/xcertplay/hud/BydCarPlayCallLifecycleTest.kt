@@ -16,6 +16,8 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.Implementation
 import org.robolectric.annotation.Implements
+import org.robolectric.shadows.ShadowBuild
+import org.robolectric.shadows.ShadowLog
 import org.robolectric.util.ReflectionHelpers
 
 @RunWith(RobolectricTestRunner::class)
@@ -80,6 +82,18 @@ class BydCarPlayCallLifecycleTest {
         assertEquals(CarPlayCallCard.Phase.RINGING, CarPlayCalls.current().card?.phase)
         BydCarPlayCall.end(); drain()
         assertEquals(CarPlayCallSnapshot(), CarPlayCalls.current())
+    }
+
+    @Test fun theCallTraceIsLoggedOnlyOnTheMonjaroA3() {
+        fun traced() = ShadowLog.getLogsForTag("DiPlay-BYD-Call").count { it.msg.startsWith("CallStateUpdate") }
+        val frame = Iap2Messages.buildRaw(CarPlayCallState.CALL_STATE_UPDATE) { u8(2, 2); string(4, "only-on-the-monjaro") }
+        ShadowLog.clear()
+        BydCarPlayCall.onFrame(frame)
+        assertEquals(0, traced())
+        ShadowBuild.setProduct("geely_fx11")
+        ShadowBuild.setModel("KX11-A3-L1")
+        BydCarPlayCall.onFrame(frame)
+        assertEquals(1, traced())
     }
 
     @Test fun aNewNumberAloneWritesNothingToTheCar() {
