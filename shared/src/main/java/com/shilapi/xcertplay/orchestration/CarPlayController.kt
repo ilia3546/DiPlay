@@ -712,7 +712,10 @@ class CarPlayController(
     fun endCall(): Boolean = sendTelephony(TELEPHONY_DROP)
 
     /** Mutes or unmutes the iPhone's microphone in the call (telephony Phone Mute). */
-    fun toggleMute(): Boolean = sendTelephony(TELEPHONY_PHONE_MUTE).also { if (it) BydCarPlayCall.muteToggled() }
+    fun toggleMute(): Boolean {
+        val muted = BydCarPlayCall.muteToggled()
+        return sendTelephony(TELEPHONY_PHONE_MUTE).also { if (!it) BydCarPlayCall.muteNotSent(muted) }
+    }
 
     private fun sendTelephony(index: Int): Boolean {
         if (closed) return false

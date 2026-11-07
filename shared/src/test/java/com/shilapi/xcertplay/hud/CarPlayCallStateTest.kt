@@ -201,6 +201,29 @@ class CarPlayCallStateTest {
     }
 
     @Test
+    fun theIphonesReportRightAfterTheMuteKeyIsNotTurnedOverByIt() {
+        state.accept(update("a", status = 4, name = "Mum"))
+        assertTrue(state.muteToggled())
+        state.accept(mute(true))
+        assertEquals(true, state.snapshot().muted)
+        state.muteNotSent(true)
+        assertEquals("a reported state stays", true, state.snapshot().muted)
+    }
+
+    @Test
+    fun aMuteKeyThatWasNotSentLeavesTheStateItFound() {
+        state.accept(update("a", status = 4, name = "Mum"))
+        state.accept(mute(true))
+        assertFalse(state.muteToggled())
+        state.muteNotSent(false)
+        assertEquals(true, state.snapshot().muted)
+        assertFalse(state.muteToggled())
+        assertTrue(state.muteToggled())
+        state.muteNotSent(true)
+        assertEquals("the earlier expectation is back", false, state.snapshot().muted)
+    }
+
+    @Test
     fun otherMessagesAndClearLeaveNoCall() {
         assertFalse(state.accept(Iap2Messages.buildRaw(ClusterSongState.NOW_PLAYING_UPDATE) { u8(2, 2) }))
         assertNull(state.current())

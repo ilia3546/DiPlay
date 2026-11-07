@@ -45,6 +45,7 @@ class CarPlayCallState(private val clock: () -> Long = System::currentTimeMillis
     private var ended: Ended? = null
     private var reportedMuted: Boolean? = null
     private var expectedMuted: Boolean? = null
+    private var expectedBeforeMuteKey: Boolean? = null
 
     /**
      * Returns true when the card changed; read it with [current]. The label, the microphone and the outcome
@@ -94,13 +95,19 @@ class CarPlayCallState(private val clock: () -> Long = System::currentTimeMillis
         CarPlayCallSnapshot(last, shown()?.second?.label.orEmpty(), expectedMuted ?: reportedMuted, outcome())
 
     /**
-     * The phone mute key was sent: returns the microphone state it should lead to. [snapshot] shows it until the
-     * iPhone reports its own state or a new call starts.
+     * The phone mute key is about to be sent: returns the microphone state it should lead to. [snapshot] shows it
+     * until the iPhone reports its own state, a new call starts or [muteNotSent] takes it back.
      */
     fun muteToggled(): Boolean {
         val next = !(expectedMuted ?: reportedMuted ?: false)
+        expectedBeforeMuteKey = expectedMuted
         expectedMuted = next
         return next
+    }
+
+    /** The key [muteToggled] expected [muted] from was not sent; a state the iPhone reported since then stays. */
+    fun muteNotSent(muted: Boolean) {
+        if (expectedMuted == muted) expectedMuted = expectedBeforeMuteKey
     }
 
     fun clear() {
@@ -236,10 +243,20 @@ object BydCarPlayCall {
         publish()
     }
 
-    /** The phone mute key was sent to the iPhone. */
-    fun muteToggled() {
+    /**
+     * The phone mute key is about to be sent to the iPhone, so that its report, which may come before the sender
+     * returns, replaces the expected state. Returns what [muteNotSent] takes if the key is not sent.
+     */
+    fun muteToggled(): Boolean {
         val muted = synchronized(state) { state.muteToggled() }
         Log.i(TAG, "CarPlay call microphone ${if (muted) "muted" else "on"} (unconfirmed until the iPhone reports it)")
+        publish()
+        return muted
+    }
+
+    fun muteNotSent(muted: Boolean) {
+        synchronized(state) { state.muteNotSent(muted) }
+        Log.i(TAG, "CarPlay call mute key not sent")
         publish()
     }
 
