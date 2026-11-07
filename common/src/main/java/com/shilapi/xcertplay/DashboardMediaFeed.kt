@@ -7,13 +7,16 @@ import android.os.Looper
 import android.os.SystemClock
 import android.provider.Settings
 import android.util.Log
+import android.view.View
+import com.shilapi.xcertplay.hud.CarPlayCalls
 
 /**
  * Keeps a [DashboardMediaBlock] on what plays now, from [start] to [stop]: picks the source with
  * [DashboardMediaSource.of], then shows only that source's data, and moves CarPlay's progress on once a second.
- * Main thread.
+ * While [DashboardCallShown.of] gives a call, the [call] block takes the media block's place, and the source is
+ * still picked behind it. Main thread.
  */
-internal class DashboardMediaFeed(private val block: DashboardMediaBlock) {
+internal class DashboardMediaFeed(private val block: DashboardMediaBlock, private val call: DashboardCallBlock) {
     private val main = Handler(Looper.getMainLooper())
     private val flags = HeadUnitMediaFlags(block.context, ::refresh)
     private val radio = DashboardRadio(block.context, ::refresh)
@@ -21,8 +24,10 @@ internal class DashboardMediaFeed(private val block: DashboardMediaBlock) {
     private var playback = ClusterPlaybackState.Snapshot()
     private var stopObservingMusic: (() -> Unit)? = null
     private var stopObservingPlayback: (() -> Unit)? = null
+    private var stopObservingCalls: (() -> Unit)? = null
     private var started = false
     private var source: DashboardMediaSource? = null
+    private var callState = describe(null)
     private val tick = object : Runnable {
         override fun run() {
             refresh()
@@ -42,6 +47,7 @@ internal class DashboardMediaFeed(private val block: DashboardMediaBlock) {
             playback = snapshot
             refresh()
         }
+        stopObservingCalls = CarPlayCalls.observe { main.post(::refresh) }
         tick.run()
     }
 
@@ -54,9 +60,12 @@ internal class DashboardMediaFeed(private val block: DashboardMediaBlock) {
         stopObservingMusic = null
         stopObservingPlayback?.invoke()
         stopObservingPlayback = null
+        stopObservingCalls?.invoke()
+        stopObservingCalls = null
         radio.disconnect()
         source = null
         block.show(DashboardMedia.Empty)
+        showCall(null)
     }
 
     private fun refresh() {
@@ -93,6 +102,25 @@ internal class DashboardMediaFeed(private val block: DashboardMediaBlock) {
                 ?: DashboardMedia.Empty
             DashboardMediaSource.OTHER, DashboardMediaSource.UNKNOWN -> DashboardMedia.Empty
         })
+        val now = System.currentTimeMillis()
+        showCall(DashboardCallShown.of(MonjaroDashboardCall.enabled(block.context), CarPlayCalls.current(), now), now)
+    }
+
+    private fun showCall(shown: DashboardCallShown?, nowMillis: Long = System.currentTimeMillis()) {
+        val state = describe(shown)
+        if (state != callState) {
+            Log.i(TAG, "call block $state")
+            callState = state
+        }
+        if (shown != null) call.show(shown, nowMillis)
+        block.visibility = if (shown == null) View.VISIBLE else View.GONE
+        call.visibility = if (shown == null) View.GONE else View.VISIBLE
+    }
+
+    private fun describe(shown: DashboardCallShown?): String = when (shown) {
+        null -> "hidden"
+        is DashboardCallShown.Live -> shown.card.phase.name.lowercase()
+        is DashboardCallShown.Ended -> "ended ${shown.outcome.kind.name.lowercase()}"
     }
 
     companion object {
