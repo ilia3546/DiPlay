@@ -68,6 +68,7 @@ class WheelSiriWindowTest {
             (activity.javaClass.getDeclaredField(name).apply { isAccessible = true }.get(activity) as Handler).removeCallbacksAndMessages(null)
         }
         BydCarPlayCall.end()
+        BydCarPlayCall.subscribing()
         CarPlayBackgroundSession.clear()
         host.getSharedPreferences("xcertplay_airplay", Context.MODE_PRIVATE).edit().clear().commit()
     }

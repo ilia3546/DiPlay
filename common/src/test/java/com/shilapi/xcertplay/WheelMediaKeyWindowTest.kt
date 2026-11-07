@@ -60,6 +60,7 @@ class WheelMediaKeyWindowTest {
         (host.javaClass.getDeclaredField("mainHandler").apply { isAccessible = true }.get(host) as Handler)
             .removeCallbacksAndMessages(null)
         BydCarPlayCall.end()
+        BydCarPlayCall.subscribing()
         CarPlayBackgroundSession.clear()
         host.getSharedPreferences("xcertplay_airplay", Context.MODE_PRIVATE).edit().clear().commit()
     }

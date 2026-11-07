@@ -1757,7 +1757,6 @@ class CarPlayController(
                             onWirelessTunnelReady(generation)
                         },
                         onIncoming = ::onRouteFrame,
-                        beforeSubscriptions = BydNavigationOutputs::carPlayCallsSubscribing,
                         onProgress = { message -> debugLog("iAP tunnel $message") },
                     )
                     if (closed || generation != wirelessGeneration.get()) return@execute

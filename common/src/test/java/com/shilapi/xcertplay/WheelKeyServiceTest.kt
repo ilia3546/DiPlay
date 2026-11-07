@@ -51,6 +51,7 @@ class WheelKeyServiceTest {
         service.onDestroy()
         BydOutputSettings.setCarPlayCallControls(service, false)
         BydCarPlayCall.end()
+        BydCarPlayCall.subscribing()
         CarPlayBackgroundSession.clear()
     }
 

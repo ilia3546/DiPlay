@@ -55,6 +55,7 @@ class MonjaroDashboardCallTest {
         MonjaroDashboardCall.sessionEnded()
         idle()
         BydCarPlayCall.end()
+        BydCarPlayCall.subscribing()
         idle()
         MonjaroDashboardCall.dashboard = GeelyDashboardCall
         MonjaroDashboardCall.liveSession = realLiveSession
@@ -171,7 +172,7 @@ class MonjaroDashboardCallTest {
         ring()
         live = true
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1))
-        assertEquals(listOf("start", "show none", "show none", "show RINGING Anna"), calls)
+        assertEquals(listOf("start", "show none", "show RINGING Anna"), calls)
     }
 
     @Test fun aCallAfterTheAirPlaySessionEndedIsNotShownWhileTheControllerStaysAttached() {
@@ -180,7 +181,18 @@ class MonjaroDashboardCallTest {
         startSession()
         live = false
         ring()
-        assertEquals(listOf("start", "show none", "show none"), calls)
+        assertEquals(listOf("start", "show none"), calls)
+    }
+
+    @Test fun theAirPlaySessionEndingDuringACallClosesTheWidgetWhileTheControllerStaysAttached() {
+        monjaroA3()
+        AirPlayPersistence.saveDashboardCalls(context, true)
+        startSession()
+        ring()
+        BydCarPlayCall.end()
+        live = false
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1))
+        assertEquals(listOf("start", "show none", "show RINGING Anna", "show none"), calls)
     }
 
     @Test fun theOptionActsOnlyOnTheMonjaroA3WithTheOptionOnAndALiveSession() {

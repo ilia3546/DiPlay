@@ -25,7 +25,10 @@ internal object MonjaroDashboardCall {
     private var app: Context? = null
     private var sessionAttached = false
     private var stopObserving: (() -> Unit)? = null
+    private var shown: Any? = Unset
     private val recheck = Runnable { showCurrent() }
+
+    private object Unset
 
     /** The option is on, on the Monjaro A3; whether a session is live does not matter. */
     fun enabled(context: Context): Boolean = MonjaroA3Options.load(context).dashboardCalls
@@ -74,6 +77,7 @@ internal object MonjaroDashboardCall {
                 Log.w(TAG, "CarPlay calls on with the phone's Bluetooth kept: the stock phone may show the same call")
             }
             dashboard.start(context)
+            shown = Unset
             stopObserving = CarPlayCalls.observe { main.post(::showCurrent) }
         } else if (!on) {
             main.removeCallbacks(recheck)
@@ -90,9 +94,13 @@ internal object MonjaroDashboardCall {
         if (stopObserving == null) return
         main.removeCallbacks(recheck)
         val card = CarPlayCalls.current().card
-        val live = active(context)
-        dashboard.show(context, card.takeIf { live })
-        // The iPhone reports its calls on iAP2 before the AirPlay session is live, and nothing is published then.
-        if (card != null && !live) main.postDelayed(recheck, RECHECK_MILLIS)
+        val wanted = card.takeIf { active(context) }
+        if (wanted != shown) {
+            shown = wanted
+            dashboard.show(context, wanted)
+        }
+        // A call stays with the iAP2 link, which reports it before an AirPlay session is live and outlives one that
+        // ends; neither publishes anything.
+        if (card != null) main.postDelayed(recheck, RECHECK_MILLIS)
     }
 }

@@ -54,6 +54,7 @@ class BydCarPlayCallQuotingTest {
 
     @After fun cleanup() {
         BydCarPlayCall.end(); drain()
+        BydCarPlayCall.subscribing(); drain()
         app.applicationInfo.sourceDir = originalSourceDir
     }
 

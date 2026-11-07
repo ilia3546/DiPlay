@@ -213,7 +213,8 @@ object BydCarPlayCall {
     private var retryCard: CarPlayCallCard? = null
     private var retryUsed = false
     @Volatile private var sessionActive = false
-    private var takingUpdates = false // guarded by state
+    // A session ended and neither a new one nor a new iAP2 link started: the calls stay, the car shows none.
+    @Volatile private var sessionEnded = false
 
     fun attach(appContext: Context) {
         context = appContext.applicationContext
@@ -221,34 +222,47 @@ object BydCarPlayCall {
     }
 
     /**
-     * A CarPlay session started: start the call watcher now, before any call, so the first call
-     * reaches the car within a second instead of after the watcher's multi-second start.
+     * A CarPlay session started: show a call that outlived the last session or began without one, and start the
+     * call watcher now, before any call, so the first call reaches the car within a second instead of after the
+     * watcher's multi-second start.
      */
     fun sessionStarted() {
         sessionActive = true
-        // A session can restart on an iAP2 link that stays up and asks for nothing again; the calls were
-        // already forgotten in end(), so only the link's updates are taken back.
-        synchronized(state) { takingUpdates = true }
+        val card = synchronized(state) {
+            sessionEnded = false
+            routeLocked()
+            carShows()
+        }
         val app = context ?: return
-        writer.execute { arm(app) }
+        writer.execute {
+            resetRetry(card)
+            apply(app, card)
+            arm(app)
+        }
     }
 
     /** The current call, followed even while the setting is off so the wheel's call keys can act on it. */
     fun current(): CarPlayCallCard? = synchronized(state) { state.current() }
 
-    /** The current call as the car shows it, without the number it never writes. */
-    private fun carCard(): CarPlayCallCard? = current()?.copy(number = "")
+    /** The current call as the car shows it: none after a session ended, and never the number it does not write. */
+    private fun carShows(): CarPlayCallCard? = synchronized(state) {
+        if (sessionEnded) null else state.current()?.copy(number = "")
+    }
+
+    /** Caller holds the state lock, so a frame of another link cannot reorder the route behind this one. */
+    private fun routeLocked() = PhoneAudioRoute.carPlayCall(!sessionEnded && state.current() != null)
 
     /**
-     * A new iAP2 link is about to ask the iPhone for its calls, which it then reports even before the CarPlay
-     * session starts: forget the calls of any earlier link and take this link's updates until [end].
+     * A new iAP2 connection is about to ask the iPhone for its calls, which it then reports even before the CarPlay
+     * session starts: forget the calls of any earlier connection, which may have dropped without ending them.
+     * A second link of the same connection must not call this: it would forget calls the iPhone still has.
      */
     fun subscribing() {
         synchronized(state) {
-            takingUpdates = true
             state.clear()
+            sessionEnded = false
+            routeLocked()
         }
-        PhoneAudioRoute.carPlayCall(false)
         publish()
         val app = context ?: return
         writer.execute { resetRetry(null); apply(app, null); arm(app) }
@@ -256,13 +270,15 @@ object BydCarPlayCall {
 
     fun onFrame(frame: Iap2Frame) {
         if (GeelyHeadUnit.monjaroA3) trace.line(frame)?.let { Log.i(TAG, it) }
-        val (changed, card) = synchronized(state) {
-            if (!takingUpdates) return
-            state.accept(frame) to carCard()
+        val (phase, card) = synchronized(state) {
+            if (!state.accept(frame)) null to null
+            else {
+                routeLocked()
+                (state.current()?.phase?.name ?: "ended") to carShows()
+            }
         }
-        if (changed) {
-            Log.i(TAG, "CarPlay call ${card?.phase ?: "ended"}")
-            PhoneAudioRoute.carPlayCall(card != null)
+        if (phase != null) {
+            Log.i(TAG, "CarPlay call $phase")
             context?.let { app ->
                 if (BydOutputSettings.carPlayCalls(app)) writer.execute { apply(app, card); if (card == null) arm(app) }
             }
@@ -292,7 +308,7 @@ object BydCarPlayCall {
     /** The setting changed: show the current call now, or end the one DiPlay showed. */
     fun settingChanged(enabled: Boolean) {
         val app = context ?: return
-        val card = if (enabled) carCard() else null
+        val card = if (enabled) carShows() else null
         writer.execute {
             resetRetry(card)
             apply(app, card)
@@ -300,15 +316,16 @@ object BydCarPlayCall {
         }
     }
 
-    /** The session ended: forget the calls, end the one DiPlay showed and take no updates until [subscribing] or [sessionStarted]. */
+    /**
+     * The session ended: end the call DiPlay showed on the car. The calls stay with the iAP2 link, which may outlive
+     * the session; [sessionStarted] shows them again and [subscribing] forgets them.
+     */
     fun end() {
         sessionActive = false
-        PhoneAudioRoute.carPlayCall(false)
         synchronized(state) {
-            takingUpdates = false
-            state.clear()
+            sessionEnded = true
+            routeLocked()
         }
-        publish()
         val app = context ?: return
         writer.execute { resetRetry(null); apply(app, null); disarm(app) }
     }
@@ -347,7 +364,7 @@ object BydCarPlayCall {
     private fun apply(app: Context, wanted: CarPlayCallCard?) {
         if (wanted != null && !BydOutputSettings.carPlayCalls(app)) return
         // Only the newest state matters; older queued ones are skipped.
-        if (wanted != carCard() && !(wanted == null && !BydOutputSettings.carPlayCalls(app))) return
+        if (wanted != carShows() && !(wanted == null && !BydOutputSettings.carPlayCalls(app))) return
         if (retryCard != wanted) resetRetry(wanted)
         if (wanted == shown && !cleanupPending) return
         if (wanted == null || cleanupPending) {
@@ -385,7 +402,7 @@ object BydCarPlayCall {
             return
         }
         // The readiness handshake can outlast a setting or session change.
-        if (!BydOutputSettings.carPlayCalls(app) || wanted != carCard()) {
+        if (!BydOutputSettings.carPlayCalls(app) || wanted != carShows()) {
             if (prepared) cancelUnprotected(app, token, null)
             else if (run(app, "end - $token")) clearLocalOwnership()
             else cleanupPending = true
@@ -427,7 +444,7 @@ object BydCarPlayCall {
             retry = null
             // One retry covers an unchanged card (onFrame deliberately deduplicates it).
             // Later state/setting events retain the ordinary retry path; no endless timer.
-            if (wanted == null || (BydOutputSettings.carPlayCalls(app) && carCard() == wanted)) apply(app, wanted)
+            if (wanted == null || (BydOutputSettings.carPlayCalls(app) && carShows() == wanted)) apply(app, wanted)
         }, 1, TimeUnit.SECONDS)
     }
 

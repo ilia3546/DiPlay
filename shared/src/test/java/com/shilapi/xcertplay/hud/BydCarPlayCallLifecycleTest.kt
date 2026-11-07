@@ -29,6 +29,9 @@ class BydCarPlayCallLifecycleTest {
     private fun ringing(id: String) = Iap2Messages.buildRaw(CarPlayCallState.CALL_STATE_UPDATE) {
         u8(2, 2); string(4, id)
     }
+    private fun active(id: String) = Iap2Messages.buildRaw(CarPlayCallState.CALL_STATE_UPDATE) {
+        u8(2, 4); string(4, id)
+    }
 
     @Before fun setup() {
         BydCarPlayCall.watcherReadyMillis = 500L
@@ -58,6 +61,7 @@ class BydCarPlayCallLifecycleTest {
         Shell.omitCompletion = false
         Shell.omitCancelCompletion = false
         BydCarPlayCall.end(); drain()
+        BydCarPlayCall.subscribing(); drain()
     }
 
     @Test fun defaultOffTracksCallWithoutAnyShellOrWatcherMutation() {
@@ -81,11 +85,11 @@ class BydCarPlayCallLifecycleTest {
         assertEquals("mobile", CarPlayCalls.current().label)
         assertEquals(false, CarPlayCalls.current().muted)
         assertEquals(CarPlayCallCard.Phase.RINGING, CarPlayCalls.current().card?.phase)
-        BydCarPlayCall.end(); drain()
+        BydCarPlayCall.subscribing(); drain()
         assertEquals(CarPlayCallSnapshot(), CarPlayCalls.current())
     }
 
-    @Test fun aNewIap2LinkStartsFromAnEmptySnapshotAndEndsTheCallShownOnTheCar() {
+    @Test fun aNewIap2ConnectionStartsFromAnEmptySnapshotAndEndsTheCallShownOnTheCar() {
         BydOutputSettings.setCarPlayCalls(app, true)
         BydCarPlayCall.onFrame(ringing("old-link")); drain()
         val token = tokenFrom(Shell.commands.single { it.contains(" ringing ") })
@@ -95,24 +99,47 @@ class BydCarPlayCallLifecycleTest {
         assertTrue(Shell.commands.any { it.endsWith(" end - $token") })
     }
 
-    @Test fun aCallFrameAfterTheSessionEndedMakesNoCallUntilTheNextLink() {
-        BydCarPlayCall.end(); drain()
-        BydCarPlayCall.onFrame(ringing("late")); drain()
-        assertNull(BydCarPlayCall.current())
-        assertNull(CarPlayCalls.current().card)
-        BydCarPlayCall.subscribing()
-        BydCarPlayCall.onFrame(ringing("late")); drain()
-        assertNotNull(BydCarPlayCall.current())
+    @Test fun aWirelessConnectionDuringACallKeepsItWhenTheTunnelAsksForTheCallsAgain() {
+        BydOutputSettings.setCarPlayCalls(app, true)
+        BydCarPlayCall.subscribing(); drain()
+        BydCarPlayCall.onFrame(ringing("ongoing"))
+        BydCarPlayCall.onFrame(active("ongoing")); drain()
+        val since = BydCarPlayCall.current()?.activeSinceMillis
+        BydCarPlayCall.sessionStarted(); drain()
+        val snapshots = mutableListOf<CarPlayCallSnapshot>()
+        val stop = CarPlayCalls.observe { snapshots += it }
+        try {
+            // The tunnel of the same connection subscribes without subscribing(); the iPhone reports the call again.
+            BydCarPlayCall.onFrame(active("ongoing")); drain()
+        } finally { stop() }
+        assertEquals(since, BydCarPlayCall.current()?.activeSinceMillis)
+        assertTrue(snapshots.none { it.card == null })
+        assertTrue(Shell.commands.none { it.contains(" end - ") })
     }
 
-    @Test fun aSessionRestartedOnTheSameLinkTakesCallsAgainWithoutTheOldOnes() {
+    @Test fun anAirPlayRestartOnALiveLinkKeepsTheCallAndShowsItOnTheCarAgain() {
+        BydOutputSettings.setCarPlayCalls(app, true)
         BydCarPlayCall.subscribing()
-        BydCarPlayCall.onFrame(ringing("first-session")); drain()
-        BydCarPlayCall.end(); drain()
         BydCarPlayCall.sessionStarted(); drain()
-        assertNull(CarPlayCalls.current().card)
-        BydCarPlayCall.onFrame(ringing("second-session")); drain()
+        BydCarPlayCall.onFrame(active("ongoing")); drain()
+        val first = tokenFrom(Shell.commands.single { it.contains(" active ") })
+        BydCarPlayCall.end(); drain()
+        assertTrue(Shell.commands.any { it.endsWith(" end - $first") })
+        assertEquals(CarPlayCallCard.Phase.ACTIVE, CarPlayCalls.current().card?.phase)
+        BydCarPlayCall.sessionStarted(); drain()
+        assertEquals(2, Shell.commands.count { it.contains(" active ") })
+    }
+
+    @Test fun aCallThatBeganBetweenSessionsShowsOnceTheNextOneStarts() {
+        BydOutputSettings.setCarPlayCalls(app, true)
+        BydCarPlayCall.subscribing()
+        BydCarPlayCall.sessionStarted(); drain()
+        BydCarPlayCall.end(); drain()
+        BydCarPlayCall.onFrame(ringing("between")); drain()
         assertEquals(CarPlayCallCard.Phase.RINGING, CarPlayCalls.current().card?.phase)
+        assertTrue(Shell.commands.none { it.contains(" ringing ") })
+        BydCarPlayCall.sessionStarted(); drain()
+        assertEquals(1, Shell.commands.count { it.contains(" ringing ") })
     }
 
     @Test fun aCallReportedBeforeTheSessionStartsIsKeptAcrossSessionStarts() {

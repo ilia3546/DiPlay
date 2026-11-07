@@ -25,6 +25,7 @@ class CarPlayCallControlsOptInTest {
     @After fun cleanup() {
         BydOutputSettings.setCarPlayCallControls(app, false)
         BydCarPlayCall.end()
+        BydCarPlayCall.subscribing()
     }
 
     @Test fun newCallKeysCannotConsumeOrSendAnythingWithoutOptIn() {
