@@ -66,7 +66,6 @@
     <string name="settings_hud_lanes_description">Shows the lanes of the next junction when the iPhone sends them, with the recommended lane underlined.</string>
     <string name="settings_hud_trip">Time and distance left on the HUD</string>
     <string name="settings_hud_trip_description">Shows the time and distance to the destination after the lanes, only when they fit whole.</string>
-    <string name="custom_dashboard_trip">Current trip</string>
     <string name="custom_dashboard_trip_distance">Distance</string>
     <string name="custom_dashboard_trip_time">Driving time</string>
     <string name="custom_dashboard_trip_consumption">Avg. consumption</string>

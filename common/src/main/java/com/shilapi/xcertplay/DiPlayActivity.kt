@@ -4193,7 +4193,6 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         }
     }
 
-    /** A 1%-step slider row for overlay placement; every step saves, so the card moves live. */
     private fun askQnxTripPassword() {
         val dialogContext = appDialogContext()
         val fields = column().apply { setPadding(dp(24), dp(12), dp(24), dp(12)) }
@@ -4225,6 +4224,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             .show()
     }
 
+    /** A 1%-step slider row for overlay placement; every step saves, so the card moves live. */
     private fun overlaySliderRow(title: String, values: List<Int>, current: Int, describe: (Int) -> String): OverlaySliderRow =
         OverlaySliderRow(this, title, values, current, describe)
 

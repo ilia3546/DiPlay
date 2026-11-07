@@ -21,9 +21,7 @@ internal object MonjaroDashboardLayout {
     val temperature = Box(left = WIDTH - 150 - 300, top = 30, width = 300)
     const val TEMPERATURE_TEXT = 32f
 
-    val trip = Box(left = 150, top = 200, width = 400)
-    const val TRIP_TITLE_TEXT = 17f
-    const val TRIP_TITLE_LETTER_SPACING = 2f
+    val trip = Box(left = 150, top = 170, width = 400)
     const val TRIP_ROW_GAP = 30
     const val TRIP_LABEL_TEXT = 19f
     const val TRIP_LABEL_GAP = 4

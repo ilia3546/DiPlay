@@ -66,7 +66,6 @@
     <string name="settings_hud_lanes_description">يعرض حارات التقاطع التالي عندما يرسلها iPhone، مع خط تحت الحارة الموصى بها.</string>
     <string name="settings_hud_trip">الوقت والمسافة المتبقيان على HUD</string>
     <string name="settings_hud_trip_description">يعرض الوقت والمسافة حتى الوجهة بعد الحارات، فقط إذا اتسعا بالكامل.</string>
-    <string name="custom_dashboard_trip">الرحلة الحالية</string>
     <string name="custom_dashboard_trip_distance">المسافة</string>
     <string name="custom_dashboard_trip_time">مدة القيادة</string>
     <string name="custom_dashboard_trip_consumption">متوسط الاستهلاك</string>

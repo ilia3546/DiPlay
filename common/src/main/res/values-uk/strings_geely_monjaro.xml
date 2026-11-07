@@ -66,7 +66,6 @@
     <string name="settings_hud_lanes_description">Показує смуги найближчого перехрестя, якщо iPhone їх надсилає; рекомендовану смугу підкреслено.</string>
     <string name="settings_hud_trip">Залишок часу й шляху на HUD</string>
     <string name="settings_hud_trip_description">Показує час і відстань до місця призначення після смуг, лише якщо вони вміщуються повністю.</string>
-    <string name="custom_dashboard_trip">Поточна поїздка</string>
     <string name="custom_dashboard_trip_distance">Пробіг</string>
     <string name="custom_dashboard_trip_time">Час у дорозі</string>
     <string name="custom_dashboard_trip_consumption">Сер. витрата</string>

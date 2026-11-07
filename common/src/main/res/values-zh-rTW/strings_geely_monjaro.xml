@@ -66,7 +66,6 @@
     <string name="settings_hud_lanes_description">iPhone 傳送車道資訊時顯示下一個路口的車道，建議車道加上底線。</string>
     <string name="settings_hud_trip">在 HUD 上顯示剩餘時間和距離</string>
     <string name="settings_hud_trip_description">在車道之後顯示到目的地的剩餘時間和距離，僅在能完整顯示時顯示。</string>
-    <string name="custom_dashboard_trip">本次行程</string>
     <string name="custom_dashboard_trip_distance">里程</string>
     <string name="custom_dashboard_trip_time">行駛時間</string>
     <string name="custom_dashboard_trip_consumption">平均油耗</string>

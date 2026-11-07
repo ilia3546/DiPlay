@@ -25,11 +25,6 @@ internal class DashboardTripBlock(context: Context) : LinearLayout(context) {
 
     init {
         orientation = VERTICAL
-        addView(dashboardText(context, L.TRIP_TITLE_TEXT, 600, L.TITLE_MUTED).apply {
-            isAllCaps = true
-            letterSpacing = L.TRIP_TITLE_LETTER_SPACING / L.TRIP_TITLE_TEXT
-            setText(R.string.custom_dashboard_trip)
-        })
         row(R.string.custom_dashboard_trip_distance, Part(distance, R.string.custom_dashboard_unit_km, L.TRIP_UNIT_GAP))
         row(R.string.custom_dashboard_trip_time,
             Part(hours, R.string.custom_dashboard_unit_hours, L.TRIP_HOURS_GAP_BEFORE, L.TRIP_HOURS_GAP_AFTER),
@@ -63,7 +58,7 @@ internal class DashboardTripBlock(context: Context) : LinearLayout(context) {
             topMargin = L.TRIP_LABEL_GAP
         })
         addView(item, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
-            topMargin = L.TRIP_ROW_GAP
+            topMargin = if (childCount == 0) 0 else L.TRIP_ROW_GAP
         })
     }
 }

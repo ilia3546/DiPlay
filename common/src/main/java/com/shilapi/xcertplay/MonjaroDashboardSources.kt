@@ -21,6 +21,7 @@ internal class MonjaroDashboardSources(private val view: MonjaroDashboardView) :
     private val app = view.context.applicationContext
     private val main = Handler(Looper.getMainLooper())
     private var stopObservingSettings: (() -> Unit)? = null
+    private var stopObservingTripPassword: (() -> Unit)? = null
     private var stopObservingGlance: (() -> Unit)? = null
     private var stopObservingConnection: (() -> Unit)? = null
     private var stopObservingStream: (() -> Unit)? = null
@@ -55,6 +56,7 @@ internal class MonjaroDashboardSources(private val view: MonjaroDashboardView) :
         showTime()
         showBackground()
         stopObservingSettings = MonjaroCustomDashboard.observeSettings(::showBackground)
+        stopObservingTripPassword = MonjaroCustomDashboard.observeSettings(trip::start)
         EcarxCarData.start(app, view::showTemperature)
         // A snapshot delivered late may be older than the glance; the post reads it again.
         stopObservingGlance = CarPlayGlance.observe { main.post { showRoute(CarPlayGlance.snapshot()) } }
@@ -73,6 +75,8 @@ internal class MonjaroDashboardSources(private val view: MonjaroDashboardView) :
         runCatching { app.unregisterReceiver(time) }
         stopObservingSettings?.invoke()
         stopObservingSettings = null
+        stopObservingTripPassword?.invoke()
+        stopObservingTripPassword = null
         EcarxCarData.stop()
         stopObservingGlance?.invoke()
         stopObservingGlance = null
@@ -97,7 +101,6 @@ internal class MonjaroDashboardSources(private val view: MonjaroDashboardView) :
         view.map.maneuverShown = options.dashboardManeuver
         view.map.arrivalShown = options.dashboardArrival
         showRoute(CarPlayGlance.snapshot())
-        if (view.isAttachedToWindow) trip.start()
     }
 
     private fun showRoute(glance: CarPlayGlance.Snapshot) =

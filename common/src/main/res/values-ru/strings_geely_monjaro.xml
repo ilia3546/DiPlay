@@ -66,7 +66,6 @@
     <string name="settings_hud_lanes_description">Показывает полосы ближайшего перекрёстка, если iPhone их присылает; рекомендованная полоса подчёркнута.</string>
     <string name="settings_hud_trip">Оставшиеся время и путь на HUD</string>
     <string name="settings_hud_trip_description">Показывает время и расстояние до места назначения после полос, только если они помещаются целиком.</string>
-    <string name="custom_dashboard_trip">Текущий пробег</string>
     <string name="custom_dashboard_trip_distance">Пробег</string>
     <string name="custom_dashboard_trip_time">Время в пути</string>
     <string name="custom_dashboard_trip_consumption">Ср. расход</string>

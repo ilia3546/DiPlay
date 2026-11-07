@@ -66,7 +66,6 @@
     <string name="settings_hud_lanes_description">iPhone から送られたときに次の交差点の車線を表示します。推奨車線には下線が付きます。</string>
     <string name="settings_hud_trip">HUD に残り時間と距離を表示</string>
     <string name="settings_hud_trip_description">目的地までの残り時間と距離を車線の後に表示します。全体が収まる場合のみ表示します。</string>
-    <string name="custom_dashboard_trip">現在のトリップ</string>
     <string name="custom_dashboard_trip_distance">走行距離</string>
     <string name="custom_dashboard_trip_time">走行時間</string>
     <string name="custom_dashboard_trip_consumption">平均燃費</string>

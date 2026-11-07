@@ -66,7 +66,6 @@
     <string name="settings_hud_lanes_description">Mostra le corsie del prossimo incrocio quando l\'iPhone le invia, con la corsia consigliata sottolineata.</string>
     <string name="settings_hud_trip">Tempo e distanza rimanenti sull\'HUD</string>
     <string name="settings_hud_trip_description">Mostra il tempo e la distanza alla destinazione dopo le corsie, solo se ci stanno per intero.</string>
-    <string name="custom_dashboard_trip">Viaggio attuale</string>
     <string name="custom_dashboard_trip_distance">Distanza</string>
     <string name="custom_dashboard_trip_time">Tempo di guida</string>
     <string name="custom_dashboard_trip_consumption">Consumo medio</string>

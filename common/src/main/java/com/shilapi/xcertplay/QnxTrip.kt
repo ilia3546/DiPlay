@@ -3,7 +3,6 @@ package com.shilapi.xcertplay
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import android.os.SystemClock
 import android.util.Log
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -40,42 +39,46 @@ internal object QnxTripData {
     }
 }
 
-/** A root login to the firmware's QNX shell over its telnet port, reduced to running one read-only command at a time. */
+/**
+ * A root login to the firmware's QNX shell over its telnet port, reduced to reading a file at a time: it sends
+ * the user name, the password and the read commands, nothing else. Not thread-safe; one worker owns it.
+ */
 internal class QnxShell(private val socket: Socket) {
-    class LoginRefused : IOException("QNX login refused")
+    /** [answer] is the tail of what QNX said, which holds no password: QNX does not echo it. */
+    class LoginRefused(val answer: String) : IOException("QNX login refused")
 
     private val input: InputStream = socket.getInputStream()
     private val output: OutputStream = socket.getOutputStream()
+    private var loggedIn = false
 
-    fun login(password: String) {
+    fun login(password: String, stillWanted: () -> Boolean) {
         readUntil(LOGIN_TIMEOUT_MILLIS) { it.trimEnd().endsWith("login:") }
+        if (!stillWanted()) throw IOException("QNX login no longer wanted")
         send("root")
         // The firmware asks "Password for root@localhost:".
         readUntil(LOGIN_TIMEOUT_MILLIS) { it.contains("password", ignoreCase = true) && it.trimEnd().endsWith(":") }
+        if (!stillWanted()) throw IOException("QNX login no longer wanted")
         send(password)
-        val answer = run("echo ok", LOGIN_TIMEOUT_MILLIS) { it.contains("incorrect", ignoreCase = true) }
-        if (answer == null) throw LoginRefused()
+        // Once the password is out, anything but the shell's prompt counts against it, silence included.
+        val answer = try {
+            readUntil(LOGIN_TIMEOUT_MILLIS) {
+                it.endsWith(PROMPT) || it.contains("incorrect", ignoreCase = true) || it.trimEnd().endsWith("login:")
+            }
+        } catch (_: SocketTimeoutException) {
+            throw LoginRefused("no answer")
+        }
+        if (!answer.endsWith(PROMPT)) throw LoginRefused(answer.takeLast(120))
+        loggedIn = true
     }
 
-    /** The command's output, or null when [refused] matched first; the marker's echo carries quotes, its output none. */
-    fun run(command: String, timeoutMillis: Long, refused: (String) -> Boolean = { false }): String? {
-        send("$command; echo ${MARKER_HEAD}\"\"$MARKER_TAIL")
-        var result: String? = null
-        readUntil(timeoutMillis) { text ->
-            when {
-                refused(text) -> true
-                text.contains(MARKER_HEAD + MARKER_TAIL) -> {
-                    result = text.substringBefore(MARKER_HEAD + MARKER_TAIL)
-                    true
-                }
-                else -> false
-            }
-        }
-        return result
+    /** What [command] printed, read up to the shell's next prompt. */
+    fun read(command: String, timeoutMillis: Long): String {
+        send(command)
+        return readUntil(timeoutMillis) { it.contains('\n') && it.endsWith(PROMPT) }
     }
 
     fun close() {
-        runCatching { send("exit") }
+        if (loggedIn) runCatching { send("exit") }
         runCatching { socket.close() }
     }
 
@@ -85,46 +88,43 @@ internal class QnxShell(private val socket: Socket) {
         output.flush()
     }
 
-    /** Reads, answering the server's option offers with a refusal, until [done] holds for the text so far. */
-    private fun readUntil(timeoutMillis: Long, done: (String) -> Boolean) {
+    /** Reads, refusing the server's option offers, until [done] holds for the text so far; returns that text. */
+    private fun readUntil(timeoutMillis: Long, done: (String) -> Boolean): String {
         val text = ByteArrayOutputStream()
-        val deadline = SystemClock.elapsedRealtime() + timeoutMillis
+        val deadline = System.nanoTime() / 1_000_000 + timeoutMillis
         while (true) {
-            if (SystemClock.elapsedRealtime() > deadline) throw SocketTimeoutException("QNX shell did not answer")
+            when (val byte = next(deadline)) {
+                IAC -> when (next(deadline)) {
+                    IAC -> text.write(IAC)
+                    DO, DONT -> refuse(WONT, next(deadline))
+                    WILL, WONT -> refuse(DONT, next(deadline))
+                    SB -> while (!(next(deadline) == IAC && next(deadline) == SE)) Unit
+                    else -> Unit
+                }
+                0 -> Unit
+                else -> text.write(byte)
+            }
+            val sofar = text.toString(Charsets.ISO_8859_1.name())
+            if (done(sofar)) return sofar
+        }
+    }
+
+    /** The next byte before [deadline]; the socket's short timeout only lets the deadline and interrupts be seen. */
+    private fun next(deadline: Long): Int {
+        while (true) {
+            if (Thread.currentThread().isInterrupted) throw IOException("QNX read interrupted")
+            if (System.nanoTime() / 1_000_000 > deadline) throw SocketTimeoutException("QNX shell did not answer")
             val byte = try {
                 input.read()
             } catch (_: SocketTimeoutException) {
                 continue
             }
             if (byte < 0) throw IOException("QNX shell closed the connection")
-            if (byte == IAC) {
-                answerOption() ?: continue
-                text.write(IAC)
-            } else if (byte != 0) {
-                text.write(byte)
-            }
-            if (done(text.toString(Charsets.ISO_8859_1.name()))) return
+            return byte
         }
-    }
-
-    /** Answers an IAC sequence; returns [IAC] for an escaped data byte, else null. */
-    private fun answerOption(): Int? {
-        when (val command = input.read()) {
-            IAC -> return IAC
-            DO, DONT -> refuse(WONT, input.read())
-            WILL, WONT -> refuse(DONT, input.read())
-            SB -> while (true) {
-                val next = input.read()
-                if (next < 0) throw IOException("QNX shell closed the connection")
-                if (next == IAC && input.read() == SE) break
-            }
-            else -> if (command < 0) throw IOException("QNX shell closed the connection")
-        }
-        return null
     }
 
     private fun refuse(answer: Int, option: Int) {
-        if (option < 0) throw IOException("QNX shell closed the connection")
         output.write(byteArrayOf(IAC.toByte(), answer.toByte(), option.toByte()))
         output.flush()
     }
@@ -132,9 +132,8 @@ internal class QnxShell(private val socket: Socket) {
     companion object {
         const val HOST = "192.168.8.1"
         const val PORT = 3333
-        private const val LOGIN_TIMEOUT_MILLIS = 6_000L
-        private const val MARKER_HEAD = "__DIPLAY_"
-        private const val MARKER_TAIL = "DONE__"
+        private const val PROMPT = "# "
+        private const val LOGIN_TIMEOUT_MILLIS = 8_000L
         private const val IAC = 255
         private const val DONT = 254
         private const val DO = 253
@@ -147,7 +146,7 @@ internal class QnxShell(private val socket: Socket) {
             val socket = Socket()
             try {
                 socket.connect(InetSocketAddress(HOST, PORT), timeoutMillis)
-                socket.soTimeout = 1_000
+                socket.soTimeout = 500
                 socket.tcpNoDelay = true
             } catch (error: IOException) {
                 runCatching { socket.close() }
@@ -158,101 +157,136 @@ internal class QnxShell(private val socket: Socket) {
     }
 }
 
-/** The QNX root password the user entered for trip data; kept out of the settings backup and never logged. */
+/**
+ * The QNX root password the user entered for trip data, kept out of the settings backup and never logged, and how
+ * many times in a row QNX refused it: after [MAX_REFUSALS] the reader waits for a new password, across windows.
+ */
 internal object QnxTripCredentials {
     private const val PREFS = "diplay_qnx"
     private const val KEY_PASSWORD = "root_password"
+    private const val KEY_REFUSALS = "refusals"
+    const val MAX_REFUSALS = 3
 
     fun load(context: Context): String? =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_PASSWORD, null)?.takeIf { it.isNotEmpty() }
+        prefs(context).getString(KEY_PASSWORD, null)?.takeIf { it.isNotEmpty() }
 
     fun save(context: Context, password: String?) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().apply {
+        prefs(context).edit().apply {
             if (password.isNullOrEmpty()) remove(KEY_PASSWORD) else putString(KEY_PASSWORD, password)
+            remove(KEY_REFUSALS)
         }.apply()
     }
+
+    fun refusals(context: Context): Int = prefs(context).getInt(KEY_REFUSALS, 0)
+
+    fun refused(context: Context) {
+        prefs(context).edit().putInt(KEY_REFUSALS, refusals(context) + 1).commit()
+    }
+
+    fun accepted(context: Context) {
+        if (refusals(context) != 0) prefs(context).edit().remove(KEY_REFUSALS).apply()
+    }
+
+    private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 }
 
 /**
  * Reads [QnxTripData] every few seconds over one [QnxShell] login while the dashboard shows, and hands each
- * reading, or null once it is lost, to the listener on the main thread. A refused password stops it until the
- * password changes, so a wrong one is not tried over and over.
+ * reading, or null once it is lost, to the listener on the main thread. Each start is a run of its own: a stopped
+ * run's connection, results and retries never reach a newer one.
  */
 internal class QnxTripReader(context: Context, private val listener: (DashboardTrip?) -> Unit) {
     private val app = context.applicationContext
     private val main = Handler(Looper.getMainLooper())
-    @Volatile private var worker: Thread? = null
-    @Volatile private var shell: QnxShell? = null
-    private var password: String? = null
+
+    private inner class Run(val password: String) : Runnable {
+        @Volatile var shell: QnxShell? = null
+        val thread = Thread(this, "DiPlay-QnxTrip").apply { isDaemon = true }
+        val current get() = active === this
+
+        fun deliver(trip: DashboardTrip?) = main.post { if (current) listener(trip) }
+
+        override fun run() {
+            var failures = 0
+            var last: DashboardTrip? = null
+            while (current) {
+                if (QnxTripCredentials.refusals(app) >= QnxTripCredentials.MAX_REFUSALS) {
+                    Log.w(TAG, "trip data from QNX: the password was refused; waiting for a new one")
+                    deliver(null)
+                    return
+                }
+                try {
+                    val open = QnxShell.connect(CONNECT_TIMEOUT_MILLIS)
+                    shell = open
+                    try {
+                        open.login(password) { current }
+                        QnxTripCredentials.accepted(app)
+                        Log.i(TAG, "trip data from QNX: logged in")
+                        while (current) {
+                            val trip = QnxTripData.parse(open.read("cat $PPS_OBJECT", READ_TIMEOUT_MILLIS))
+                            failures = 0
+                            if (trip != last) {
+                                Log.i(TAG, "trip data from QNX: $trip")
+                                last = trip
+                                deliver(trip)
+                            }
+                            Thread.sleep(POLL_MILLIS)
+                        }
+                    } finally {
+                        shell = null
+                        open.close()
+                    }
+                } catch (refused: QnxShell.LoginRefused) {
+                    QnxTripCredentials.refused(app)
+                    failures++
+                    Log.w(TAG, "trip data from QNX: login refused, QNX said: " + printable(refused.answer))
+                } catch (_: InterruptedException) {
+                    return
+                } catch (error: IOException) {
+                    if (!current) return
+                    failures++
+                    Log.w(TAG, "trip data from QNX lost: ${error.javaClass.simpleName}: ${error.message}")
+                }
+                if (last != null) {
+                    last = null
+                    deliver(null)
+                }
+                try {
+                    Thread.sleep(RETRY_MILLIS[(failures - 1).coerceIn(RETRY_MILLIS.indices)])
+                } catch (_: InterruptedException) {
+                    return
+                }
+            }
+        }
+    }
+
+    @Volatile private var active: Run? = null
+    private var off = false
 
     /** Starts, or restarts after a password change; main thread. */
     fun start() {
-        val next = QnxTripCredentials.load(app)
-        if (worker != null && next == password) return
+        val password = QnxTripCredentials.load(app)
+        if (active != null && active?.password == password) return
         stop()
-        password = next
-        if (next == null) {
-            Log.i(TAG, "trip data from QNX off: no password")
+        if (password == null) {
+            if (!off) Log.i(TAG, "trip data from QNX off: no password")
+            off = true
             return
         }
-        worker = Thread({ loop(next) }, "DiPlay-QnxTrip").apply {
-            isDaemon = true
-            start()
+        off = false
+        Run(password).also {
+            active = it
+            it.thread.start()
         }
     }
 
     /** Main thread. */
     fun stop() {
-        val running = worker ?: return
-        worker = null
-        running.interrupt()
-        shell?.let { open -> Thread { open.close() }.start() }
-        main.post { listener(null) }
-    }
-
-    private fun loop(password: String) {
-        var failures = 0
-        var last: DashboardTrip? = null
-        while (worker === Thread.currentThread()) {
-            try {
-                val open = QnxShell.connect(CONNECT_TIMEOUT_MILLIS)
-                shell = open
-                open.login(password)
-                Log.i(TAG, "trip data from QNX: logged in")
-                failures = 0
-                while (worker === Thread.currentThread()) {
-                    val text = open.run("cat $PPS_OBJECT", READ_TIMEOUT_MILLIS)
-                    val trip = text?.let(QnxTripData::parse)
-                    if (trip != last) {
-                        Log.i(TAG, "trip data from QNX: $trip")
-                        last = trip
-                        main.post { if (worker != null) listener(trip) }
-                    }
-                    Thread.sleep(POLL_MILLIS)
-                }
-            } catch (_: QnxShell.LoginRefused) {
-                Log.w(TAG, "trip data from QNX: the password was refused; waiting for a new one")
-                main.post { if (worker != null) listener(null) }
-                return
-            } catch (_: InterruptedException) {
-                return
-            } catch (error: IOException) {
-                failures++
-                Log.w(TAG, "trip data from QNX lost: ${error.javaClass.simpleName}: ${error.message}")
-                if (last != null) {
-                    last = null
-                    main.post { if (worker != null) listener(null) }
-                }
-            } finally {
-                shell?.let { open -> runCatching { open.close() } }
-                shell = null
-            }
-            try {
-                Thread.sleep(RETRY_MILLIS[(failures - 1).coerceIn(RETRY_MILLIS.indices)])
-            } catch (_: InterruptedException) {
-                return
-            }
-        }
+        val stopped = active ?: return
+        active = null
+        stopped.thread.interrupt()
+        stopped.shell?.let { open -> Thread { open.close() }.start() }
+        listener(null)
     }
 
     private companion object {
@@ -262,5 +296,7 @@ internal class QnxTripReader(context: Context, private val listener: (DashboardT
         const val READ_TIMEOUT_MILLIS = 4_000L
         const val POLL_MILLIS = 5_000L
         val RETRY_MILLIS = longArrayOf(10_000L, 30_000L, 60_000L)
+
+        fun printable(text: String) = text.map { if (it in ' '..'~') it else '.' }.joinToString("")
     }
 }
