@@ -26,12 +26,12 @@ internal object GeelyCallKeys {
     }
 
     /**
-     * Gives the media key [index] to [call] when [enabled] and a [session] has a call for it, otherwise to [media].
-     * Decided before [media], which may leave the key to the car's source: during a call the wheel belongs to it.
+     * Gives the media key [index] to [call] when the option is [active] and [card] has a call for it, otherwise to
+     * [media]. Decided before [media], which may leave the key to the car's source: during a call the wheel belongs
+     * to it.
      */
-    fun route(index: Int, enabled: Boolean, session: Boolean, card: CarPlayCallCard?, call: (Action) -> Unit,
-        media: (Int) -> Unit) {
-        val action = if (enabled && session) action(index, card) else Action.PASS
+    fun route(index: Int, active: Boolean, card: CarPlayCallCard?, call: (Action) -> Unit, media: (Int) -> Unit) {
+        val action = if (active) action(index, card) else Action.PASS
         if (action == Action.PASS) media(index) else call(action)
     }
 }

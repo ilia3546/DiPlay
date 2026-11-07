@@ -37,11 +37,12 @@ internal sealed interface DashboardCallShown {
         const val ENDED_MILLIS = 3_500L
 
         /**
-         * Null leaves the media block: the option is off, there is no call, or the last call ended [ENDED_MILLIS] or
-         * more before [nowMillis], which is wall-clock time like [CarPlayCallOutcome.endedAtMillis].
+         * Null leaves the media block: the option does not act ([MonjaroDashboardCall.active]), there is no call, or
+         * the last call ended [ENDED_MILLIS] or more before [nowMillis], which is wall-clock time like
+         * [CarPlayCallOutcome.endedAtMillis].
          */
-        fun of(enabled: Boolean, calls: CarPlayCallSnapshot, nowMillis: Long): DashboardCallShown? {
-            if (!enabled) return null
+        fun of(active: Boolean, calls: CarPlayCallSnapshot, nowMillis: Long): DashboardCallShown? {
+            if (!active) return null
             calls.card?.let { return Live(it, calls.label, calls.muted == true) }
             val outcome = calls.lastOutcome ?: return null
             return if (nowMillis - outcome.endedAtMillis in 0 until ENDED_MILLIS) Ended(outcome) else null

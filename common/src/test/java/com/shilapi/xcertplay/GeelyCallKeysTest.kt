@@ -34,9 +34,9 @@ class GeelyCallKeysTest {
         }
     }
 
-    private fun route(index: Int, enabled: Boolean = true, session: Boolean = true, card: CarPlayCallCard? = ringing,
+    private fun route(index: Int, active: Boolean = true, card: CarPlayCallCard? = ringing,
         media: (Int) -> Unit = { routed += "media $it" }) =
-        GeelyCallKeys.route(index, enabled, session, card, call = { routed += "call $it" }, media = media)
+        GeelyCallKeys.route(index, active, card, call = { routed += "call $it" }, media = media)
 
     @Test fun duringACallTheKeyGoesToTheCallAndNotToTheIphoneAsMedia() {
         route(CarPlayMediaButton.NEXT)
@@ -50,9 +50,9 @@ class GeelyCallKeysTest {
         assertEquals(listOf("media ${CarPlayMediaButton.NEXT}", "media ${CarPlayMediaButton.PLAY_PAUSE}"), routed)
     }
 
-    @Test fun withTheOptionOffOrWithoutASessionTheKeyGoesToTheMediaKeys() {
-        route(CarPlayMediaButton.NEXT, enabled = false)
-        route(CarPlayMediaButton.PREVIOUS, session = false)
+    @Test fun whileTheOptionDoesNotActTheKeyGoesToTheMediaKeys() {
+        route(CarPlayMediaButton.NEXT, active = false)
+        route(CarPlayMediaButton.PREVIOUS, active = false, card = active)
         assertEquals(listOf("media ${CarPlayMediaButton.NEXT}", "media ${CarPlayMediaButton.PREVIOUS}"), routed)
     }
 

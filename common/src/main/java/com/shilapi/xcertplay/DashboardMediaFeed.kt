@@ -103,7 +103,7 @@ internal class DashboardMediaFeed(private val block: DashboardMediaBlock, privat
             DashboardMediaSource.OTHER, DashboardMediaSource.UNKNOWN -> DashboardMedia.Empty
         })
         val now = System.currentTimeMillis()
-        showCall(DashboardCallShown.of(MonjaroDashboardCall.enabled(block.context), CarPlayCalls.current(), now), now)
+        showCall(DashboardCallShown.of(MonjaroDashboardCall.active(block.context), CarPlayCalls.current(), now), now)
     }
 
     private fun showCall(shown: DashboardCallShown?, nowMillis: Long = System.currentTimeMillis()) {

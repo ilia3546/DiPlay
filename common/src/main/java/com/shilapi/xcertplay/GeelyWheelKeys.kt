@@ -151,8 +151,7 @@ internal object GeelyWheelKeys {
         val controller = CarPlayBackgroundSession.snapshot()?.controller
         GeelyCallKeys.route(
             index,
-            enabled = context != null && GeelyHeadUnit.monjaroA3 && AirPlayPersistence.loadDashboardCalls(context),
-            session = controller?.activeAirPlaySessionToken() != null,
+            active = context != null && MonjaroDashboardCall.active(context),
             card = CarPlayCalls.current().card,
             call = { action -> sendToCall(controller, index, action) },
             media = CarPlayMediaKeys::onExternalMediaKey,
