@@ -22,6 +22,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowBuild
+import org.robolectric.shadows.ShadowLog
 import java.time.Duration
 
 @RunWith(RobolectricTestRunner::class)
@@ -201,5 +202,19 @@ class MonjaroDashboardCallTest {
         live = false
         assertNull(DashboardCallShown.of(MonjaroDashboardCall.active(context), CarPlayCalls.current(),
             System.currentTimeMillis()))
+    }
+
+    @Test fun aSessionWithTheOptionOnWarnsWhileThePhonesBluetoothIsKept() {
+        fun warnings() = ShadowLog.getLogsForTag("DiPlay-DashboardCall").count { it.type == android.util.Log.WARN }
+        ShadowLog.clear()
+        monjaroA3()
+        AirPlayPersistence.saveDashboardCalls(context, true)
+        startSession()
+        assertEquals(1, warnings())
+        MonjaroDashboardCall.sessionEnded()
+        idle()
+        AirPlayPersistence.saveDisconnectPhoneBluetooth(context, true)
+        startSession()
+        assertEquals(1, warnings())
     }
 }

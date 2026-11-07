@@ -3,6 +3,7 @@ package com.shilapi.xcertplay
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import com.shilapi.xcertplay.hud.CarPlayCalls
 import com.shilapi.xcertplay.hud.DashboardCall
 import com.shilapi.xcertplay.hud.GeelyDashboardCall
@@ -14,6 +15,7 @@ import com.shilapi.xcertplay.network.GeelyHeadUnit
  * attached and [active] holds; turning either off closes the widget.
  */
 internal object MonjaroDashboardCall {
+    private const val TAG = "DiPlay-DashboardCall"
     private const val RECHECK_MILLIS = 1_000L
     private val main = Handler(Looper.getMainLooper())
     internal var dashboard: DashboardCall = GeelyDashboardCall
@@ -68,6 +70,9 @@ internal object MonjaroDashboardCall {
         val context = app ?: return
         val on = sessionAttached && enabled(context)
         if (on && stopObserving == null) {
+            if (!MonjaroA3Options.load(context).disconnectPhoneBluetooth) {
+                Log.w(TAG, "CarPlay calls on with the phone's Bluetooth kept: the stock phone may show the same call")
+            }
             dashboard.start(context)
             stopObserving = CarPlayCalls.observe { main.post(::showCurrent) }
         } else if (!on) {
