@@ -75,6 +75,7 @@ class CarPlayCallState(private val clock: () -> Long = System::currentTimeMillis
 
     companion object {
         const val CALL_STATE_UPDATE = 0x4155
+        const val COMMUNICATIONS_UPDATE = 0x4158
         private const val REMOTE_ID = 0
         private const val DISPLAY_NAME = 1
         private const val STATUS = 2
@@ -119,6 +120,7 @@ object BydCarPlayCall {
     private val shell = BydAdbShell(TAG)
     private val writer = Executors.newSingleThreadScheduledExecutor { Thread(it, "diplay-carplay-call").apply { isDaemon = true } }
     private val state = CarPlayCallState()
+    private val trace = CarPlayCallTrace()
     @Volatile private var context: Context? = null
     private var shown: CarPlayCallCard? = null // writer thread
     private var watcherRunning = false // writer thread
@@ -149,6 +151,7 @@ object BydCarPlayCall {
     fun current(): CarPlayCallCard? = synchronized(state) { state.current() }
 
     fun onFrame(frame: Iap2Frame) {
+        trace.line(frame)?.let { Log.i(TAG, it) }
         val card = synchronized(state) {
             if (!state.accept(frame)) return
             state.current()

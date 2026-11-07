@@ -86,7 +86,8 @@ object BydNavigationOutputs {
             BydClusterSong.onFrame(frame)
             return
         }
-        if (frame.messageId == CarPlayCallState.CALL_STATE_UPDATE) {
+        if (frame.messageId == CarPlayCallState.CALL_STATE_UPDATE ||
+            frame.messageId == CarPlayCallState.COMMUNICATIONS_UPDATE) {
             BydCarPlayCall.onFrame(frame)
             return
         }
