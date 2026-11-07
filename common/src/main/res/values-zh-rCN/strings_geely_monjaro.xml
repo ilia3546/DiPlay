@@ -15,7 +15,7 @@
     <string name="settings_dashboard_music">在仪表盘和媒体组件上显示 CarPlay 音乐（实验性）</string>
     <string name="settings_dashboard_music_description">在原厂仪表盘的音乐组件以及驾驶员和乘客屏幕的音乐组件中显示 CarPlay 的曲目、艺人、专辑和封面，CarPlay 结束时清除。组件上的按钮可控制 CarPlay。只有车机拒绝 DiPlay 自身的请求时才使用 root（Magisk）。立即生效。</string>
     <string name="settings_pause_carplay_for_car_audio">车机播放自身音频时暂停 CarPlay（实验性）</string>
-    <string name="settings_pause_carplay_for_car_audio_description">当收音机或车机的其他应用开始播放时，DiPlay 会暂停 iPhone，避免两者同时发声。适用于播放器会获取 Android 音频焦点、但 DiPlay 的声音仍继续播放的固件。要切换回来，请在 CarPlay 中重新播放音乐。立即生效。</string>
+    <string name="settings_pause_carplay_for_car_audio_description">当收音机或车机的其他应用开始播放时，DiPlay 会暂停 iPhone，避免两者同时发声。适用于播放器会获取 Android 音频焦点、但 DiPlay 的声音仍继续播放的固件。要切换回来，请在 CarPlay 中重新播放音乐。在此之前，方向盘媒体按键控制车机音源。立即生效。</string>
     <string name="settings_custom_dashboard">带 CarPlay 地图的自定义仪表盘（实验性）</string>
     <string name="settings_custom_dashboard_description">CarPlay 连接期间，DiPlay 在仪表盘上绘制自己的界面：中间是 CarPlay 地图，周围以时钟、车外温度、行程和音乐取代原厂仪表盘两侧的组件。车速、警告灯和底部信息栏仍由固件绘制在上层。适用于在工程模式下显示 Android 仪表盘屏幕的固件。请先关闭 GMC 自定义仪表盘。与中控屏上的仪表盘地图同时使用时，CarPlay 需要多一个视频解码器。需要“显示在其他应用上层”权限。开启后在下次连接时生效，关闭后立即生效。</string>
     <string name="settings_custom_dashboard_background">仪表盘背景</string>

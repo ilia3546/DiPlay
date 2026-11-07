@@ -63,6 +63,8 @@ internal object CarPlayMediaKeys {
     private var focusHeld = false
     /** Some car firmware never sends a gain callback after the phone call ends. */
     private var transientFocusInterrupted = false
+    // The car's own source took the audio; its steering-wheel keys stay with it until CarPlay plays again.
+    private var carAudioOwnsWheel = false
     private var appContext: Context? = null
     private var mediaAudioActive = false
     private var nowPlaying = CarPlayNowPlaying()
@@ -117,7 +119,10 @@ internal object CarPlayMediaKeys {
         MonjaroDashboardMusic.playingChanged(playing)
         if (playing) mainHandler.post {
             synchronized(this) {
-                if (controller === expected) regainFocusLocked(onIphonePlaybackResume = true)
+                if (controller === expected) {
+                    carAudioOwnsWheel = false
+                    regainFocusLocked(onIphonePlaybackResume = true)
+                }
             }
         }
     }
@@ -355,8 +360,10 @@ internal object CarPlayMediaKeys {
             if (controller !== expectedController || focusOwner !== owner ||
                 (grantedRevision != null && grantedRevision != focusEventRevision)) false
             else {
-                pauseIphone = change == AudioManager.AUDIOFOCUS_LOSS && (nowPlaying.playing || mediaAudioActive) &&
+                val carAudioTakesOver = change == AudioManager.AUDIOFOCUS_LOSS &&
                     appContext?.let { MonjaroA3Options.load(it).pauseCarPlayForCarAudio } == true
+                if (carAudioTakesOver) carAudioOwnsWheel = true
+                pauseIphone = carAudioTakesOver && (nowPlaying.playing || mediaAudioActive)
                 focusEventRevision += 1
                 // Only permanent loss moves media keys elsewhere; transient losses come back.
                 when (change) {
@@ -411,6 +418,7 @@ internal object CarPlayMediaKeys {
         focusRequest = null
         focusHeld = false
         transientFocusInterrupted = false
+        carAudioOwnsWheel = false
         publishClusterPlaybackLocked()
     }
 
@@ -458,7 +466,15 @@ internal object CarPlayMediaKeys {
     }
 
     /** A steering-wheel media key captured outside the Android key stream (Geely/Lynk). */
-    internal fun onExternalMediaKey(index: Int) = send(index, "geely-wheel")
+    internal fun onExternalMediaKey(index: Int) {
+        // The car's source hears the same key itself; forwarding it too would start CarPlay over it.
+        if (synchronized(this) { carAudioOwnsWheel }) {
+            Log.i(TAG, "media key geely-wheel $index left to the car's source")
+            WheelKeyLog.note("media key geely-wheel $index left to the car's source")
+            return
+        }
+        send(index, "geely-wheel")
+    }
 
     /** A button of the stock Geely media widget while DiPlay's track is shown there. */
     internal fun onWidgetMediaKey(index: Int) = send(index, "geely-widget")
