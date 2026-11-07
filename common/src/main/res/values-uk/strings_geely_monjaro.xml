@@ -35,6 +35,10 @@
     <string name="settings_custom_dashboard_background_photo">Власне фото…</string>
     <string name="settings_custom_dashboard_change_photo">Змінити фото</string>
     <string name="settings_custom_dashboard_dimming">Затемнення фону</string>
+    <string name="settings_custom_dashboard_map_width">Ширина мапи</string>
+    <string name="settings_custom_dashboard_map_height">Висота мапи</string>
+    <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
+    <string name="settings_custom_dashboard_map_size_note">Картка змінюється одразу; iPhone надішле мапу нового розміру після перепідключення.</string>
     <string name="settings_hud_maneuvers">Навігація на HUD (експериментально)</string>
     <string name="settings_hud_maneuvers_description">Поки CarPlay веде маршрутом, DiPlay малює на проєкційному дисплеї наступний маневр: знак із номером з\'їзду з кільця, відстань і вулицю, а під ними смуги та час і відстань, що залишилися. Без маршруту проєкційний дисплей порожній. Для прошивок, які показують на проєкційному дисплеї дисплей Android. Якщо встановлено застосунок HUD Renderer (org.monjaro.hudrenderer), спочатку вимкніть його виведення, інакше обидва малюватимуть одночасно. Потрібен дозвіл «Показ поверх інших застосунків». Застосовується одразу.</string>
     <string name="settings_hud_density">Вигляд рядка HUD</string>

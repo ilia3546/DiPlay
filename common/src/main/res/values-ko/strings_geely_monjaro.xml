@@ -35,6 +35,10 @@
     <string name="settings_custom_dashboard_background_photo">내 사진…</string>
     <string name="settings_custom_dashboard_change_photo">사진 변경</string>
     <string name="settings_custom_dashboard_dimming">배경 어둡게</string>
+    <string name="settings_custom_dashboard_map_width">지도 너비</string>
+    <string name="settings_custom_dashboard_map_height">지도 높이</string>
+    <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
+    <string name="settings_custom_dashboard_map_size_note">카드는 즉시 바뀌며, iPhone은 다시 연결한 후 새 크기로 지도를 보냅니다.</string>
     <string name="settings_hud_maneuvers">HUD에 내비게이션 표시 (실험 기능)</string>
     <string name="settings_hud_maneuvers_description">CarPlay가 경로를 안내하는 동안 DiPlay가 헤드업 디스플레이에 다음 안내를 그립니다. 회전 교차로 출구 번호가 있는 표지, 거리, 도로 이름과 그 아래에 차로, 남은 시간과 거리를 표시합니다. 경로가 없으면 아무것도 표시하지 않습니다. 헤드업 디스플레이에 Android 디스플레이를 보여 주는 펌웨어용입니다. HUD Renderer 앱(org.monjaro.hudrenderer)이 설치되어 있으면 먼저 그 출력을 끄세요. 그렇지 않으면 둘이 동시에 그립니다. \'다른 앱 위에 표시\' 권한이 필요합니다. 바로 적용됩니다.</string>
     <string name="settings_hud_density">HUD 레이아웃</string>

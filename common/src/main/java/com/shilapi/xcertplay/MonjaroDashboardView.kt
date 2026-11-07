@@ -37,8 +37,7 @@ internal class MonjaroDashboardView(context: Context) : FrameLayout(context) {
         place(clock, L.clock)
         place(temperature, L.temperature)
         place(trip, L.trip)
-        place(map, L.Box(L.map.left - L.MAP_BORDER, L.map.top - L.MAP_BORDER,
-            L.map.width + 2 * L.MAP_BORDER, (L.map.height ?: 0) + 2 * L.MAP_BORDER))
+        place(map, mapBox(L.defaultMap))
         place(media, L.media)
         showBackground(DashboardBackground.OCEAN, 0) { null }
         showTemperature(null)
@@ -64,6 +63,24 @@ internal class MonjaroDashboardView(context: Context) : FrameLayout(context) {
         val (wallpaper, picture) = background.drawn(photo)
         this.background = DashboardWallpaperDrawable(wallpaper, picture, dimmingPercent)
     }
+
+    /** Moves and sizes the map card; the iPhone keeps the stream's size until it connects again. */
+    fun showMap(geometry: L.MapGeometry) {
+        val box = mapBox(geometry)
+        val params = map.layoutParams as LayoutParams
+        if (params.leftMargin == box.left && params.topMargin == box.top && params.width == box.width &&
+            params.height == box.height) return
+        map.resize(geometry)
+        map.layoutParams = params.apply {
+            width = box.width
+            height = box.height ?: LayoutParams.WRAP_CONTENT
+            leftMargin = box.left
+            topMargin = box.top
+        }
+    }
+
+    private fun mapBox(geometry: L.MapGeometry) = L.Box(geometry.map.left - L.MAP_BORDER,
+        geometry.map.top - L.MAP_BORDER, geometry.width + 2 * L.MAP_BORDER, geometry.height + 2 * L.MAP_BORDER)
 
     private fun place(view: View, box: L.Box) {
         addView(view, LayoutParams(box.width, box.height ?: LayoutParams.WRAP_CONTENT, Gravity.TOP or Gravity.START).apply {

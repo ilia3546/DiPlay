@@ -74,7 +74,7 @@ internal class DashboardMapVideo(context: Context) : FrameLayout(context), Textu
     }
 
     override fun onSurfaceTextureAvailable(texture: SurfaceTexture, width: Int, height: Int) {
-        val stream = DashboardMapStream.config
+        val stream = DashboardMapStream.requested
         texture.setDefaultBufferSize(stream.widthPixels, stream.heightPixels)
         crop(width, height)
         val next = Surface(texture)
@@ -110,7 +110,7 @@ internal class DashboardMapVideo(context: Context) : FrameLayout(context), Textu
     }
 
     private fun crop(width: Int, height: Int) {
-        val stream = DashboardMapStream.config
+        val stream = DashboardMapStream.requested
         val (scaleX, scaleY) = centreCropScale(width, height, stream.widthPixels, stream.heightPixels)
         texture.setTransform(Matrix().apply { setScale(scaleX, scaleY, width / 2f, height / 2f) })
     }

@@ -35,11 +35,32 @@ internal object MonjaroDashboardLayout {
     const val TRIP_MINUTES_GAP = 5
 
     /**
-     * The map itself; the card's 1 px border lies around it, as CSS content-box sizing puts it. It sits below the
-     * firmware's drive mode selector and above its bottom line, and both sides are multiples of 8 so the iPhone
-     * streams exactly this size.
+     * The map's size, which the user picks in steps of 8 px so the iPhone streams exactly it. The map itself is
+     * centred on the firmware's car, below its drive mode selector; the card's 1 px border lies around it, as CSS
+     * content-box sizing puts it. The route cards sit in its top corners.
      */
-    val map = Box(left = (WIDTH - 592) / 2, top = 272, width = 592, height = 336)
+    data class MapGeometry(val width: Int, val height: Int) {
+        val map = Box(left = (WIDTH - width) / 2, top = MAP_CENTRE_Y - height / 2, width = width, height = height)
+
+        /** [Box.width] is the widest the card grows. */
+        val maneuverCard = Box(
+            left = map.left + ROUTE_CARD_INSET,
+            top = map.top + ROUTE_CARD_INSET,
+            width = width - 2 * ROUTE_CARD_INSET - ROUTE_CARD_GAP - ARRIVAL_WIDTH,
+        )
+        val arrivalCard = Box(
+            left = map.left + width - ROUTE_CARD_INSET - ARRIVAL_WIDTH,
+            top = map.top + ROUTE_CARD_INSET + 6,
+            width = ARRIVAL_WIDTH,
+        )
+    }
+
+    private const val MAP_CENTRE_Y = 440
+    private const val MAP_STEP = 8
+    val mapWidths = (448..800 step MAP_STEP).toList()
+    val mapHeights = (200..480 step MAP_STEP).toList()
+    val defaultMap = MapGeometry(width = 592, height = 336)
+
     const val MAP_BORDER = 1
     const val MAP_RADIUS = 28f
     const val MAP_SHADOW_DY = 18f
@@ -55,12 +76,6 @@ internal object MonjaroDashboardLayout {
     private const val ROUTE_CARD_GAP = 12
     private const val ARRIVAL_WIDTH = 230
 
-    /** Over the map's top left corner, in display pixels; [width] is the widest the card grows. */
-    val maneuverCard = Box(
-        left = map.left + ROUTE_CARD_INSET,
-        top = map.top + ROUTE_CARD_INSET,
-        width = map.width - 2 * ROUTE_CARD_INSET - ROUTE_CARD_GAP - ARRIVAL_WIDTH,
-    )
     const val MANEUVER_PADDING_START = 12
     const val MANEUVER_PADDING_END = 24
     const val MANEUVER_PADDING_VERTICAL = 12
@@ -75,12 +90,6 @@ internal object MonjaroDashboardLayout {
     const val MANEUVER_SHADOW_DY = 10f
     const val MANEUVER_SHADOW_BLUR = 30f
 
-    /** Over the map's top right corner, in display pixels. */
-    val arrivalCard = Box(
-        left = map.left + map.width - ROUTE_CARD_INSET - ARRIVAL_WIDTH,
-        top = map.top + ROUTE_CARD_INSET + 6,
-        width = ARRIVAL_WIDTH,
-    )
     const val ARRIVAL_PADDING_HORIZONTAL = 20
     const val ARRIVAL_PADDING_VERTICAL = 12
     const val ARRIVAL_RADIUS = 18f

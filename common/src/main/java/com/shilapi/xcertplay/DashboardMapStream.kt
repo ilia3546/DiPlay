@@ -17,13 +17,19 @@ internal object DashboardMapStream {
     private const val STREAM_TYPE_ALT_SCREEN = 111
 
     /** The map card's size, rounded as the iPhone needs it; the card crops the rounding away. */
-    val config: AirPlayDisplayConfig = CarPlayClusterDisplay.config(
-        widthPixels = L.map.width,
-        heightPixels = L.map.height ?: 0,
+    fun config(map: L.MapGeometry): AirPlayDisplayConfig = CarPlayClusterDisplay.config(
+        widthPixels = map.width,
+        heightPixels = map.height,
         scalePercent = 100,
         content = CarPlayClusterDisplay.Content.MAP,
         baseSafeArea = L.MAP_SAFE_AREA_PERCENT,
     )
+
+    /** What the running session asked the iPhone for: the stream keeps this size until the next connection. */
+    @Volatile var requested: AirPlayDisplayConfig = config(L.defaultMap)
+        private set
+
+    fun request(map: L.MapGeometry): AirPlayDisplayConfig = config(map).also { requested = it }
 
     private val main by lazy { Handler(Looper.getMainLooper()) }
     private var surface: Surface? = null

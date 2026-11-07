@@ -35,6 +35,10 @@
     <string name="settings_custom_dashboard_background_photo">自己的照片…</string>
     <string name="settings_custom_dashboard_change_photo">更换照片</string>
     <string name="settings_custom_dashboard_dimming">背景变暗</string>
+    <string name="settings_custom_dashboard_map_width">地图宽度</string>
+    <string name="settings_custom_dashboard_map_height">地图高度</string>
+    <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
+    <string name="settings_custom_dashboard_map_size_note">卡片立即变化；重新连接后 iPhone 才会按新尺寸发送地图。</string>
     <string name="settings_hud_maneuvers">在 HUD 上显示导航（实验性）</string>
     <string name="settings_hud_maneuvers_description">CarPlay 按路线导航期间，DiPlay 在抬头显示上绘制下一个操作：带环岛出口编号的标志、距离和道路名称，下方是车道以及剩余时间和距离。没有路线时抬头显示保持空白。适用于在抬头显示上显示 Android 显示屏的固件。如果安装了 HUD Renderer 应用（org.monjaro.hudrenderer），请先关闭它的输出，否则两者会同时绘制。需要“显示在其他应用上层”权限。立即生效。</string>
     <string name="settings_hud_density">HUD 布局</string>

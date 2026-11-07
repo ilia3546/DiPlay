@@ -1585,10 +1585,11 @@ open class CarPlayHostActivity : ComponentActivity() {
         requestedSmallWindowForStream = null
         if (MonjaroCustomDashboard.sessionStarting()) {
             clusterStreamOnDisplay = true
-            return DashboardMapStream.config.also {
+            val map = MonjaroA3Options.load(this).dashboardMap
+            return DashboardMapStream.request(map).also {
                 MapMirrors.streamAspect = it.widthPixels.toDouble() / it.heightPixels
                 appendLog("Custom dashboard: requesting stream 111 at ${it.widthPixels}x${it.heightPixels} for the " +
-                    "${MonjaroDashboardLayout.map.width}x${MonjaroDashboardLayout.map.height} map; safeArea=${it.safeArea}")
+                    "${map.width}x${map.height} map; safeArea=${it.safeArea}")
             }
         }
         if (!AirPlayPersistence.loadClusterMapEnabled(this)) return null

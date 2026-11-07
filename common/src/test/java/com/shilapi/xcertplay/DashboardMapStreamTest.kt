@@ -6,8 +6,18 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class DashboardMapStreamTest {
+    @Test fun aPickedMapSizeIsStreamedExactlyAndCentredOnTheCar() {
+        val wide = MonjaroDashboardLayout.MapGeometry(width = 800, height = 400)
+        val config = DashboardMapStream.config(wide)
+        assertEquals(800 to 400, config.widthPixels to config.heightPixels)
+        assertEquals(560, wide.map.left)
+        assertEquals(240, wide.map.top)
+        assertEquals(wide.map.left + 800 - 15, wide.arrivalCard.left + wide.arrivalCard.width)
+        assertEquals(MonjaroDashboardLayout.mapWidths.all { it % 8 == 0 } && MonjaroDashboardLayout.mapHeights.all { it % 8 == 0 }, true)
+    }
+
     @Test fun theStreamIsTheMapCardRoundedForTheIphone() {
-        val config = DashboardMapStream.config
+        val config = DashboardMapStream.config(MonjaroDashboardLayout.defaultMap)
         assertEquals(592 to 336, config.widthPixels to config.heightPixels)
         assertEquals(CarPlayClusterDisplay.MAP_URL, config.initialUrl)
         assertEquals("under the cards, clear of the sides", AirPlayInsets(top = 100, bottom = 0, left = 47, right = 47),

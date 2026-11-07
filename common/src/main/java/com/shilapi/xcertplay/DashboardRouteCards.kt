@@ -82,8 +82,16 @@ internal class DashboardManeuverCard(context: Context) : LinearLayout(context) {
         road.visibility = if (road.text.isEmpty()) GONE else VISIBLE
     }
 
+    /** The widest the card grows, from the map it sits on. */
+    var maxWidth = L.defaultMap.maneuverCard.width
+        set(value) {
+            if (field == value) return
+            field = value
+            requestLayout()
+        }
+
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(L.maneuverCard.width, MeasureSpec.AT_MOST), heightMeasureSpec)
+        super.onMeasure(MeasureSpec.makeMeasureSpec(maxWidth, MeasureSpec.AT_MOST), heightMeasureSpec)
     }
 
     override fun draw(canvas: Canvas) {

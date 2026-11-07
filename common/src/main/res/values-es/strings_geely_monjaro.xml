@@ -35,6 +35,10 @@
     <string name="settings_custom_dashboard_background_photo">Tu foto…</string>
     <string name="settings_custom_dashboard_change_photo">Cambiar foto</string>
     <string name="settings_custom_dashboard_dimming">Oscurecimiento del fondo</string>
+    <string name="settings_custom_dashboard_map_width">Ancho del mapa</string>
+    <string name="settings_custom_dashboard_map_height">Alto del mapa</string>
+    <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
+    <string name="settings_custom_dashboard_map_size_note">La tarjeta cambia al instante; el iPhone envía el mapa con el nuevo tamaño tras volver a conectar.</string>
     <string name="settings_hud_maneuvers">Navegación en el HUD (experimental)</string>
     <string name="settings_hud_maneuvers_description">Mientras CarPlay te guía por una ruta, DiPlay dibuja la siguiente maniobra en el head-up display: la señal con la salida de la rotonda, la distancia y la calle, y debajo los carriles y el tiempo y la distancia restantes. Sin ruta, el head-up display queda vacío. Para firmware que muestra una pantalla de Android en el head-up display. Si tienes instalada la app HUD Renderer (org.monjaro.hudrenderer), desactiva antes su salida o ambas dibujarán a la vez. Requiere \"Mostrar sobre otras aplicaciones\". Se aplica de inmediato.</string>
     <string name="settings_hud_density">Diseño del HUD</string>

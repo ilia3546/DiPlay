@@ -90,6 +90,7 @@ internal class MonjaroDashboardSources(private val view: MonjaroDashboardView) :
     private fun showBackground() {
         val options = MonjaroA3Options.load(app)
         view.showBackground(options.dashboardBackground, options.dashboardDimmingPercent) { DashboardPhoto.load(app) }
+        view.showMap(options.dashboardMap)
     }
 
     private fun showRoute(glance: CarPlayGlance.Snapshot) =

@@ -142,6 +142,8 @@ object AirPlayPersistence {
     private const val KEY_CUSTOM_DASHBOARD = "monjaro_custom_dashboard"
     private const val KEY_DASHBOARD_BACKGROUND = "monjaro_dashboard_background"
     private const val KEY_DASHBOARD_DIMMING = "monjaro_dashboard_dimming_percent"
+    private const val KEY_DASHBOARD_MAP_WIDTH = "monjaro_dashboard_map_width"
+    private const val KEY_DASHBOARD_MAP_HEIGHT = "monjaro_dashboard_map_height"
     private const val KEY_HUD_MANEUVERS = "monjaro_hud_maneuvers"
     private const val KEY_HUD_DENSITY = "monjaro_hud_density"
     private const val KEY_HUD_HEIGHT = "monjaro_hud_height"
@@ -659,6 +661,22 @@ object AirPlayPersistence {
     fun saveDashboardDimmingPercent(context: Context, percent: Int) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putInt(KEY_DASHBOARD_DIMMING, percent).apply()
+    }
+
+    internal fun loadDashboardMap(context: Context): MonjaroDashboardLayout.MapGeometry {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val default = MonjaroDashboardLayout.defaultMap
+        val width = prefs.getInt(KEY_DASHBOARD_MAP_WIDTH, default.width)
+            .takeIf { it in MonjaroDashboardLayout.mapWidths } ?: default.width
+        val height = prefs.getInt(KEY_DASHBOARD_MAP_HEIGHT, default.height)
+            .takeIf { it in MonjaroDashboardLayout.mapHeights } ?: default.height
+        return MonjaroDashboardLayout.MapGeometry(width, height)
+    }
+
+    internal fun saveDashboardMap(context: Context, map: MonjaroDashboardLayout.MapGeometry) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putInt(KEY_DASHBOARD_MAP_WIDTH, map.width)
+            .putInt(KEY_DASHBOARD_MAP_HEIGHT, map.height).apply()
     }
 
     fun loadHudManeuvers(context: Context): Boolean =

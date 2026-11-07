@@ -13,7 +13,7 @@ import java.util.TimeZone
 
 /**
  * The centre card of the dashboard: a rounded, bordered frame around the map. The CarPlay map's view goes into
- * [surfaceContainer], the cards drawn over the map into [overlays]; both fill the map's 700x404 pixels and are
+ * [surfaceContainer], the cards drawn over the map into [overlays]; both fill the map and are
  * clipped to its corners. Without a map the card shows its neutral colour. While CarPlay guides, the next turn
  * and the arrival sit over the map.
  */
@@ -43,22 +43,35 @@ internal class DashboardMapCard(context: Context) : FrameLayout(context) {
             addView(surfaceContainer, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
             addView(overlays, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         }
-        addView(map, LayoutParams(L.map.width, L.map.height ?: 0).apply {
+        addView(map, LayoutParams(0, 0).apply {
             leftMargin = L.MAP_BORDER
             topMargin = L.MAP_BORDER
         })
         surfaceContainer.addView(video, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         overlays.addView(maneuver, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT,
-            Gravity.TOP or Gravity.START).apply {
-            leftMargin = L.maneuverCard.left - L.map.left
-            topMargin = L.maneuverCard.top - L.map.top
-        })
+            Gravity.TOP or Gravity.START))
         overlays.addView(arrival, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT,
-            Gravity.TOP or Gravity.END).apply {
-            rightMargin = L.map.left + L.map.width - (L.arrivalCard.left + L.arrivalCard.width)
-            topMargin = L.arrivalCard.top - L.map.top
-        })
+            Gravity.TOP or Gravity.END))
+        resize(L.defaultMap)
         showRoute(null, is24Hour = true)
+    }
+
+    /** Lays the map and its route cards out for [geometry]; the owner moves the card itself. */
+    fun resize(geometry: L.MapGeometry) {
+        val map = getChildAt(0)
+        map.layoutParams = (map.layoutParams as LayoutParams).apply {
+            width = geometry.width
+            height = geometry.height
+        }
+        maneuver.maxWidth = geometry.maneuverCard.width
+        maneuver.layoutParams = (maneuver.layoutParams as LayoutParams).apply {
+            leftMargin = geometry.maneuverCard.left - geometry.map.left
+            topMargin = geometry.maneuverCard.top - geometry.map.top
+        }
+        arrival.layoutParams = (arrival.layoutParams as LayoutParams).apply {
+            rightMargin = geometry.map.left + geometry.width - (geometry.arrivalCard.left + geometry.arrivalCard.width)
+            topMargin = geometry.arrivalCard.top - geometry.map.top
+        }
     }
 
     fun showRoute(route: DashboardRoute?, is24Hour: Boolean, zone: TimeZone = TimeZone.getDefault()) {

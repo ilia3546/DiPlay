@@ -2257,6 +2257,28 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     AirPlayPersistence.saveDashboardDimmingPercent(this, dimmings[it])
                     MonjaroCustomDashboard.settingChanged()
                 }
+                val map = AirPlayPersistence.loadDashboardMap(this)
+                card.addView(overlaySliderRow(getString(R.string.settings_custom_dashboard_map_width),
+                    MonjaroDashboardLayout.mapWidths, map.width,
+                ) { getString(R.string.settings_custom_dashboard_map_size_value, it) }.also { row ->
+                    row.onSave = { width ->
+                        AirPlayPersistence.saveDashboardMap(this,
+                            AirPlayPersistence.loadDashboardMap(this).copy(width = width))
+                        MonjaroCustomDashboard.settingChanged()
+                    }
+                    row.onCommit = { markReconnectNeeded() }
+                })
+                card.addView(overlaySliderRow(getString(R.string.settings_custom_dashboard_map_height),
+                    MonjaroDashboardLayout.mapHeights, map.height,
+                ) { getString(R.string.settings_custom_dashboard_map_size_value, it) }.also { row ->
+                    row.onSave = { height ->
+                        AirPlayPersistence.saveDashboardMap(this,
+                            AirPlayPersistence.loadDashboardMap(this).copy(height = height))
+                        MonjaroCustomDashboard.settingChanged()
+                    }
+                    row.onCommit = { markReconnectNeeded() }
+                })
+                card.addView(choiceNote(getString(R.string.settings_custom_dashboard_map_size_note)))
             }
             val hudManeuvers = AirPlayPersistence.loadHudManeuvers(this)
             toggle(card, getString(R.string.settings_hud_maneuvers),
