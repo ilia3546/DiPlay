@@ -2,6 +2,8 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md)
 
+> **This is a fork with Geely Monjaro A3 support.** It adds support for the Geely Monjaro A3 (KX11, Desay head unit, Android 11) on top of [upstream DiPlay](https://github.com/shihabal3amri/DiPlay): wireless CarPlay over the car hotspot, the cabin microphones, the CarPlay track on the stock instrument cluster and media widgets, a custom instrument cluster with the CarPlay map, navigation on the head-up display and steering-wheel media keys. Everything added here sits in the **Geely Monjaro A3 Support** settings card, is off by default and shows only on that head unit; some options need root (Magisk). It is not affiliated with Geely or with the upstream author. Report Monjaro issues in this fork, not upstream. The rest of this README is upstream's.
+
 **CarPlay for compatible BYD Android head units.** Wired and wireless, with the familiar DiAuto interface. Independent app: `com.shihab.diplay`.
 
 > **BYD support scope:** These projects focus on BYD cars. They may work on other brands, but other brands are unsupported and there are no plans to add support or fix brand-specific incompatibilities.
