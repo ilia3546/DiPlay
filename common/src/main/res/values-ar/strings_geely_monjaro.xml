@@ -50,7 +50,7 @@
     <string name="settings_custom_dashboard_trip_qnx_hint">كلمة مرور root لـ QNX</string>
     <string name="settings_custom_dashboard_trip_qnx_forget">نسيان</string>
     <string name="settings_custom_dashboard_bottom_line">الإبقاء على السطر السفلي الأصلي (تجريبي)</string>
-    <string name="settings_custom_dashboard_bottom_line_description">أثناء وجود لوحة العدادات في وضع الهندسة للبرنامج الثابت، يعيد DiPlay عبر تسجيل دخول QNX الخاص ببيانات الرحلة ضبط علامة اللوحة التي تعرض الدورات والعداد والوقود وسائل التبريد وECO وناقل الحركة الأصلية إذا مسحها تطبيق آخر. يكتب هذه العلامة فقط، وفي وضع الهندسة فقط، وبحد أقصى خمس مرات لكل تسجيل دخول. يتطلب كلمة مرور QNX. يُطبّق فورًا.</string>
+    <string name="settings_custom_dashboard_bottom_line_description">أثناء وجود لوحة العدادات في وضع الهندسة للبرنامج الثابت، يعيد DiPlay عبر تسجيل دخول QNX الخاص ببيانات الرحلة ضبط علامة اللوحة التي تعرض الدورات والعداد والوقود وسائل التبريد وECO وناقل الحركة الأصلية إذا مسحها تطبيق آخر. يكتب هذه العلامة فقط، وفي وضع الهندسة فقط، وبحد أقصى خمس مرات أثناء عرض اللوحة. يتطلب كلمة مرور QNX. يُطبّق فورًا.</string>
     <string name="settings_hud_maneuvers">الملاحة على شاشة HUD (تجريبي)</string>
     <string name="settings_hud_maneuvers_description">أثناء توجيه CarPlay على مسار، يرسم DiPlay المناورة التالية على شاشة العرض الأمامية: الإشارة مع مخرج الدوار والمسافة والشارع، وتحتها الحارات والوقت والمسافة المتبقيان. بدون مسار تبقى شاشة العرض الأمامية فارغة. للبرامج الثابتة التي تعرض شاشة Android على شاشة العرض الأمامية. إذا كان تطبيق HUD Renderer (org.monjaro.hudrenderer) مثبتاً فأوقف إخراجه أولاً، وإلا فسيرسم الاثنان معاً. يتطلب إذن \"الظهور فوق التطبيقات الأخرى\". يُطبَّق فوراً.</string>
     <string name="settings_hud_density">تخطيط HUD</string>

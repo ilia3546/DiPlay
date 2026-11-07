@@ -52,7 +52,11 @@ internal object QnxEtmFlag {
     const val READ_COMMAND = "hd $FILE"
     const val ENSURE_COMMAND = "[ -f $FILE ] && [ \"\$(wc -c < $FILE)\" -eq 2 ] && " +
         "case \"\$(hd $FILE)\" in *\" 02 00 \"*) awk 'BEGIN { printf \"%c\", 1 }' | " +
-        "dd of=$FILE bs=1 seek=1 count=1 conv=notrunc 2>/dev/null ;; esac; hd $FILE"
+        "dd of=$FILE bs=1 seek=1 count=1 conv=notrunc 2>/dev/null && echo ETM_\"\"WROTE ;; esac; hd $FILE"
+    private val WROTE = Regex("""(?m)^ETM_WROTE""")
+
+    /** Whether the command wrote; its echo carries the marker with quotes, so only the shell's output counts. */
+    fun wrote(text: String) = WROTE.containsMatchIn(text)
 
     /** The pair the shell printed last, so the echoed command never counts. */
     fun parse(text: String): Pair<Int, Int>? =
@@ -221,6 +225,9 @@ internal class QnxTripReader(context: Context, private val listener: (DashboardT
 
     private inner class Run(val password: String) : Runnable {
         @Volatile var shell: QnxShell? = null
+        // Across this run's logins, so a reconnect does not reset the limits.
+        var etmWrites = 0
+        var etmWrittenAt = Long.MIN_VALUE / 2
         val thread = Thread(this, "DiPlay-QnxTrip").apply { isDaemon = true }
         val current get() = active === this
 
@@ -243,26 +250,24 @@ internal class QnxTripReader(context: Context, private val listener: (DashboardT
                         QnxTripCredentials.accepted(app)
                         Log.i(TAG, "trip data from QNX: logged in")
                         var etm: Pair<Int, Int>? = null
-                        var etmWrites = 0
-                        var etmWrittenAt = Long.MIN_VALUE / 2
                         while (current) {
                             if (MonjaroA3Options.load(app).dashboardBottomLine) {
                                 val now = System.nanoTime() / 1_000_000
                                 val mayWrite = etmWrites < MAX_ETM_WRITES && now - etmWrittenAt >= ETM_WRITE_GAP_MILLIS
-                                val before = etm
-                                val pair = QnxEtmFlag.parse(open.read(
+                                val answer = open.read(
                                     if (mayWrite) QnxEtmFlag.ENSURE_COMMAND else QnxEtmFlag.READ_COMMAND,
-                                    READ_TIMEOUT_MILLIS))
-                                // The write went through when the line was hidden and it shows now.
-                                if (mayWrite && pair == ETM_SHOWN && before != ETM_SHOWN) {
+                                    READ_TIMEOUT_MILLIS)
+                                val pair = QnxEtmFlag.parse(answer)
+                                if (mayWrite && QnxEtmFlag.wrote(answer)) {
                                     etmWrites++
                                     etmWrittenAt = now
+                                    Log.i(TAG, "cluster flags: the stock bottom line was hidden, set it again " +
+                                        "($etmWrites of $MAX_ETM_WRITES), now ${format(pair)}")
+                                } else if (pair != etm) {
+                                    Log.i(TAG, "cluster flags ${format(etm)} -> ${format(pair)}" +
+                                        if (pair == ETM_HIDDEN && etmWrites >= MAX_ETM_WRITES) "; no more writes" else "")
                                 }
-                                if (pair != before) {
-                                    Log.i(TAG, "cluster flags ${format(before)} -> ${format(pair)}" +
-                                        if (pair == ETM_HIDDEN && etmWrites >= MAX_ETM_WRITES) "; no more writes this login" else "")
-                                    etm = pair
-                                }
+                                etm = pair
                             }
                             val trip = QnxTripData.parse(open.read("cat $PPS_OBJECT", READ_TIMEOUT_MILLIS))
                             failures = 0
@@ -340,7 +345,6 @@ internal class QnxTripReader(context: Context, private val listener: (DashboardT
 
         const val MAX_ETM_WRITES = 5
         const val ETM_WRITE_GAP_MILLIS = 30_000L
-        val ETM_SHOWN = 2 to 1
         val ETM_HIDDEN = 2 to 0
 
         fun printable(text: String) = text.map { if (it in ' '..'~') it else '.' }.joinToString("")

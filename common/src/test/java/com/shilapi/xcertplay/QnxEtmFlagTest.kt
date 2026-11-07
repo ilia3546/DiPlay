@@ -17,6 +17,12 @@ class QnxEtmFlagTest {
         assertNull(QnxEtmFlag.parse("hd: /dev/shmem/etm_flag: No such file or directory\r\n# "))
     }
 
+    @Test fun onlyTheShellsMarkerCountsAsAWrite() {
+        val echo = QnxEtmFlag.ENSURE_COMMAND + "\r\n"
+        assertEquals(false, QnxEtmFlag.wrote(echo + "0000000 02 01    ..\r\n# "))
+        assertEquals(true, QnxEtmFlag.wrote(echo + "ETM_WROTE\r\n0000000 02 01    ..\r\n# "))
+    }
+
     @Test fun theWriteIsGuardedOnTheQnxSide() {
         val command = QnxEtmFlag.ENSURE_COMMAND
         assertEquals(1, Regex("conv=notrunc").findAll(command).count())

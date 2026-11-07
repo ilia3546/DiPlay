@@ -50,7 +50,7 @@
     <string name="settings_custom_dashboard_trip_qnx_hint">QNX の root パスワード</string>
     <string name="settings_custom_dashboard_trip_qnx_forget">削除</string>
     <string name="settings_custom_dashboard_bottom_line">純正の下段表示を保つ（実験的機能）</string>
-    <string name="settings_custom_dashboard_bottom_line_description">メーターがファームウェアのエンジニアリングモードの間、他のアプリがフラグを消した場合に、DiPlay が走行データ用の QNX ログインで純正の回転数・走行距離・燃料・冷却水・ECO・ギアの下段を表示するフラグを戻します。書き込むのはこのフラグだけで、エンジニアリングモード中のみ、1 回のログインで最大 5 回です。QNX パスワードが必要です。すぐに適用されます。</string>
+    <string name="settings_custom_dashboard_bottom_line_description">メーターがファームウェアのエンジニアリングモードの間、他のアプリがフラグを消した場合に、DiPlay が走行データ用の QNX ログインで純正の回転数・走行距離・燃料・冷却水・ECO・ギアの下段を表示するフラグを戻します。書き込むのはこのフラグだけで、エンジニアリングモード中のみ、メーター表示中に最大 5 回です。QNX パスワードが必要です。すぐに適用されます。</string>
     <string name="settings_hud_maneuvers">HUD にナビを表示（実験的機能）</string>
     <string name="settings_hud_maneuvers_description">CarPlay がルート案内している間、DiPlay はヘッドアップディスプレイに次の操作を表示します。ロータリーの出口番号付きの標識、距離、通りの名前と、その下に車線と残りの時間・距離です。ルートがないときは何も表示しません。ヘッドアップディスプレイに Android のディスプレイを表示するファームウェア向けです。HUD Renderer アプリ（org.monjaro.hudrenderer）がインストールされている場合は、先にその出力をオフにしてください。オフにしないと両方が同時に表示されます。「他のアプリの上に重ねて表示」の許可が必要です。すぐに適用されます。</string>
     <string name="settings_hud_density">HUD のレイアウト</string>
