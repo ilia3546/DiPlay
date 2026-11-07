@@ -20,11 +20,13 @@ internal enum class DashboardMediaSource {
          */
         fun of(signals: DashboardMediaSignals): DashboardMediaSource = with(signals) {
             val carPlaySounding = (carPlayFocus || carPlayFocusDisabled) && carPlayPlaying
-            val headUnitSources = listOf(radioPlaying, bluetoothPlaying, usbPlaying).count { it }
+            // The firmware leaves its radio flag set after the radio pauses for another source; the radio service knows.
+            val radioSounding = radioPlaying && radioServicePlaying != false
+            val headUnitSources = listOf(radioSounding, bluetoothPlaying, usbPlaying).count { it }
             when {
                 carPlaySounding -> if (headUnitSources == 0) CARPLAY else UNKNOWN
                 headUnitSources > 1 -> UNKNOWN
-                radioPlaying -> if (radioServicePlaying == false) UNKNOWN else RADIO
+                radioSounding -> RADIO
                 bluetoothPlaying || usbPlaying -> OTHER
                 carPlayFocus && carPlayTrack -> CARPLAY
                 else -> UNKNOWN

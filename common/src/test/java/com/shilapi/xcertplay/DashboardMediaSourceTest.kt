@@ -41,6 +41,13 @@ class DashboardMediaSourceTest {
             source(carPlayPlays.copy(carPlayPlaying = false, radioPlaying = true)))
     }
 
+    @Test fun aRadioFlagLeftSetAfterTheRadioPausedDoesNotHideCarPlay() {
+        assertEquals(DashboardMediaSource.CARPLAY,
+            source(carPlayPlays.copy(radioPlaying = true, radioServicePlaying = false)))
+        assertEquals("the service is not bound yet", DashboardMediaSource.UNKNOWN,
+            source(carPlayPlays.copy(radioPlaying = true, radioServicePlaying = null)))
+    }
+
     @Test fun disagreeingSignalsShowNothing() {
         assertEquals(DashboardMediaSource.UNKNOWN, source(carPlayPlays.copy(radioPlaying = true)))
         assertEquals(DashboardMediaSource.UNKNOWN, source(carPlayPlays.copy(bluetoothPlaying = true)))
