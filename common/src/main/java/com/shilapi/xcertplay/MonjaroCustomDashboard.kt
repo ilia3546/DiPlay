@@ -239,12 +239,14 @@ internal object MonjaroCustomDashboard {
 }
 
 /**
- * Waits off the main thread, up to one deadline, for the dashboard music and the custom dashboard work asked for
- * so far, such as the empty music card and the engineering-mode exit at shutdown.
+ * Waits off the main thread, up to one deadline, for the dashboard music, the call widget and the custom dashboard
+ * work asked for so far, such as the empty music card, the closed call widget and the engineering-mode exit at
+ * shutdown.
  */
 internal fun awaitMonjaroDashboards(timeoutMillis: Long): Boolean {
-    val idle = CountDownLatch(2)
+    val idle = CountDownLatch(3)
     MonjaroDashboardMusic.whenIdle(idle::countDown)
+    MonjaroDashboardCall.whenIdle(idle::countDown)
     MonjaroCustomDashboard.whenIdle(idle::countDown)
     return try {
         idle.await(timeoutMillis, TimeUnit.MILLISECONDS)

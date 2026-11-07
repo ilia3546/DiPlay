@@ -53,7 +53,8 @@ internal object GeelyDashboardMessages {
 
     fun playState(playing: Boolean): String = "{\"MusicPlayStatus\":\"${if (playing) "Play" else "Pause"}\"}"
 
-    private fun StringBuilder.field(name: String, value: String) {
+    /** Appends `,"name":"value"` with [value] escaped as a JSON string. */
+    internal fun StringBuilder.field(name: String, value: String) {
         append(",\"").append(name).append("\":\"")
         for (char in value) when {
             char == '"' -> append("\\\"")

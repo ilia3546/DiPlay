@@ -91,6 +91,7 @@ internal object CarPlayMediaKeys {
         controller = next
         GeelyWheelKeys.start(context)
         MonjaroDashboardMusic.sessionStarted(context) { next.nowPlayingSnapshot().playing }
+        MonjaroDashboardCall.sessionStarted(context)
         com.shilapi.xcertplay.media.AmbientMusicController.claimPlaybackOwner(next)
         next.playbackListener = { playing ->
             com.shilapi.xcertplay.media.AmbientMusicController.phonePlaybackChanged(next, playing)
@@ -114,6 +115,7 @@ internal object CarPlayMediaKeys {
         controller = null
         GeelyWheelKeys.stop()
         MonjaroDashboardMusic.sessionEnded()
+        MonjaroDashboardCall.sessionEnded()
         releaseLocked()
     }
 

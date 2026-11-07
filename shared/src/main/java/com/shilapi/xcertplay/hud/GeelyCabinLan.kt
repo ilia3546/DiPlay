@@ -10,6 +10,7 @@ import com.shilapi.xcertplay.network.RootShell
  */
 internal object GeelyCabinLan {
     const val MUSIC = 0x1001
+    const val PHONE = 0x1003
     const val ENGINEERING_MODE = 0x1005
     const val ENGINEERING_MODE_SWITCH = 0x10
     private const val CABIN_LAN_MSG_COMMON = 1114113

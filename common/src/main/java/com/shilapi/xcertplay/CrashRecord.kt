@@ -72,8 +72,8 @@ internal object CrashRecord {
 }
 
 /**
- * Installs [CrashRecord], [MonjaroCustomDashboard] and [MonjaroHud] when the process starts, before any activity,
- * receiver or service runs.
+ * Installs [CrashRecord], [MonjaroCustomDashboard], [MonjaroHud] and [MonjaroDashboardCall] when the process starts,
+ * before any activity, receiver or service runs.
  */
 class CrashRecordInstaller : ContentProvider() {
     override fun onCreate(): Boolean {
@@ -81,6 +81,7 @@ class CrashRecordInstaller : ContentProvider() {
             CrashRecord.install(it)
             MonjaroCustomDashboard.install(it)
             MonjaroHud.install(it)
+            MonjaroDashboardCall.install(it)
         }
         return true
     }
