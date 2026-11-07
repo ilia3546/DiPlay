@@ -49,6 +49,8 @@
     <string name="settings_custom_dashboard_trip_qnx_description">適用於將行車電腦放在 QNX 一側的韌體。儀表顯示期間，DiPlay 以 root 登入 192.168.8.1:3333 上的 QNX shell，每 5 秒只讀取原廠儀表的行程（里程、行駛時間、平均油耗）。密碼只保存在本車機上，不會進入設定備份。</string>
     <string name="settings_custom_dashboard_trip_qnx_hint">QNX root 密碼</string>
     <string name="settings_custom_dashboard_trip_qnx_forget">忘記</string>
+    <string name="settings_custom_dashboard_bottom_line">保留原廠底部資訊列（實驗性）</string>
+    <string name="settings_custom_dashboard_bottom_line_description">儀表處於韌體工程模式時，如果其他應用程式清除了顯示原廠轉速、里程、油量、水溫、ECO 和檔位底部列的儀表旗標，DiPlay 會透過行程資料的 QNX 登入將其恢復。只寫入這一個旗標，只在工程模式下，每次登入最多五次。需要 QNX 密碼。立即生效。</string>
     <string name="settings_hud_maneuvers">在 HUD 上顯示導航（實驗性）</string>
     <string name="settings_hud_maneuvers_description">CarPlay 依路線導航期間，DiPlay 會在抬頭顯示器上繪製下一個操作：帶圓環出口編號的標誌、距離和道路名稱，下方是車道以及剩餘時間和距離。沒有路線時抬頭顯示器保持空白。適用於在抬頭顯示器上顯示 Android 螢幕的韌體。如果安裝了 HUD Renderer 應用程式（org.monjaro.hudrenderer），請先關閉它的輸出，否則兩者會同時繪製。需要「顯示在其他應用程式上層」權限。立即生效。</string>
     <string name="settings_hud_density">HUD 版面</string>

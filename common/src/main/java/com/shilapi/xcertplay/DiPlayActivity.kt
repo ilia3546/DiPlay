@@ -2290,6 +2290,11 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     matchButton(0, 60))
                 card.addView(choiceNote(getString(if (tripPassword) R.string.settings_custom_dashboard_trip_qnx_on
                     else R.string.settings_custom_dashboard_trip_qnx_off)))
+                toggle(card, getString(R.string.settings_custom_dashboard_bottom_line),
+                    getString(R.string.settings_custom_dashboard_bottom_line_description),
+                    AirPlayPersistence.loadDashboardBottomLine(this), enabled = tripPassword) {
+                    AirPlayPersistence.saveDashboardBottomLine(this, it)
+                }
                 toggle(card, getString(R.string.settings_custom_dashboard_arrival),
                     getString(R.string.settings_custom_dashboard_arrival_description),
                     AirPlayPersistence.loadDashboardArrival(this)) {

@@ -144,6 +144,7 @@ object AirPlayPersistence {
     private const val KEY_DASHBOARD_DIMMING = "monjaro_dashboard_dimming_percent"
     private const val KEY_DASHBOARD_MAP_WIDTH = "monjaro_dashboard_map_width"
     private const val KEY_DASHBOARD_MANEUVER = "monjaro_dashboard_maneuver"
+    private const val KEY_DASHBOARD_BOTTOM_LINE = "monjaro_dashboard_bottom_line"
     private const val KEY_DASHBOARD_ARRIVAL = "monjaro_dashboard_arrival"
     private const val KEY_DASHBOARD_MAP_HEIGHT = "monjaro_dashboard_map_height"
     private const val KEY_HUD_MANEUVERS = "monjaro_hud_maneuvers"
@@ -680,6 +681,13 @@ object AirPlayPersistence {
 
     fun saveDashboardManeuver(context: Context, shown: Boolean) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_DASHBOARD_MANEUVER, shown).apply()
+    }
+
+    fun loadDashboardBottomLine(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_DASHBOARD_BOTTOM_LINE, false)
+
+    fun saveDashboardBottomLine(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_DASHBOARD_BOTTOM_LINE, enabled).apply()
     }
 
     fun loadDashboardArrival(context: Context): Boolean =

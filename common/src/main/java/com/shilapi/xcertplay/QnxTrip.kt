@@ -40,6 +40,26 @@ internal object QnxTripData {
 }
 
 /**
+ * The firmware's two-byte `/dev/shmem/etm_flag`: the engineering mode (2 while it shows Android's cluster display)
+ * and the flag that shows the stock bottom line (RPM, odometer, fuel, coolant, ECO, gear), which some other
+ * cluster apps clear. [ENSURE_COMMAND] sets that flag back to 1 only in the engineering mode with it at 0, checked
+ * and written in one command on the QNX side, then prints the pair.
+ */
+internal object QnxEtmFlag {
+    private const val FILE = "/dev/shmem/etm_flag"
+    private val PAIR = Regex("""(?m)^0000000 ([0-9a-fA-F]{2}) ([0-9a-fA-F]{2})""")
+
+    const val READ_COMMAND = "hd $FILE"
+    const val ENSURE_COMMAND = "[ -f $FILE ] && [ \"\$(wc -c < $FILE)\" -eq 2 ] && " +
+        "case \"\$(hd $FILE)\" in *\" 02 00 \"*) awk 'BEGIN { printf \"%c\", 1 }' | " +
+        "dd of=$FILE bs=1 seek=1 count=1 conv=notrunc 2>/dev/null ;; esac; hd $FILE"
+
+    /** The pair the shell printed last, so the echoed command never counts. */
+    fun parse(text: String): Pair<Int, Int>? =
+        PAIR.findAll(text).lastOrNull()?.let { it.groupValues[1].toInt(16) to it.groupValues[2].toInt(16) }
+}
+
+/**
  * A root login to the firmware's QNX shell over its telnet port, reduced to reading a file at a time: it sends
  * the user name, the password and the read commands, nothing else. Not thread-safe; one worker owns it.
  */
@@ -222,7 +242,28 @@ internal class QnxTripReader(context: Context, private val listener: (DashboardT
                         open.login(password) { current }
                         QnxTripCredentials.accepted(app)
                         Log.i(TAG, "trip data from QNX: logged in")
+                        var etm: Pair<Int, Int>? = null
+                        var etmWrites = 0
+                        var etmWrittenAt = Long.MIN_VALUE / 2
                         while (current) {
+                            if (MonjaroA3Options.load(app).dashboardBottomLine) {
+                                val now = System.nanoTime() / 1_000_000
+                                val mayWrite = etmWrites < MAX_ETM_WRITES && now - etmWrittenAt >= ETM_WRITE_GAP_MILLIS
+                                val before = etm
+                                val pair = QnxEtmFlag.parse(open.read(
+                                    if (mayWrite) QnxEtmFlag.ENSURE_COMMAND else QnxEtmFlag.READ_COMMAND,
+                                    READ_TIMEOUT_MILLIS))
+                                // The write went through when the line was hidden and it shows now.
+                                if (mayWrite && pair == ETM_SHOWN && before != ETM_SHOWN) {
+                                    etmWrites++
+                                    etmWrittenAt = now
+                                }
+                                if (pair != before) {
+                                    Log.i(TAG, "cluster flags ${format(before)} -> ${format(pair)}" +
+                                        if (pair == ETM_HIDDEN && etmWrites >= MAX_ETM_WRITES) "; no more writes this login" else "")
+                                    etm = pair
+                                }
+                            }
                             val trip = QnxTripData.parse(open.read("cat $PPS_OBJECT", READ_TIMEOUT_MILLIS))
                             failures = 0
                             if (trip != last) {
@@ -297,6 +338,13 @@ internal class QnxTripReader(context: Context, private val listener: (DashboardT
         const val POLL_MILLIS = 5_000L
         val RETRY_MILLIS = longArrayOf(10_000L, 30_000L, 60_000L)
 
+        const val MAX_ETM_WRITES = 5
+        const val ETM_WRITE_GAP_MILLIS = 30_000L
+        val ETM_SHOWN = 2 to 1
+        val ETM_HIDDEN = 2 to 0
+
         fun printable(text: String) = text.map { if (it in ' '..'~') it else '.' }.joinToString("")
+
+        fun format(pair: Pair<Int, Int>?) = pair?.let { "%02x %02x".format(it.first, it.second) } ?: "unknown"
     }
 }
