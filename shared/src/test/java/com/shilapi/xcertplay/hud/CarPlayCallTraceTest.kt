@@ -55,5 +55,7 @@ class CarPlayCallTraceTest {
 
         assertEquals(listOf(0, 1, 2, 3, 4, 7, 11), requested(0x4154))
         assertEquals(listOf(0, 4, 5, 8), requested(0x4157))
+        assertTrue(requested(0x4154).containsAll(listOf(CarPlayCallState.LABEL, CarPlayCallState.DISCONNECT_REASON)))
+        assertTrue(CarPlayCallState.MUTE_STATUS in requested(0x4157))
     }
 }

@@ -22,35 +22,64 @@ data class CarPlayCallCard(val phase: Phase, val name: String, val activeSinceMi
 }
 
 /**
- * The iPhone's calls from iAP2 CallStateUpdate (0x4155): remote id (0), display name (1), status (2)
- * and call UUID (4). Status: 0 disconnected, 1 sending, 2 ringing, 3 connecting, 4 active, 5 held,
- * 6 disconnecting. Several calls can exist at once (call waiting); the card shows a ringing call
- * first, then a connected (active or held) one, then an outgoing one.
+ * The iPhone's calls from iAP2 CallStateUpdate (0x4155): remote id (0), display name (1), status (2),
+ * call UUID (4), label (7) and disconnect reason (11). Status: 0 disconnected, 1 sending, 2 ringing,
+ * 3 connecting, 4 active, 5 held, 6 disconnecting. Several calls can exist at once (call waiting); the
+ * card shows a ringing call first, then a connected (active or held) one, then an outgoing one.
+ * The microphone state comes from CommunicationsUpdate (0x4158) mute status (8).
  */
 class CarPlayCallState(private val clock: () -> Long = System::currentTimeMillis) {
-    private data class Call(val status: Int, val name: String, val number: String, val activeSince: Long?)
+    private data class Call(
+        val status: Int,
+        val name: String,
+        val number: String,
+        val label: String,
+        val activeSince: Long?,
+        val rang: Boolean,
+    )
+
+    private data class Ended(val id: String, val call: Call, val atMillis: Long, val reason: Int?)
 
     private val calls = LinkedHashMap<String, Call>()
     private var last: CarPlayCallCard? = null
+    private var ended: Ended? = null
+    private var reportedMuted: Boolean? = null
+    private var expectedMuted: Boolean? = null
 
-    /** Returns true when the card changed; read it with [current]. */
+    /**
+     * Returns true when the card changed; read it with [current]. The label, the microphone and the outcome
+     * of the last call can change without it; read them with [snapshot].
+     */
     fun accept(frame: Iap2Frame): Boolean {
+        if (frame.messageId == COMMUNICATIONS_UPDATE) {
+            acceptCommunications(frame)
+            return false
+        }
         if (frame.messageId != CALL_STATE_UPDATE) return false
         val body = runCatching { Iap2BodyReader.of(frame) }.getOrNull() ?: return false
         val status = runCatching { body.optionalU8(STATUS) }.getOrNull() ?: return false
         val remote = runCatching { body.optionalString(REMOTE_ID) }.getOrNull()?.trim().orEmpty()
         val display = runCatching { body.optionalString(DISPLAY_NAME) }.getOrNull()?.trim().orEmpty()
+        val label = runCatching { body.optionalString(LABEL) }.getOrNull()?.trim().orEmpty()
         val id = runCatching { body.optionalString(CALL_UUID) }.getOrNull()?.takeIf { it.isNotBlank() } ?: remote
         if (status == DISCONNECTED || status == DISCONNECTING) {
-            calls.remove(id)
+            val reason = runCatching { body.optionalU8(DISCONNECT_REASON) }.getOrNull()
+            val gone = calls.remove(id)
+            val previous = ended
+            // A second disconnect update of the same call can still bring the reason the first one lacked.
+            if (gone != null) ended = Ended(id, gone, clock(), reason)
+            else if (reason != null && previous?.id == id) ended = previous.copy(reason = reason)
         } else {
             val previous = calls[id]
+            if (previous == null) expectedMuted = null
             val connected = status == ACTIVE || status == HELD
             calls[id] = Call(
                 status = status,
                 name = display.ifEmpty { remote }.ifEmpty { previous?.name.orEmpty() },
                 number = remote.ifEmpty { previous?.number.orEmpty() },
+                label = label.ifEmpty { previous?.label.orEmpty() },
                 activeSince = previous?.activeSince ?: if (connected) clock() else null,
+                rang = previous?.rang == true || status == RINGING,
             )
         }
         val next = card()
@@ -61,24 +90,56 @@ class CarPlayCallState(private val clock: () -> Long = System::currentTimeMillis
 
     fun current(): CarPlayCallCard? = last
 
-    fun snapshot(): CarPlayCallSnapshot = CarPlayCallSnapshot(last)
+    fun snapshot(): CarPlayCallSnapshot =
+        CarPlayCallSnapshot(last, shown()?.second?.label.orEmpty(), expectedMuted ?: reportedMuted, outcome())
+
+    /**
+     * The phone mute key was sent: returns the microphone state it should lead to. [snapshot] shows it until the
+     * iPhone reports its own state or a new call starts.
+     */
+    fun muteToggled(): Boolean {
+        val next = !(expectedMuted ?: reportedMuted ?: false)
+        expectedMuted = next
+        return next
+    }
 
     fun clear() {
         calls.clear()
         last = null
+        ended = null
+        reportedMuted = null
+        expectedMuted = null
     }
 
-    private fun card(): CarPlayCallCard? {
-        calls.values.firstOrNull { it.status == RINGING }?.let {
-            return CarPlayCallCard(CarPlayCallCard.Phase.RINGING, it.name, number = it.number)
-        }
+    private fun acceptCommunications(frame: Iap2Frame) {
+        val body = runCatching { Iap2BodyReader.of(frame) }.getOrNull() ?: return
+        reportedMuted = runCatching { body.optionalBool(MUTE_STATUS) }.getOrNull() ?: return
+        expectedMuted = null
+    }
+
+    private fun shown(): Pair<CarPlayCallCard.Phase, Call>? {
+        calls.values.firstOrNull { it.status == RINGING }?.let { return CarPlayCallCard.Phase.RINGING to it }
         (calls.values.firstOrNull { it.status == ACTIVE } ?: calls.values.firstOrNull { it.status == HELD })?.let {
-            return CarPlayCallCard(CarPlayCallCard.Phase.ACTIVE, it.name, it.activeSince, it.number)
+            return CarPlayCallCard.Phase.ACTIVE to it
         }
         calls.values.firstOrNull { it.status == SENDING || it.status == CONNECTING }?.let {
-            return CarPlayCallCard(CarPlayCallCard.Phase.DIALING, it.name, number = it.number)
+            return CarPlayCallCard.Phase.DIALING to it
         }
         return null
+    }
+
+    private fun card(): CarPlayCallCard? = shown()?.let { (phase, call) ->
+        CarPlayCallCard(phase, call.name, call.activeSince.takeIf { phase == CarPlayCallCard.Phase.ACTIVE }, call.number)
+    }
+
+    private fun outcome(): CarPlayCallOutcome? {
+        val ended = ended ?: return null
+        val call = ended.call
+        val declined = ended.reason == REASON_DECLINED ||
+            (ended.reason == null && call.rang && call.activeSince == null)
+        if (declined) return CarPlayCallOutcome(CarPlayCallOutcome.Kind.DECLINED, call.name, call.number, 0, ended.atMillis)
+        val talkSeconds = call.activeSince?.let { (ended.atMillis - it).coerceAtLeast(0) / 1000 } ?: 0
+        return CarPlayCallOutcome(CarPlayCallOutcome.Kind.ENDED, call.name, call.number, talkSeconds, ended.atMillis)
     }
 
     companion object {
@@ -88,6 +149,10 @@ class CarPlayCallState(private val clock: () -> Long = System::currentTimeMillis
         private const val DISPLAY_NAME = 1
         private const val STATUS = 2
         private const val CALL_UUID = 4
+        internal const val LABEL = 7
+        internal const val DISCONNECT_REASON = 11
+        internal const val MUTE_STATUS = 8
+        private const val REASON_DECLINED = 1
         private const val DISCONNECTED = 0
         private const val SENDING = 1
         private const val RINGING = 2
@@ -160,15 +225,22 @@ object BydCarPlayCall {
 
     fun onFrame(frame: Iap2Frame) {
         trace.line(frame)?.let { Log.i(TAG, it) }
-        val card = synchronized(state) {
-            if (!state.accept(frame)) return
-            state.current()
+        val (changed, card) = synchronized(state) { state.accept(frame) to state.current() }
+        if (changed) {
+            Log.i(TAG, "CarPlay call ${card?.phase ?: "ended"}")
+            PhoneAudioRoute.carPlayCall(card != null)
+            context?.let { app ->
+                if (BydOutputSettings.carPlayCalls(app)) writer.execute { apply(app, card); if (card == null) arm(app) }
+            }
         }
-        Log.i(TAG, "CarPlay call ${card?.phase ?: "ended"}")
-        PhoneAudioRoute.carPlayCall(card != null)
         publish()
-        val app = context ?: return
-        if (BydOutputSettings.carPlayCalls(app)) writer.execute { apply(app, card); if (card == null) arm(app) }
+    }
+
+    /** The phone mute key was sent to the iPhone. */
+    fun muteToggled() {
+        val muted = synchronized(state) { state.muteToggled() }
+        Log.i(TAG, "CarPlay call microphone ${if (muted) "muted" else "on"} (unconfirmed until the iPhone reports it)")
+        publish()
     }
 
     private fun publish() = CarPlayCalls.publish { synchronized(state) { state.snapshot() } }

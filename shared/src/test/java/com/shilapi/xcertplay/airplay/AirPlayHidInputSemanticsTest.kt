@@ -1,5 +1,6 @@
 package com.shilapi.xcertplay.airplay
 
+import com.shilapi.xcertplay.orchestration.CarPlayController
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -25,6 +26,14 @@ class AirPlayHidInputSemanticsTest {
         assertEquals(0x06, wheel.flags)
         assertEquals(8, wheel.size)
         assertEquals(1, wheel.count)
+    }
+
+    @Test fun theMuteKeySendsTheReportIndexOfPhoneMute() {
+        val device = AirPlayHid.telephonyHidDevice("test-display")
+        val telephony = inputFields(device["hidDescriptor"] as ByteArray).single()
+        // An array input: the report carries the index of the usage, not the usage itself.
+        assertEquals(0x2f, telephony.usages[CarPlayController.TELEPHONY_PHONE_MUTE])
+        assertEquals(0, telephony.flags and 0x02)
     }
 
     private data class InputField(val page: Int, val usages: List<Int>, val size: Int, val count: Int, val flags: Int)

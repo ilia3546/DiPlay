@@ -37,6 +37,7 @@ import com.shilapi.xcertplay.airplay.PairingStore
 import com.shilapi.xcertplay.airplay.VideoInCar
 import com.shilapi.xcertplay.airplay.VideoPlaybackDelivery
 import com.shilapi.xcertplay.hud.BydBluetoothSuspend
+import com.shilapi.xcertplay.hud.BydCarPlayCall
 import com.shilapi.xcertplay.hud.BydNavigationOutputs
 import com.shilapi.xcertplay.iap2.session.Iap2Session
 import com.shilapi.xcertplay.mfi.Iap2MfiAuthenticationClient
@@ -709,6 +710,9 @@ class CarPlayController(
 
     /** Ends the current call or declines the ringing one (telephony Drop). */
     fun endCall(): Boolean = sendTelephony(TELEPHONY_DROP)
+
+    /** Mutes or unmutes the iPhone's microphone in the call (telephony Phone Mute). */
+    fun toggleMute(): Boolean = sendTelephony(TELEPHONY_PHONE_MUTE).also { if (it) BydCarPlayCall.muteToggled() }
 
     private fun sendTelephony(index: Int): Boolean {
         if (closed) return false
@@ -3297,6 +3301,7 @@ class CarPlayController(
         // Indices in the telephony HID report (AirPlayHid.telephonyDescriptor).
         private const val TELEPHONY_HOOK_SWITCH = 1
         private const val TELEPHONY_DROP = 3
+        internal const val TELEPHONY_PHONE_MUTE = 4
         private val diagnosticAttempts = AtomicInteger()
         private const val IAP2_IPHONE_UUID = "00000000-deca-fade-deca-deafdecacafe"
         // BluetoothProfile.A2DP_SINK and HEADSET_CLIENT, hidden from the public SDK.

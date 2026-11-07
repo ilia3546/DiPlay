@@ -63,6 +63,25 @@ class BydCarPlayCallLifecycleTest {
         assertTrue(Shell.commands.isEmpty())
     }
 
+    @Test fun observersFollowLabelAndMicrophoneWithoutRewritingTheCarsCallCard() {
+        BydOutputSettings.setCarPlayCalls(app, true)
+        BydCarPlayCall.onFrame(ringing("a")); drain()
+        val writes = Shell.commands.count { it.contains(" ringing ") }
+        BydCarPlayCall.onFrame(Iap2Messages.buildRaw(CarPlayCallState.CALL_STATE_UPDATE) {
+            u8(2, 2); string(4, "a"); string(CarPlayCallState.LABEL, "mobile")
+        })
+        BydCarPlayCall.onFrame(Iap2Messages.buildRaw(CarPlayCallState.COMMUNICATIONS_UPDATE) {
+            bool(CarPlayCallState.MUTE_STATUS, true)
+        })
+        BydCarPlayCall.muteToggled(); drain()
+        assertEquals(writes, Shell.commands.count { it.contains(" ringing ") })
+        assertEquals("mobile", CarPlayCalls.current().label)
+        assertEquals(false, CarPlayCalls.current().muted)
+        assertEquals(CarPlayCallCard.Phase.RINGING, CarPlayCalls.current().card?.phase)
+        BydCarPlayCall.end(); drain()
+        assertEquals(CarPlayCallSnapshot(), CarPlayCalls.current())
+    }
+
     @Test fun backToBackCallsUseDifferentTokensForWritesWatcherAndCleanup() {
         BydOutputSettings.setCarPlayCalls(app, true)
         BydCarPlayCall.onFrame(ringing("a")); drain()
