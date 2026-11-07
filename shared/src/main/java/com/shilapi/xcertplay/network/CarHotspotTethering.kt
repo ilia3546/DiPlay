@@ -66,13 +66,25 @@ object CarHotspotTethering {
                 }
             }
         }
+        // The same shell steps as over ADB, run through root as the shell user; the app needs no permission then.
+        val startRoot: () -> Boolean = {
+            CarHotspotAdbFallback.start(deadline, isCancelled,
+                state = { CarHotspotStatus.isEnabled(context) },
+                shell = { command, timeout ->
+                    (RootShell.runAsShell(command, timeout.toLong()) as? RootShell.Result.Completed)?.stdout
+                },
+                log = log, helper = shellTetheringHelper(context))
+                .also { if (it) observedAdbState.set(true) }
+        }
+        val root = CarHotspotSettings.rootStart(context)
+        if (root) log("car hotspot: starting through root as the shell user")
         return enableUntil(
             deadline,
             isCancelled,
-            { permitted(context) },
+            { root || permitted(context) },
             stateWithAdbObservation({ CarHotspotStatus.isEnabled(context) }, observedAdbState),
-            startFallback = startAdb,
-            start = startReflection,
+            startFallback = if (root) startRoot else startAdb,
+            start = if (root) { _ -> throw SecurityException("hotspot started through root") } else startReflection,
         ).also {
             if (it != Result.READY && it != Result.CANCELLED)
                 log("car hotspot: Android state=${CarHotspotStatus.isEnabled(context) ?: "unknown"} writeSettings=${permitted(context)}")

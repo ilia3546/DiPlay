@@ -2160,6 +2160,13 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 AirPlayPersistence.saveRootHotspotDetails(this, it)
                 markReconnectNeeded()
             }
+            toggle(card, getString(R.string.settings_root_hotspot_start),
+                getString(R.string.settings_root_hotspot_start_description),
+                CarHotspotSettings.rootStart(this) && CarHotspotSettings.enabled(this)) {
+                CarHotspotSettings.setRootStart(this, it)
+                CarHotspotSettings.setEnabled(this, it)
+                if (!it) startupHotspotCancelled = true
+            }
             toggle(card, getString(R.string.settings_disconnect_phone_bluetooth),
                 getString(R.string.settings_disconnect_phone_bluetooth_description),
                 AirPlayPersistence.loadDisconnectPhoneBluetooth(this)) {

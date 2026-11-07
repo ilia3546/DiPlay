@@ -3,6 +3,8 @@
     <string name="settings_geely_monjaro_a3_support">Geely Monjaro A3 支持</string>
     <string name="settings_root_hotspot_details">车辆热点的准确信息（实验性）</string>
     <string name="settings_root_hotspot_details_description">当 Android 隐藏车辆热点的信道时，从固件的热点配置中读取信道，并把热点的 BSSID 告诉 iPhone。需要 root（Magisk）。下次连接时生效。</string>
+    <string name="settings_root_hotspot_start">通过 root 开启车机热点（实验性）</string>
+    <string name="settings_root_hotspot_start_description">打开 DiPlay 时以及无线连接前，如果车机保存的热点处于关闭状态，会以与 ADB 相同的步骤、通过 root 以 shell 用户身份将其开启。适用于 Android 不允许应用开启热点的固件。请开启“车辆启动后打开 DiPlay”，让每次启动都出现热点。需要 root（Magisk）。热点不会自动关闭。立即生效。</string>
     <string name="settings_disconnect_phone_bluetooth">无线 CarPlay 期间断开 iPhone 蓝牙（实验性）</string>
     <string name="settings_disconnect_phone_bluetooth_description">无线 CarPlay 启动后，像车辆原厂 CarPlay 一样，从车机断开 iPhone 的蓝牙通话、音乐、联系人和媒体控制。适用于会通过蓝牙暂停 CarPlay 音乐的固件。CarPlay 继续通过 Wi-Fi 运行；之后 iPhone 不会自动重新连接蓝牙。如果配对了多部 iPhone，请在 DiPlay 中选择你的 iPhone：蓝牙断开后，DiPlay 下次无法自动选出它。需要 root（Magisk）。下次连接时生效。</string>
     <string name="settings_hotspot_audio_firewall">让 CarPlay 音频通过车辆防火墙（实验性）</string>

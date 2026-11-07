@@ -18,12 +18,20 @@ object RootShell {
 
     // Covers a first-time root prompt, which waits for the driver's answer on the head unit.
     const val DEFAULT_TIMEOUT_MILLIS = 15_000L
+    private const val SHELL_UID = "2000"
 
     fun run(
         command: String,
         timeoutMillis: Long = DEFAULT_TIMEOUT_MILLIS,
         exec: (List<String>, Long) -> CommandOutput = ::runProcess,
     ): Result = complete { exec(listOf("su", "-c", command), timeoutMillis) }
+
+    /** Like [run], as the shell user (uid 2000), which is what ADB runs as. */
+    fun runAsShell(
+        command: String,
+        timeoutMillis: Long = DEFAULT_TIMEOUT_MILLIS,
+        exec: (List<String>, Long) -> CommandOutput = ::runProcess,
+    ): Result = complete { exec(listOf("su", SHELL_UID, "-c", command), timeoutMillis) }
 
     /** Like [run], with [stdin] written to the command: for payloads too large for an argument. */
     fun runWithInput(

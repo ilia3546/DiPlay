@@ -12,6 +12,12 @@ object CarHotspotSettings {
     fun setEnabled(context: Context, enabled: Boolean) =
         prefs(context).edit().putBoolean("auto_enable", enabled).apply()
 
+    /** Start the hotspot through root as the shell user, for firmware where only ADB could start it otherwise. */
+    fun rootStart(context: Context): Boolean = prefs(context).getBoolean("root_start", false)
+
+    fun setRootStart(context: Context, enabled: Boolean) =
+        prefs(context).edit().putBoolean("root_start", enabled).apply()
+
     fun configWrite(context: Context): Boolean = prefs(context).getBoolean("config_write", false)
 
     fun setConfigWrite(context: Context, enabled: Boolean) =
