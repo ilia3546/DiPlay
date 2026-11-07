@@ -11,7 +11,9 @@ import android.util.Log
 import com.geely.lib.oneosapi.input.IInputListener
 import com.geely.lib.oneosapi.input.IInputManager
 import com.shilapi.xcertplay.airplay.CarPlayMediaButton
+import com.shilapi.xcertplay.hud.CarPlayCalls
 import com.shilapi.xcertplay.network.GeelyHeadUnit
+import com.shilapi.xcertplay.orchestration.CarPlayController
 
 /**
  * Geely/Lynk steering-wheel media keys.
@@ -145,6 +147,26 @@ internal object GeelyWheelKeys {
             GeelyWheelKeyCodes.KEY_PREVIOUS -> CarPlayMediaButton.PREVIOUS
             else -> return
         }
-        CarPlayMediaKeys.onExternalMediaKey(index)
+        val context = synchronized(this) { appContext }
+        val controller = CarPlayBackgroundSession.snapshot()?.controller
+        GeelyCallKeys.route(
+            index,
+            enabled = context != null && GeelyHeadUnit.monjaroA3 && AirPlayPersistence.loadDashboardCalls(context),
+            session = controller?.activeAirPlaySessionToken() != null,
+            card = CarPlayCalls.current().card,
+            call = { action -> sendToCall(controller, index, action) },
+            media = CarPlayMediaKeys::onExternalMediaKey,
+        )
+    }
+
+    private fun sendToCall(controller: CarPlayController?, index: Int, action: GeelyCallKeys.Action) {
+        val sent = when (action) {
+            GeelyCallKeys.Action.ANSWER -> controller?.answerCall()
+            GeelyCallKeys.Action.END -> controller?.endCall()
+            GeelyCallKeys.Action.MUTE -> controller?.toggleMute()
+            GeelyCallKeys.Action.PASS -> null
+        } == true
+        Log.i(TAG, "media key geely-wheel $index -> CarPlay call $action sent=$sent")
+        WheelKeyLog.note("media key geely-wheel $index -> CarPlay call $action sent=$sent")
     }
 }
