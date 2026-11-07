@@ -38,6 +38,7 @@ import kotlin.math.roundToInt
  */
 internal object CarPlayMediaKeys {
     private const val TAG = "DiPlay-MediaKeys"
+    private const val WHEEL_KEY_ECHO_MILLIS = 1_500L
     private const val ACTIONS = PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or
         PlaybackState.ACTION_PLAY_PAUSE or PlaybackState.ACTION_SKIP_TO_NEXT or PlaybackState.ACTION_SKIP_TO_PREVIOUS
 
@@ -65,6 +66,7 @@ internal object CarPlayMediaKeys {
     private var transientFocusInterrupted = false
     // The car's own source took the audio; its steering-wheel keys stay with it until CarPlay plays again.
     private var carAudioOwnsWheel = false
+    private var wheelKeyForwardedAt = Long.MIN_VALUE / 2
     private var appContext: Context? = null
     private var mediaAudioActive = false
     private var nowPlaying = CarPlayNowPlaying()
@@ -356,14 +358,19 @@ internal object CarPlayMediaKeys {
     private fun onFocusChanged(expectedController: CarPlayController, owner: Any, change: Int,
         grantedRevision: Long? = null) {
         var pauseIphone = false
+        var takeBack = false
         val current = synchronized(this) {
             if (controller !== expectedController || focusOwner !== owner ||
                 (grantedRevision != null && grantedRevision != focusEventRevision)) false
             else {
-                val carAudioTakesOver = change == AudioManager.AUDIOFOCUS_LOSS &&
+                val carAudio = change == AudioManager.AUDIOFOCUS_LOSS &&
                     appContext?.let { MonjaroA3Options.load(it).pauseCarPlayForCarAudio } == true
-                if (carAudioTakesOver) carAudioOwnsWheel = true
-                pauseIphone = carAudioTakesOver && (nowPlaying.playing || mediaAudioActive)
+                // The firmware's media centre hands each wheel key to its last own source too, so a car source
+                // starting right after a key DiPlay sent to CarPlay answered that key, not a choice of the driver.
+                takeBack = carAudio &&
+                    SystemClock.elapsedRealtime() - wheelKeyForwardedAt < WHEEL_KEY_ECHO_MILLIS
+                if (carAudio && !takeBack) carAudioOwnsWheel = true
+                pauseIphone = carAudio && !takeBack && (nowPlaying.playing || mediaAudioActive)
                 focusEventRevision += 1
                 // Only permanent loss moves media keys elsewhere; transient losses come back.
                 when (change) {
@@ -388,6 +395,10 @@ internal object CarPlayMediaKeys {
         if (pauseIphone) {
             val sent = expectedController.sendMediaButton(CarPlayMediaButton.PAUSE)
             Log.i(TAG, "car audio took focus, CarPlay paused sent=$sent")
+        }
+        if (takeBack) {
+            Log.i(TAG, "car audio answered a wheel key sent to CarPlay; taking the focus back")
+            mainHandler.post { synchronized(this) { if (controller === expectedController) regainFocusLocked() } }
         }
         // Resolve the matching sink and invoke it outside the media-key monitor. An abandoned
         // request must never mute a newer controller, and these owners must not nest locks.
@@ -447,17 +458,18 @@ internal object CarPlayMediaKeys {
     private fun publishClusterPlaybackLocked() = ClusterPlaybackState.publish(ClusterPlaybackState.Snapshot(
         nowPlaying.playing, nowPlaying.elapsedMillis, elapsedUpdatedAt, focusHeld))
 
-    private fun send(index: Int, source: String) {
+    private fun send(index: Int, source: String): Boolean {
         // While the car's video player is on screen the wheel drives it: a CarPlay play/pause would
         // make the iPhone end the video session.
         if (CarPlayVideo.onMediaKey(index)) {
             Log.i(TAG, "media key $source -> car video player $index")
             WheelKeyLog.note("media key $source -> car video player $index")
-            return
+            return false
         }
         val sent = synchronized(this) { controller }?.sendMediaButton(index) ?: false
         Log.i(TAG, "media key $source -> CarPlay $index sent=$sent")
         WheelKeyLog.note("media key $source -> CarPlay $index sent=$sent")
+        return sent
     }
 
     private fun notUsed(source: String) {
@@ -473,11 +485,11 @@ internal object CarPlayMediaKeys {
             WheelKeyLog.note("media key geely-wheel $index left to the car's source")
             return
         }
-        send(index, "geely-wheel")
+        if (send(index, "geely-wheel")) synchronized(this) { wheelKeyForwardedAt = SystemClock.elapsedRealtime() }
     }
 
     /** A button of the stock Geely media widget while DiPlay's track is shown there. */
-    internal fun onWidgetMediaKey(index: Int) = send(index, "geely-widget")
+    internal fun onWidgetMediaKey(index: Int) { send(index, "geely-widget") }
 
     /** The steering-wheel microphone key captured outside the Android key stream (Geely/Lynk). */
     internal fun onExternalSiriKey(): Boolean {
@@ -616,8 +628,8 @@ internal class CarPlayMediaCallback(
         return true
     }
 
-    override fun onPlay() = send(CarPlayMediaButton.PLAY, "play")
-    override fun onPause() = send(CarPlayMediaButton.PAUSE, "pause")
-    override fun onSkipToNext() = send(CarPlayMediaButton.NEXT, "next")
-    override fun onSkipToPrevious() = send(CarPlayMediaButton.PREVIOUS, "previous")
+    override fun onPlay() { send(CarPlayMediaButton.PLAY, "play") }
+    override fun onPause() { send(CarPlayMediaButton.PAUSE, "pause") }
+    override fun onSkipToNext() { send(CarPlayMediaButton.NEXT, "next") }
+    override fun onSkipToPrevious() { send(CarPlayMediaButton.PREVIOUS, "previous") }
 }
