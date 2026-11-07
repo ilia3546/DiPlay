@@ -143,6 +143,8 @@ object AirPlayPersistence {
     private const val KEY_DASHBOARD_BACKGROUND = "monjaro_dashboard_background"
     private const val KEY_DASHBOARD_DIMMING = "monjaro_dashboard_dimming_percent"
     private const val KEY_DASHBOARD_MAP_WIDTH = "monjaro_dashboard_map_width"
+    private const val KEY_DASHBOARD_MANEUVER = "monjaro_dashboard_maneuver"
+    private const val KEY_DASHBOARD_ARRIVAL = "monjaro_dashboard_arrival"
     private const val KEY_DASHBOARD_MAP_HEIGHT = "monjaro_dashboard_map_height"
     private const val KEY_HUD_MANEUVERS = "monjaro_hud_maneuvers"
     private const val KEY_HUD_DENSITY = "monjaro_hud_density"
@@ -671,6 +673,20 @@ object AirPlayPersistence {
         val height = prefs.getInt(KEY_DASHBOARD_MAP_HEIGHT, default.height)
             .takeIf { it in MonjaroDashboardLayout.mapHeights } ?: default.height
         return MonjaroDashboardLayout.MapGeometry(width, height)
+    }
+
+    fun loadDashboardManeuver(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_DASHBOARD_MANEUVER, true)
+
+    fun saveDashboardManeuver(context: Context, shown: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_DASHBOARD_MANEUVER, shown).apply()
+    }
+
+    fun loadDashboardArrival(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_DASHBOARD_ARRIVAL, true)
+
+    fun saveDashboardArrival(context: Context, shown: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_DASHBOARD_ARRIVAL, shown).apply()
     }
 
     internal fun saveDashboardMap(context: Context, map: MonjaroDashboardLayout.MapGeometry) {

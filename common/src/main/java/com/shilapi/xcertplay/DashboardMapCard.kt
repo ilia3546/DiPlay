@@ -74,10 +74,13 @@ internal class DashboardMapCard(context: Context) : FrameLayout(context) {
         }
     }
 
+    /** Which of the route cards the user wants over the map; the next [showRoute] applies them. */
+    var maneuverShown = true
+    var arrivalShown = true
+
     fun showRoute(route: DashboardRoute?, is24Hour: Boolean, zone: TimeZone = TimeZone.getDefault()) {
-        val visibility = if (route == null) GONE else VISIBLE
-        maneuver.visibility = visibility
-        arrival.visibility = visibility
+        maneuver.visibility = if (route != null && maneuverShown) VISIBLE else GONE
+        arrival.visibility = if (route != null && arrivalShown) VISIBLE else GONE
         if (route == null) return
         maneuver.show(route.turn)
         arrival.show(route, is24Hour, zone)

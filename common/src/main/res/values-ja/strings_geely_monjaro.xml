@@ -39,6 +39,10 @@
     <string name="settings_custom_dashboard_map_height">地図の高さ</string>
     <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
     <string name="settings_custom_dashboard_map_size_note">カードはすぐに変わります。iPhone は再接続後に新しいサイズで地図を送ります。</string>
+    <string name="settings_custom_dashboard_maneuver">地図上に次の案内</string>
+    <string name="settings_custom_dashboard_maneuver_description">CarPlay のルート案内中、次の曲がり角、その距離、通り名を地図の左上に表示します。すぐに適用されます。</string>
+    <string name="settings_custom_dashboard_arrival">地図上に到着情報</string>
+    <string name="settings_custom_dashboard_arrival_description">CarPlay のルート案内中、到着時刻と残りの分数・キロ数を地図の右上に表示します。すぐに適用されます。</string>
     <string name="settings_hud_maneuvers">HUD にナビを表示（実験的機能）</string>
     <string name="settings_hud_maneuvers_description">CarPlay がルート案内している間、DiPlay はヘッドアップディスプレイに次の操作を表示します。ロータリーの出口番号付きの標識、距離、通りの名前と、その下に車線と残りの時間・距離です。ルートがないときは何も表示しません。ヘッドアップディスプレイに Android のディスプレイを表示するファームウェア向けです。HUD Renderer アプリ（org.monjaro.hudrenderer）がインストールされている場合は、先にその出力をオフにしてください。オフにしないと両方が同時に表示されます。「他のアプリの上に重ねて表示」の許可が必要です。すぐに適用されます。</string>
     <string name="settings_hud_density">HUD のレイアウト</string>

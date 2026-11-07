@@ -39,6 +39,10 @@
     <string name="settings_custom_dashboard_map_height">Map height</string>
     <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
     <string name="settings_custom_dashboard_map_size_note">The card changes at once; the iPhone sends the map in the new size after you reconnect.</string>
+    <string name="settings_custom_dashboard_maneuver">Next maneuver over the map</string>
+    <string name="settings_custom_dashboard_maneuver_description">While CarPlay guides you, the next turn, its distance and the street are in the map\'s top left corner. Applies at once.</string>
+    <string name="settings_custom_dashboard_arrival">Arrival over the map</string>
+    <string name="settings_custom_dashboard_arrival_description">While CarPlay guides you, the arrival time and the minutes and kilometres left are in the map\'s top right corner. Applies at once.</string>
     <string name="settings_hud_maneuvers">Navigation on the HUD (experimental)</string>
     <string name="settings_hud_maneuvers_description">While CarPlay guides you along a route, DiPlay draws the next maneuver on the head-up display: the sign with the roundabout exit, the distance and the street, and below them the lanes and the time and distance left. Without a route the head-up display stays empty. For firmware that shows an Android display on the head-up display. If the HUD Renderer app (org.monjaro.hudrenderer) is installed, turn its output off first, or both draw at once. Needs \"Draw over other apps\". Applies at once.</string>
     <string name="settings_hud_density">HUD layout</string>

@@ -2279,6 +2279,18 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     row.onCommit = { markReconnectNeeded() }
                 })
                 card.addView(choiceNote(getString(R.string.settings_custom_dashboard_map_size_note)))
+                toggle(card, getString(R.string.settings_custom_dashboard_maneuver),
+                    getString(R.string.settings_custom_dashboard_maneuver_description),
+                    AirPlayPersistence.loadDashboardManeuver(this)) {
+                    AirPlayPersistence.saveDashboardManeuver(this, it)
+                    MonjaroCustomDashboard.settingChanged()
+                }
+                toggle(card, getString(R.string.settings_custom_dashboard_arrival),
+                    getString(R.string.settings_custom_dashboard_arrival_description),
+                    AirPlayPersistence.loadDashboardArrival(this)) {
+                    AirPlayPersistence.saveDashboardArrival(this, it)
+                    MonjaroCustomDashboard.settingChanged()
+                }
             }
             val hudManeuvers = AirPlayPersistence.loadHudManeuvers(this)
             toggle(card, getString(R.string.settings_hud_maneuvers),

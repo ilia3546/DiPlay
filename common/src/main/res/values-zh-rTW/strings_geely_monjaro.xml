@@ -39,6 +39,10 @@
     <string name="settings_custom_dashboard_map_height">地圖高度</string>
     <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
     <string name="settings_custom_dashboard_map_size_note">卡片立即變化；重新連線後 iPhone 才會依新尺寸傳送地圖。</string>
+    <string name="settings_custom_dashboard_maneuver">地圖上顯示下一個轉向</string>
+    <string name="settings_custom_dashboard_maneuver_description">CarPlay 導航時，在地圖左上角顯示下一個轉向、距離和道路。立即生效。</string>
+    <string name="settings_custom_dashboard_arrival">地圖上顯示抵達資訊</string>
+    <string name="settings_custom_dashboard_arrival_description">CarPlay 導航時，在地圖右上角顯示抵達時間以及剩餘分鐘和公里。立即生效。</string>
     <string name="settings_hud_maneuvers">在 HUD 上顯示導航（實驗性）</string>
     <string name="settings_hud_maneuvers_description">CarPlay 依路線導航期間，DiPlay 會在抬頭顯示器上繪製下一個操作：帶圓環出口編號的標誌、距離和道路名稱，下方是車道以及剩餘時間和距離。沒有路線時抬頭顯示器保持空白。適用於在抬頭顯示器上顯示 Android 螢幕的韌體。如果安裝了 HUD Renderer 應用程式（org.monjaro.hudrenderer），請先關閉它的輸出，否則兩者會同時繪製。需要「顯示在其他應用程式上層」權限。立即生效。</string>
     <string name="settings_hud_density">HUD 版面</string>

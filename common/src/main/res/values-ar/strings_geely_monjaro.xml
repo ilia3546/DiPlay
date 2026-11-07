@@ -39,6 +39,10 @@
     <string name="settings_custom_dashboard_map_height">ارتفاع الخريطة</string>
     <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
     <string name="settings_custom_dashboard_map_size_note">تتغير البطاقة فورًا؛ يرسل iPhone الخريطة بالحجم الجديد بعد إعادة الاتصال.</string>
+    <string name="settings_custom_dashboard_maneuver">المناورة التالية على الخريطة</string>
+    <string name="settings_custom_dashboard_maneuver_description">أثناء توجيه CarPlay، يظهر المنعطف التالي ومسافته والشارع في الزاوية العلوية اليسرى من الخريطة. يُطبّق فورًا.</string>
+    <string name="settings_custom_dashboard_arrival">الوصول على الخريطة</string>
+    <string name="settings_custom_dashboard_arrival_description">أثناء توجيه CarPlay، يظهر وقت الوصول والدقائق والكيلومترات المتبقية في الزاوية العلوية اليمنى من الخريطة. يُطبّق فورًا.</string>
     <string name="settings_hud_maneuvers">الملاحة على شاشة HUD (تجريبي)</string>
     <string name="settings_hud_maneuvers_description">أثناء توجيه CarPlay على مسار، يرسم DiPlay المناورة التالية على شاشة العرض الأمامية: الإشارة مع مخرج الدوار والمسافة والشارع، وتحتها الحارات والوقت والمسافة المتبقيان. بدون مسار تبقى شاشة العرض الأمامية فارغة. للبرامج الثابتة التي تعرض شاشة Android على شاشة العرض الأمامية. إذا كان تطبيق HUD Renderer (org.monjaro.hudrenderer) مثبتاً فأوقف إخراجه أولاً، وإلا فسيرسم الاثنان معاً. يتطلب إذن \"الظهور فوق التطبيقات الأخرى\". يُطبَّق فوراً.</string>
     <string name="settings_hud_density">تخطيط HUD</string>

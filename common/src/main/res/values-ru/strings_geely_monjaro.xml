@@ -39,6 +39,10 @@
     <string name="settings_custom_dashboard_map_height">Высота карты</string>
     <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
     <string name="settings_custom_dashboard_map_size_note">Карточка меняется сразу; iPhone пришлёт карту нового размера после переподключения.</string>
+    <string name="settings_custom_dashboard_maneuver">Следующий манёвр на карте</string>
+    <string name="settings_custom_dashboard_maneuver_description">Пока CarPlay ведёт по маршруту, в левом верхнем углу карты показываются следующий поворот, расстояние до него и улица. Применяется сразу.</string>
+    <string name="settings_custom_dashboard_arrival">Прибытие на карте</string>
+    <string name="settings_custom_dashboard_arrival_description">Пока CarPlay ведёт по маршруту, в правом верхнем углу карты показываются время прибытия и оставшиеся минуты и километры. Применяется сразу.</string>
     <string name="settings_hud_maneuvers">Навигация на HUD (экспериментально)</string>
     <string name="settings_hud_maneuvers_description">Пока CarPlay ведёт по маршруту, DiPlay рисует на проекционном дисплее следующий манёвр: знак с номером съезда с кольца, расстояние и улицу, а под ними полосы и оставшиеся время и путь. Без маршрута проекционный дисплей пустой. Для прошивок, которые показывают на проекционном дисплее дисплей Android. Если установлено приложение HUD Renderer (org.monjaro.hudrenderer), сначала выключите его вывод, иначе оба будут рисовать одновременно. Нужно разрешение «Поверх других приложений». Применяется сразу.</string>
     <string name="settings_hud_density">Вид строки HUD</string>
