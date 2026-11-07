@@ -48,9 +48,10 @@ internal class QnxShell(private val socket: Socket) {
     private val output: OutputStream = socket.getOutputStream()
 
     fun login(password: String) {
-        readUntil(LOGIN_TIMEOUT_MILLIS) { it.endsWith("login:") || it.endsWith("login: ") }
+        readUntil(LOGIN_TIMEOUT_MILLIS) { it.trimEnd().endsWith("login:") }
         send("root")
-        readUntil(LOGIN_TIMEOUT_MILLIS) { it.contains("assword:") }
+        // The firmware asks "Password for root@localhost:".
+        readUntil(LOGIN_TIMEOUT_MILLIS) { it.contains("password", ignoreCase = true) && it.trimEnd().endsWith(":") }
         send(password)
         val answer = run("echo ok", LOGIN_TIMEOUT_MILLIS) { it.contains("incorrect", ignoreCase = true) }
         if (answer == null) throw LoginRefused()
@@ -79,7 +80,8 @@ internal class QnxShell(private val socket: Socket) {
     }
 
     private fun send(line: String) {
-        output.write("$line\r\n".toByteArray(Charsets.ISO_8859_1))
+        // Enter as a telnet client sends it in character mode; CR LF reads as two lines there.
+        output.write("$line\r\u0000".toByteArray(Charsets.ISO_8859_1))
         output.flush()
     }
 
