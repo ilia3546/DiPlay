@@ -40,6 +40,7 @@ class WheelMediaKeyWindowTest {
 
     @Before fun setUp() {
         BydCarPlayCall.end()
+        BydCarPlayCall.subscribing()
         CarPlayBackgroundSession.clear()
         host = Robolectric.buildActivity(CarPlayHostActivity::class.java).get()
         host.getSharedPreferences("diplay_wheel_map_zoom", Context.MODE_PRIVATE).edit().clear().commit()

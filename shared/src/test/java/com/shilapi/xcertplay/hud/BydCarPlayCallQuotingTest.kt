@@ -44,6 +44,7 @@ class BydCarPlayCallQuotingTest {
         ReflectionHelpers.setField(BydCarPlayCall, "prepared", false)
         ReflectionHelpers.setField(BydCarPlayCall, "sessionActive", false)
         BydCarPlayCall.attach(app)
+        BydCarPlayCall.subscribing(); drain()
         BydOutputSettings.setCarPlayCalls(app, true)
         BydCarPlayCallLifecycleTest.Shell.run {
             commands.clear(); rejectPhase = null; endFailures = 0; omitCompletion = false

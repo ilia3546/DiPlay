@@ -45,6 +45,7 @@ class WheelSiriWindowTest {
 
     @Before fun setUp() {
         BydCarPlayCall.end()
+        BydCarPlayCall.subscribing()
         CarPlayBackgroundSession.clear()
         host = Robolectric.buildActivity(CarPlayHostActivity::class.java).get()
         settings = Robolectric.buildActivity(DiPlayActivity::class.java).get()

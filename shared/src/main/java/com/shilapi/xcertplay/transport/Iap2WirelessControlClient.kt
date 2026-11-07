@@ -27,6 +27,7 @@ class Iap2WirelessControlClient(
         locationProvider: Iap2LocationProvider? = null,
         vehicleStatusProvider: VehicleStatusProvider? = null,
         onReady: () -> Unit = {},
+        beforeSubscriptions: () -> Unit = {},
         beforeStartSession: () -> Unit = {},
         onStartSessionSent: (Iap2StartSessionSent) -> Unit = {},
         onIncoming: (Iap2Frame) -> Unit = {},
@@ -55,6 +56,7 @@ class Iap2WirelessControlClient(
         stage = Iap2WirelessControlStage.AUTHENTICATED
         onProgress("iap2 authentication accepted")
 
+        beforeSubscriptions()
         for (subscription in Iap2WiredControlClient.subscriptions()) {
             session.send(subscription, deadline.requireRemaining())
         }

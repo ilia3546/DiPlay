@@ -6,6 +6,7 @@ import com.shilapi.xcertplay.hud.CarPlayCallState
 import com.shilapi.xcertplay.iap2.message.Iap2Messages
 import com.shilapi.xcertplay.orchestration.CarPlayController
 import org.junit.After
+import org.junit.Before
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -18,6 +19,8 @@ import org.robolectric.annotation.Config
 @Config(sdk = [29], manifest = Config.NONE)
 class CarPlayCallControlsOptInTest {
     private val app get() = RuntimeEnvironment.getApplication()
+
+    @Before fun takeCallUpdates() = BydCarPlayCall.subscribing()
 
     @After fun cleanup() {
         BydOutputSettings.setCarPlayCallControls(app, false)

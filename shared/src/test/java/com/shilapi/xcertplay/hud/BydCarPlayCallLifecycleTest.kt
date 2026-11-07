@@ -41,6 +41,7 @@ class BydCarPlayCallLifecycleTest {
         ReflectionHelpers.setField(BydCarPlayCall, "prepared", false)
         ReflectionHelpers.setField(BydCarPlayCall, "sessionActive", false)
         BydCarPlayCall.attach(app)
+        BydCarPlayCall.subscribing(); drain()
         BydOutputSettings.setCarPlayCalls(app, false)
         Shell.commands.clear()
         Shell.rejectPhase = null
@@ -84,6 +85,35 @@ class BydCarPlayCallLifecycleTest {
         assertEquals(CarPlayCallSnapshot(), CarPlayCalls.current())
     }
 
+    @Test fun aNewIap2LinkStartsFromAnEmptySnapshotAndEndsTheCallShownOnTheCar() {
+        BydOutputSettings.setCarPlayCalls(app, true)
+        BydCarPlayCall.onFrame(ringing("old-link")); drain()
+        val token = tokenFrom(Shell.commands.single { it.contains(" ringing ") })
+        BydCarPlayCall.subscribing(); drain()
+        assertNull(BydCarPlayCall.current())
+        assertEquals(CarPlayCallSnapshot(), CarPlayCalls.current())
+        assertTrue(Shell.commands.any { it.endsWith(" end - $token") })
+    }
+
+    @Test fun aCallFrameAfterTheSessionEndedMakesNoCallUntilTheNextLink() {
+        BydCarPlayCall.end(); drain()
+        BydCarPlayCall.onFrame(ringing("late")); drain()
+        assertNull(BydCarPlayCall.current())
+        assertNull(CarPlayCalls.current().card)
+        BydCarPlayCall.subscribing()
+        BydCarPlayCall.onFrame(ringing("late")); drain()
+        assertNotNull(BydCarPlayCall.current())
+    }
+
+    @Test fun aCallReportedBeforeTheSessionStartsIsKeptAcrossSessionStarts() {
+        BydCarPlayCall.subscribing()
+        BydCarPlayCall.onFrame(ringing("before-the-session")); drain()
+        BydCarPlayCall.sessionStarted(); drain()
+        assertEquals(CarPlayCallCard.Phase.RINGING, BydCarPlayCall.current()?.phase)
+        BydCarPlayCall.sessionStarted(); drain()
+        assertEquals(CarPlayCallCard.Phase.RINGING, CarPlayCalls.current().card?.phase)
+    }
+
     @Test fun theCallTraceIsLoggedOnlyOnTheMonjaroA3() {
         fun traced() = ShadowLog.getLogsForTag("DiPlay-BYD-Call").count { it.msg.startsWith("CallStateUpdate") }
         val frame = Iap2Messages.buildRaw(CarPlayCallState.CALL_STATE_UPDATE) { u8(2, 2); string(4, "only-on-the-monjaro") }
@@ -115,6 +145,7 @@ class BydCarPlayCallLifecycleTest {
         assertTrue(Shell.commands.any { it.contains(" watch $first ${app.packageName} ") })
         BydCarPlayCall.end(); drain()
         assertTrue(Shell.commands.any { it.endsWith(" end - $first") })
+        BydCarPlayCall.subscribing()
         BydCarPlayCall.onFrame(ringing("b")); drain()
         val next = tokenFrom(Shell.commands.last { it.contains(" ringing ") })
         assertNotEquals(first, next)

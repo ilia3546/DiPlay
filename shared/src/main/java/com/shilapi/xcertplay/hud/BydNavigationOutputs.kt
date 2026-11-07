@@ -143,6 +143,9 @@ object BydNavigationOutputs {
     /** The CarPlay call setting changed; applies at once. */
     fun carPlayCallsChanged(enabled: Boolean) = BydCarPlayCall.settingChanged(enabled)
 
+    /** An iAP2 link is about to send its update subscriptions; its calls replace those of any earlier link. */
+    fun carPlayCallsSubscribing() = BydCarPlayCall.subscribing()
+
     /** A CarPlay session became active; ready the call card so calls show without the watcher's start delay. */
     fun carPlaySessionStarted() = BydCarPlayCall.sessionStarted()
 

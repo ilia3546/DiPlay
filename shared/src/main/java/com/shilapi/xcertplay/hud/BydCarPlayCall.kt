@@ -213,6 +213,7 @@ object BydCarPlayCall {
     private var retryCard: CarPlayCallCard? = null
     private var retryUsed = false
     @Volatile private var sessionActive = false
+    private var takingUpdates = false // guarded by state
 
     fun attach(appContext: Context) {
         context = appContext.applicationContext
@@ -235,9 +236,27 @@ object BydCarPlayCall {
     /** The current call as the car shows it, without the number it never writes. */
     private fun carCard(): CarPlayCallCard? = current()?.copy(number = "")
 
+    /**
+     * A new iAP2 link is about to ask the iPhone for its calls, which it then reports even before the CarPlay
+     * session starts: forget the calls of any earlier link and take this link's updates until [end].
+     */
+    fun subscribing() {
+        synchronized(state) {
+            takingUpdates = true
+            state.clear()
+        }
+        PhoneAudioRoute.carPlayCall(false)
+        publish()
+        val app = context ?: return
+        writer.execute { resetRetry(null); apply(app, null); arm(app) }
+    }
+
     fun onFrame(frame: Iap2Frame) {
         if (GeelyHeadUnit.monjaroA3) trace.line(frame)?.let { Log.i(TAG, it) }
-        val (changed, card) = synchronized(state) { state.accept(frame) to carCard() }
+        val (changed, card) = synchronized(state) {
+            if (!takingUpdates) return
+            state.accept(frame) to carCard()
+        }
         if (changed) {
             Log.i(TAG, "CarPlay call ${card?.phase ?: "ended"}")
             PhoneAudioRoute.carPlayCall(card != null)
@@ -278,11 +297,14 @@ object BydCarPlayCall {
         }
     }
 
-    /** The session ended: forget the calls and end the one DiPlay showed. */
+    /** The session ended: forget the calls, end the one DiPlay showed and take no updates until [subscribing]. */
     fun end() {
         sessionActive = false
         PhoneAudioRoute.carPlayCall(false)
-        synchronized(state) { state.clear() }
+        synchronized(state) {
+            takingUpdates = false
+            state.clear()
+        }
         publish()
         val app = context ?: return
         writer.execute { resetRetry(null); apply(app, null); disarm(app) }

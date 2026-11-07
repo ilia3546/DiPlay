@@ -1655,6 +1655,7 @@ class CarPlayController(
                 beforeStartSession = { startedHotspot?.validateReady() },
                 onStartSessionSent = { watchdog.startSessionSent(it.sentAtNanos) },
                 onIncoming = ::onRouteFrame,
+                beforeSubscriptions = BydNavigationOutputs::carPlayCallsSubscribing,
                 onProgress = { message ->
                     diagnostics.controlProgress(message)
                     debugLog(message)
@@ -1756,6 +1757,7 @@ class CarPlayController(
                             onWirelessTunnelReady(generation)
                         },
                         onIncoming = ::onRouteFrame,
+                        beforeSubscriptions = BydNavigationOutputs::carPlayCallsSubscribing,
                         onProgress = { message -> debugLog("iAP tunnel $message") },
                     )
                     if (closed || generation != wirelessGeneration.get()) return@execute
@@ -2476,6 +2478,7 @@ class CarPlayController(
                 locationProvider = locationProvider,
                 vehicleStatusProvider = vehicleStatusProvider,
                 onIncoming = ::onRouteFrame,
+                beforeSubscriptions = BydNavigationOutputs::carPlayCallsSubscribing,
                 onProgress = { message ->
                     if (message == Iap2WiredControlClient.START_SESSION_AGAIN_PROGRESS) {
                         startWatchdog.startSessionSentAgain()

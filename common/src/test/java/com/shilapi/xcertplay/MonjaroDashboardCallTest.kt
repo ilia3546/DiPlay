@@ -37,6 +37,7 @@ class MonjaroDashboardCallTest {
 
     @Before fun record() {
         BydCarPlayCall.end()
+        BydCarPlayCall.subscribing()
         realLiveSession = MonjaroDashboardCall.liveSession
         MonjaroDashboardCall.liveSession = { live }
         MonjaroDashboardCall.dashboard = object : DashboardCall {
