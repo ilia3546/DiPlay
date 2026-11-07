@@ -141,6 +141,7 @@ object AirPlayPersistence {
     private const val KEY_HOTSPOT_AUDIO_FIREWALL = "hotspot_audio_firewall"
     private const val KEY_MICROPHONE_INPUT = "microphone_input"
     private const val KEY_DASHBOARD_MUSIC = "monjaro_dashboard_music"
+    private const val KEY_DASHBOARD_CALLS = "monjaro_dashboard_calls"
     private const val KEY_PAUSE_CARPLAY_FOR_CAR_AUDIO = "monjaro_pause_carplay_for_car_audio"
     private const val KEY_CUSTOM_DASHBOARD = "monjaro_custom_dashboard"
     private const val KEY_DASHBOARD_BACKGROUND = "monjaro_dashboard_background"
@@ -625,6 +626,14 @@ object AirPlayPersistence {
     fun saveDashboardMusic(context: Context, enabled: Boolean) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putBoolean(KEY_DASHBOARD_MUSIC, enabled).apply()
+    }
+
+    fun loadDashboardCalls(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_DASHBOARD_CALLS, false)
+
+    fun saveDashboardCalls(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putBoolean(KEY_DASHBOARD_CALLS, enabled).apply()
     }
 
     fun loadPauseCarPlayForCarAudio(context: Context): Boolean =

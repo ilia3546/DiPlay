@@ -37,6 +37,7 @@ class SettingsBackupCodecTest {
         AirPlayPersistence.saveDisconnectPhoneBluetooth(context, true)
         AirPlayPersistence.saveHotspotAudioFirewall(context, true)
         AirPlayPersistence.saveDashboardMusic(context, true)
+        AirPlayPersistence.saveDashboardCalls(context, true)
         AirPlayPersistence.saveCustomDashboard(context, true)
         AirPlayPersistence.saveDashboardBackground(context, DashboardBackground.AURORA)
         AirPlayPersistence.saveDashboardDimmingPercent(context, 40)
@@ -49,7 +50,7 @@ class SettingsBackupCodecTest {
         val document = JSONObject(String(SettingsBackupCodec.export(context, "0.2.22")))
         val airplay = document.getJSONObject("settings").optJSONObject("xcertplay_airplay") ?: JSONObject()
         for (key in listOf("root_hotspot_details", "disconnect_phone_bluetooth_wireless", "hotspot_audio_firewall",
-            "monjaro_dashboard_music", "monjaro_custom_dashboard", "monjaro_dashboard_background",
+            "monjaro_dashboard_music", "monjaro_dashboard_calls", "monjaro_custom_dashboard", "monjaro_dashboard_background",
             "monjaro_dashboard_dimming_percent", "monjaro_hud_maneuvers", "monjaro_hud_density", "monjaro_hud_height",
             "monjaro_hud_scale_percent", "monjaro_hud_lanes", "monjaro_hud_trip")) {
             assertFalse(key, airplay.has(key))

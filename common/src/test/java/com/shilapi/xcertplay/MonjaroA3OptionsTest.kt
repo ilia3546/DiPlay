@@ -24,6 +24,7 @@ class MonjaroA3OptionsTest {
         AirPlayPersistence.saveHotspotAudioFirewall(context, true)
         AirPlayPersistence.saveMicrophoneInput(context, MicrophoneInput.ALL_CABIN_MICROPHONES)
         AirPlayPersistence.saveDashboardMusic(context, true)
+        AirPlayPersistence.saveDashboardCalls(context, true)
         AirPlayPersistence.saveCustomDashboard(context, true)
         AirPlayPersistence.saveDashboardBackground(context, DashboardBackground.NEON)
         AirPlayPersistence.saveDashboardDimmingPercent(context, 40)
@@ -50,10 +51,17 @@ class MonjaroA3OptionsTest {
         ShadowBuild.setProduct("geely_fx11")
         ShadowBuild.setModel("KX11-A3-L1")
         assertEquals(MonjaroA3Options(rootHotspotDetails = true, disconnectPhoneBluetooth = true, hotspotAudioFirewall = true,
-            microphoneInput = MicrophoneInput.ALL_CABIN_MICROPHONES, dashboardMusic = true, customDashboard = true,
+            microphoneInput = MicrophoneInput.ALL_CABIN_MICROPHONES, dashboardMusic = true, dashboardCalls = true, customDashboard = true,
             dashboardBackground = DashboardBackground.NEON, dashboardDimmingPercent = 40, hudManeuvers = true,
             hudDensity = HudSettings.Variant.BOLD, hudHeight = 260, hudScalePercent = 80, hudLanes = false, hudTrip = false),
             MonjaroA3Options.load(context))
+    }
+
+    @Test fun dashboardCallsAreOffByDefaultAndOffOnAnyOtherHeadUnit() {
+        assertFalse(MonjaroA3Options.load(context, monjaroA3 = true).dashboardCalls)
+        AirPlayPersistence.saveDashboardCalls(context, true)
+        assertTrue(MonjaroA3Options.load(context, monjaroA3 = true).dashboardCalls)
+        assertFalse(MonjaroA3Options.load(context, monjaroA3 = false).dashboardCalls)
     }
 
     @Test fun theHudIsOffAndDrawsTheBalancedLineAt215And65PercentWithLanesAndTripByDefault() {

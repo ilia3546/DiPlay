@@ -2187,6 +2187,11 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 AirPlayPersistence.saveDashboardMusic(this, it)
                 MonjaroDashboardMusic.settingChanged(this)
             }
+            toggle(card, getString(R.string.settings_dashboard_calls),
+                getString(R.string.settings_dashboard_calls_description),
+                AirPlayPersistence.loadDashboardCalls(this)) {
+                AirPlayPersistence.saveDashboardCalls(this, it)
+            }
             toggle(card, getString(R.string.settings_pause_carplay_for_car_audio),
                 getString(R.string.settings_pause_carplay_for_car_audio_description),
                 AirPlayPersistence.loadPauseCarPlayForCarAudio(this)) {

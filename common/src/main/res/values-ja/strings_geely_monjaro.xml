@@ -17,6 +17,8 @@
     <string name="settings_microphone_input_all_cabin">車内のすべてのマイク（ミックス）</string>
     <string name="settings_dashboard_music">CarPlay の音楽をメーターとメディアウィジェットに表示（実験的機能）</string>
     <string name="settings_dashboard_music_description">CarPlay の曲名、アーティスト、アルバム、カバーを純正メーターの音楽ウィジェットと、運転席・助手席画面の音楽ウィジェットに表示し、CarPlay が終わると消去します。ウィジェットのボタンで CarPlay を操作できます。ヘッドユニットが DiPlay 自身の要求を拒否した場合にのみ root（Magisk）を使います。すぐに反映されます。</string>
+    <string name="settings_dashboard_calls">CarPlay の通話をメーターと HUD に表示（実験的機能）</string>
+    <string name="settings_dashboard_calls_description">CarPlay の通話を純正メーターと HUD の通話ウィジェット、およびカスタムメーターに表示します。着信中はステアリングの「前へ」で拒否、「次へ」で応答し、通話中は「前へ」でマイクのオン/オフ、「次へ」で通話を終了します。CarPlay 中に Bluetooth 電話を切断するファームウェア向けです。そうでない場合、メーターに通話が二重に表示されることがあります。すぐに反映されます。</string>
     <string name="settings_pause_carplay_for_car_audio">車の音声が再生されたら CarPlay を一時停止（実験的機能）</string>
     <string name="settings_pause_carplay_for_car_audio_description">ラジオやヘッドユニットの他のアプリが再生を始めると、両方が同時に鳴らないよう DiPlay が iPhone を一時停止します。プレーヤーが Android のオーディオフォーカスを取得しても DiPlay の音声が鳴り続けるファームウェア向けです。戻すには CarPlay で音楽を再生してください。 それまではステアリングのメディアボタンは車のソースを操作します。すぐに適用されます。</string>
     <string name="settings_custom_dashboard">CarPlay 地図付きのカスタムメーター（実験的機能）</string>
