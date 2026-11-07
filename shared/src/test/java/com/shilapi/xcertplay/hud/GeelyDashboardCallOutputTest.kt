@@ -17,10 +17,11 @@ class GeelyDashboardCallOutputTest {
     private val marks = mutableListOf<Boolean>()
     private var accept = true
     private var acceptApp = true
+    private var refused: String? = null
     private var clock = 1_000_000L
 
     private fun output(leftBehind: Boolean = false) = GeelyDashboardCallOutput(
-        send = { subtype, json -> sent += Triple("root", subtype, json); accept },
+        send = { subtype, json -> sent += Triple("root", subtype, json); accept && json != refused },
         resend = { subtype, json -> sent += Triple("app", subtype, json); acceptApp },
         leftBehind = leftBehind,
         widgetShown = { marks += it },
@@ -191,5 +192,96 @@ class GeelyDashboardCallOutputTest {
             call("Anna", "+7 900 000-00-00", GeelyCallMessages.ENDED),
             call("Anna", "+7 900 000-00-00", GeelyCallMessages.IDLE),
         ), sent)
+    }
+
+    @Test fun aRefusedAnswerIsSentAgainAndOnlyThenTheTalkTimeStarts() {
+        val output = output()
+        output.show(ringing)
+        accept = false
+        val active = ringing.copy(phase = CarPlayCallCard.Phase.ACTIVE, activeSinceMillis = clock)
+        output.show(active)
+        output.tick()
+        assertFalse(output.ticking)
+        assertTrue(output.undelivered)
+        accept = true
+        clock += 3_000
+        output.retry()
+        assertTrue(output.ticking)
+        assertFalse(output.undelivered)
+        assertEquals(listOf(
+            call("Anna", "+7 900 000-00-00", GeelyCallMessages.INCOMING),
+            call("Anna", "+7 900 000-00-00", GeelyCallMessages.TALKING),
+            call("Anna", "+7 900 000-00-00", GeelyCallMessages.TALKING),
+            duration(3),
+        ), sent)
+    }
+
+    @Test fun aRefusedEndIsSentAgainWithoutANewCall() {
+        val output = output()
+        output.show(ringing)
+        accept = false
+        output.clear()
+        assertTrue(output.undelivered)
+        accept = true
+        output.retry()
+        output.retry()
+        assertFalse(output.undelivered)
+        assertEquals(listOf(true, false), marks)
+        assertEquals(listOf(
+            call("Anna", "+7 900 000-00-00", GeelyCallMessages.INCOMING),
+            call("Anna", "+7 900 000-00-00", GeelyCallMessages.ENDED),
+            call("Anna", "+7 900 000-00-00", GeelyCallMessages.ENDED),
+            call("Anna", "+7 900 000-00-00", GeelyCallMessages.IDLE),
+        ), sent)
+    }
+
+    @Test fun aHalfSentEndSendsOnlyTheIdleStateAgainAndKeepsTheWidgetMarked() {
+        val output = output()
+        output.show(ringing)
+        refused = GeelyCallMessages.call("Anna", "+7 900 000-00-00", GeelyCallMessages.IDLE)
+        output.clear()
+        assertEquals(listOf(true), marks)
+        refused = null
+        output.retry()
+        assertEquals(listOf(true, false), marks)
+        assertEquals(listOf(
+            call("Anna", "+7 900 000-00-00", GeelyCallMessages.INCOMING),
+            call("Anna", "+7 900 000-00-00", GeelyCallMessages.ENDED),
+            call("Anna", "+7 900 000-00-00", GeelyCallMessages.IDLE),
+            call("Anna", "+7 900 000-00-00", GeelyCallMessages.IDLE),
+        ), sent)
+    }
+
+    @Test fun theSameCallAfterAHalfSentEndIsSentAgain() {
+        val output = output()
+        output.show(ringing)
+        refused = GeelyCallMessages.call("Anna", "+7 900 000-00-00", GeelyCallMessages.IDLE)
+        output.clear()
+        output.show(ringing)
+        assertFalse(output.undelivered)
+        assertEquals(listOf(
+            call("Anna", "+7 900 000-00-00", GeelyCallMessages.INCOMING),
+            call("Anna", "+7 900 000-00-00", GeelyCallMessages.ENDED),
+            call("Anna", "+7 900 000-00-00", GeelyCallMessages.IDLE),
+            call("Anna", "+7 900 000-00-00", GeelyCallMessages.INCOMING),
+        ), sent)
+    }
+
+    @Test fun aNewWishReplacesTheUndeliveredOne() {
+        val output = output()
+        accept = false
+        output.show(ringing)
+        accept = true
+        output.show(ringing.copy(name = "Boris"))
+        output.retry()
+        assertEquals(listOf(
+            call("Anna", "+7 900 000-00-00", GeelyCallMessages.INCOMING),
+            call("Boris", "+7 900 000-00-00", GeelyCallMessages.INCOMING),
+        ), sent)
+    }
+
+    @Test fun retriesWaitLongerUpToTenSeconds() {
+        assertEquals(listOf(1_000L, 2_000L, 5_000L, 10_000L, 10_000L, 10_000L),
+            (0..5).map(GeelyDashboardCallOutput::retryDelayMillis))
     }
 }

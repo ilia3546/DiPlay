@@ -44,10 +44,11 @@ internal object GeelyCallMessages {
 }
 
 /**
- * What the dashboard's call widget shows. Sends the call only when its state, name or number changed, the talk
- * time every [tick] of a call in progress when the second changed, and on [clear] the end of the call and then
- * the idle state, only while a widget of ours may be shown. Not thread-safe: [GeelyDashboardCall] calls it from
- * one worker.
+ * What the dashboard's call widget shows. Keeps the wanted call, or the wanted close, until it is delivered: sends
+ * the call only when its state, name or number changed, the talk time every [tick] of a delivered call in progress
+ * when the second changed, and on [clear] the end of the call and then the idle state, only while a widget of ours
+ * may be shown. A message that was not sent leaves [undelivered] set until [retry] or a new wish delivers it. Not
+ * thread-safe: [GeelyDashboardCall] calls it from one worker.
  */
 internal class GeelyDashboardCallOutput(
     private val send: (subtype: Int, json: String) -> Boolean,
@@ -62,20 +63,40 @@ internal class GeelyDashboardCallOutput(
     private val now: () -> Long = System::currentTimeMillis,
 ) {
     private var shown = leftBehind
+    private var wanted: CarPlayCallCard? = null
     private var lastCall: String? = null
     private var lastName = ""
     private var lastNumber = ""
+    private var endSent = false
     private var activeSince: Long? = null
     private var lastSecond: Long? = null
 
-    val ticking: Boolean get() = lastCall != null && activeSince != null
+    var undelivered = false
+        private set
+
+    val ticking: Boolean get() = activeSince != null
 
     fun show(card: CarPlayCallCard?) {
-        if (card == null) {
-            clear()
-            return
-        }
-        activeSince = card.activeSinceMillis.takeIf { card.phase == CarPlayCallCard.Phase.ACTIVE }
+        wanted = card
+        deliver()
+    }
+
+    fun clear() = show(null)
+
+    /** Sends again what was not delivered; does nothing once it was. */
+    fun retry() {
+        if (undelivered) deliver()
+    }
+
+    fun tick() {
+        val since = activeSince ?: return
+        val second = (now() - since).coerceAtLeast(0) / 1000
+        if (second == lastSecond) return
+        if (resend(GeelyCallMessages.DURATION, GeelyCallMessages.duration(second))) lastSecond = second
+    }
+
+    private fun deliver() {
+        val card = wanted ?: return close()
         val json = GeelyCallMessages.call(card.name, card.number, GeelyCallMessages.state(card.phase))
         if (json != lastCall) {
             // Marked before the message: a process killed right after it must still close the widget.
@@ -83,36 +104,56 @@ internal class GeelyDashboardCallOutput(
                 shown = true
                 widgetShown(true)
             }
-            if (!send(GeelyCallMessages.CALL, json)) return
+            if (!send(GeelyCallMessages.CALL, json)) {
+                activeSince = null
+                undelivered = true
+                return
+            }
             lastCall = json
             lastName = card.name
             lastNumber = card.number
+            endSent = false
             lastSecond = null
             log("dashboard call ${card.phase} sent nameLength=${card.name.length} number=${card.number.isNotEmpty()}")
         }
+        undelivered = false
+        activeSince = card.activeSinceMillis.takeIf { card.phase == CarPlayCallCard.Phase.ACTIVE }
         tick()
     }
 
-    fun tick() {
-        val since = activeSince ?: return
-        if (lastCall == null) return
-        val second = (now() - since).coerceAtLeast(0) / 1000
-        if (second == lastSecond) return
-        if (resend(GeelyCallMessages.DURATION, GeelyCallMessages.duration(second))) lastSecond = second
-    }
-
-    fun clear() {
+    private fun close() {
         activeSince = null
-        if (!shown) return
-        if (!send(GeelyCallMessages.CALL, GeelyCallMessages.call(lastName, lastNumber, GeelyCallMessages.ENDED))) return
-        if (!send(GeelyCallMessages.CALL, GeelyCallMessages.call(lastName, lastNumber, GeelyCallMessages.IDLE))) return
+        if (!shown) {
+            undelivered = false
+            return
+        }
+        if (!endSent) {
+            if (!send(GeelyCallMessages.CALL, GeelyCallMessages.call(lastName, lastNumber, GeelyCallMessages.ENDED))) {
+                undelivered = true
+                return
+            }
+            endSent = true
+            lastCall = null
+        }
+        if (!send(GeelyCallMessages.CALL, GeelyCallMessages.call(lastName, lastNumber, GeelyCallMessages.IDLE))) {
+            undelivered = true
+            return
+        }
         shown = false
-        lastCall = null
+        endSent = false
         lastName = ""
         lastNumber = ""
         lastSecond = null
+        undelivered = false
         widgetShown(false)
         log("dashboard call widget closed")
+    }
+
+    companion object {
+        private val RETRY_DELAYS_MILLIS = longArrayOf(1_000, 2_000, 5_000, 10_000)
+
+        /** How long the [attempt]th retry in a row of an undelivered message waits, counting from 0. */
+        fun retryDelayMillis(attempt: Int): Long = RETRY_DELAYS_MILLIS[attempt.coerceIn(0, RETRY_DELAYS_MILLIS.size - 1)]
     }
 }
 
@@ -121,10 +162,10 @@ interface DashboardCall {
     /** A session with the option on began. */
     fun start(context: Context)
 
-    /** Null closes the widget. */
+    /** Null closes the widget. What fails to send is sent again until it is delivered or another wish replaces it. */
     fun show(context: Context, card: CarPlayCallCard?)
 
-    /** Closes the widget if one of ours is shown and stops the talk time. */
+    /** Closes the widget if one of ours is shown, like a null [show], and stops the talk time. */
     fun stop(context: Context)
 
     /** At process start: closes a widget that a killed process left shown. */
@@ -147,6 +188,8 @@ object GeelyDashboardCall : DashboardCall {
     @Volatile private var app: Context? = null
     private var link: Link? = null
     private var duration: ScheduledFuture<*>? = null
+    private var retry: ScheduledFuture<*>? = null
+    private var retryAttempt = 0
 
     private class Link(val sender: GeelyCabinLan.Sender, val output: GeelyDashboardCallOutput)
 
@@ -159,7 +202,7 @@ object GeelyDashboardCall : DashboardCall {
         app = context.applicationContext
         worker.execute {
             link().output.show(card)
-            followDuration()
+            follow()
         }
     }
 
@@ -167,7 +210,7 @@ object GeelyDashboardCall : DashboardCall {
         app = context.applicationContext
         worker.execute {
             link().output.clear()
-            followDuration()
+            follow()
         }
     }
 
@@ -178,10 +221,33 @@ object GeelyDashboardCall : DashboardCall {
             if (link != null || !prefs(app).getBoolean(KEY_WIDGET_SHOWN, false)) return@execute
             Log.i(TAG, "a call widget left by the previous process is closed at start")
             link()
+            follow()
         }
     }
 
     override fun whenIdle(done: () -> Unit) = worker.execute(done)
+
+    private fun follow() {
+        followDuration()
+        followRetry()
+    }
+
+    private fun followRetry() {
+        val output = link?.output ?: return
+        if (!output.undelivered) {
+            retry?.cancel(false)
+            retry = null
+            retryAttempt = 0
+            return
+        }
+        if (retry != null) return
+        val delay = GeelyDashboardCallOutput.retryDelayMillis(retryAttempt++)
+        retry = worker.schedule({
+            retry = null
+            output.retry()
+            follow()
+        }, delay, TimeUnit.MILLISECONDS)
+    }
 
     private fun followDuration() {
         val ticking = link?.output?.ticking == true
