@@ -18,6 +18,13 @@ internal enum class DashboardMediaSource {
          * silent. More than one playing source is a contradiction. With the focus turned off in the settings,
          * CarPlay counts while it plays and nothing else does, and a paused CarPlay shows nothing.
          */
+        /** As [of], but a paused radio stays shown after [previous] showed it, until CarPlay plays or another source does. */
+        fun after(previous: DashboardMediaSource?, signals: DashboardMediaSignals): DashboardMediaSource {
+            val next = of(signals)
+            val radioHeld = previous == RADIO && next != OTHER && !signals.carPlayPlaying
+            return if (radioHeld) RADIO else next
+        }
+
         fun of(signals: DashboardMediaSignals): DashboardMediaSource = with(signals) {
             val carPlaySounding = (carPlayFocus || carPlayFocusDisabled) && carPlayPlaying
             // The firmware leaves its radio flag set after the radio pauses for another source; the radio service knows.

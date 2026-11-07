@@ -75,7 +75,7 @@ internal class DashboardMediaFeed(private val block: DashboardMediaBlock) {
             usbPlaying = heard.usb,
             radioServicePlaying = radio.servicePlaying,
         )
-        val next = DashboardMediaSource.of(signals)
+        val next = DashboardMediaSource.after(source, signals)
         if (next != source) {
             Log.i(TAG, "media source $next: $signals")
             source = next

@@ -41,6 +41,16 @@ class DashboardMediaSourceTest {
             source(carPlayPlays.copy(carPlayPlaying = false, radioPlaying = true)))
     }
 
+    @Test fun aPausedRadioStaysUntilCarPlayPlays() {
+        val radioPaused = carPlayPlays.copy(carPlayPlaying = false, radioPlaying = true, radioServicePlaying = false)
+        assertEquals(DashboardMediaSource.RADIO, DashboardMediaSource.after(DashboardMediaSource.RADIO, radioPaused))
+        assertEquals("not shown before", DashboardMediaSource.CARPLAY, DashboardMediaSource.after(null, radioPaused))
+        assertEquals("CarPlay plays", DashboardMediaSource.CARPLAY,
+            DashboardMediaSource.after(DashboardMediaSource.RADIO, radioPaused.copy(carPlayPlaying = true)))
+        assertEquals("another car source", DashboardMediaSource.OTHER,
+            DashboardMediaSource.after(DashboardMediaSource.RADIO, DashboardMediaSignals(usbPlaying = true)))
+    }
+
     @Test fun aRadioFlagLeftSetAfterTheRadioPausedDoesNotHideCarPlay() {
         assertEquals(DashboardMediaSource.CARPLAY,
             source(carPlayPlays.copy(radioPlaying = true, radioServicePlaying = false)))
