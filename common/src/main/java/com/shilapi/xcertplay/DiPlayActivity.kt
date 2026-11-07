@@ -3060,7 +3060,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
     private fun carHotspotOff(): Boolean =
         AirPlayPersistence.loadWirelessHotspotMode(this) == WirelessHotspotMode.MANUAL &&
             CarHotspotSettings.reportedOff(this, com.shilapi.xcertplay.network.CarHotspotStatus.isEnabled(this)) &&
-            !(CarHotspotSettings.enabled(this) && CarHotspotTethering.permitted(this))
+            !(CarHotspotSettings.enabled(this) &&
+                (CarHotspotTethering.permitted(this) || CarHotspotSettings.rootStart(this)))
 
     /**
      * Other head units: starting the hotspot needs only Android's "Modify system settings" access
