@@ -51,4 +51,15 @@ class DashboardFormatTest {
         assertEquals("02", DashboardFormat.minutesOfHour(302, Locale.US))
         assertEquals("0", DashboardFormat.hours(45, Locale.US))
     }
+
+    @Test fun aCallLastsInMinutesAndSecondsThenInHours() {
+        assertEquals("00:00", DashboardFormat.callDuration(0, Locale.US))
+        assertEquals("00:42", DashboardFormat.callDuration(42, Locale.US))
+        assertEquals("02:14", DashboardFormat.callDuration(134, Locale.US))
+        assertEquals("59:59", DashboardFormat.callDuration(3_599, Locale.US))
+        assertEquals("1:00:00", DashboardFormat.callDuration(3_600, Locale.US))
+        assertEquals("1:02:05", DashboardFormat.callDuration(3_725, Locale.US))
+        assertEquals("12:00:01", DashboardFormat.callDuration(43_201, Locale.US))
+        assertEquals("00:00", DashboardFormat.callDuration(-5, Locale.US))
+    }
 }

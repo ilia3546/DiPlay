@@ -115,6 +115,54 @@ internal object MonjaroDashboardLayout {
     const val PROGRESS_HEIGHT = 4
     const val PROGRESS_GAP = 22
 
+    /** The call block of design v3 takes the media block's column; its ended card starts [CALL_ENDED_TOP] lower. */
+    val call = Box(left = 1370, top = 192, width = 400)
+    const val CALL_ENDED_TOP = 38
+    const val CALL_AVATAR_SIZE = 150
+    const val CALL_AVATAR_GRADIENT_DEGREES = 160.0
+    const val CALL_AVATAR_SHADOW_DY = 16f
+    const val CALL_AVATAR_SHADOW_BLUR = 40f
+    const val CALL_INITIALS_TEXT = 52f
+    const val CALL_TALKING_INITIALS_TEXT = 48f
+    const val CALL_AVATAR_GLYPH_SIZE = 64
+    const val CALL_RING_WIDTH = 3f
+    const val CALL_RING_INSET = 5f
+    const val CALL_PULSE_SCALE = 1.45f
+    const val CALL_PULSE_ALPHA = 0.9f
+    const val CALL_PULSE_MILLIS = 1_600L
+    const val CALL_BADGE_SIZE = 48
+    const val CALL_BADGE_BORDER = 4
+    const val CALL_BADGE_GLYPH_SIZE = 24
+    const val CALL_CAPTION_TEXT = 17f
+    const val CALL_CAPTION_LETTER_SPACING = 2f
+    const val CALL_CAPTION_GAP = 22
+    const val CALL_NAME_TEXT = 30f
+    const val CALL_RINGING_NAME_GAP = 6
+    const val CALL_NAME_GAP = 24
+    const val CALL_DETAIL_TEXT = 19f
+    const val CALL_DETAIL_GAP = 2
+    const val CALL_TIMER_TEXT = 24f
+    const val CALL_TIMER_GAP = 6
+    const val CALL_MUTED_TEXT = 15f
+    const val CALL_MUTED_GAP = 10
+    const val CALL_MUTED_PADDING_HORIZONTAL = 10
+    const val CALL_MUTED_PADDING_VERTICAL = 3
+    const val CALL_MUTED_RADIUS = 8f
+    const val CALL_OUTCOME_TEXT = 21f
+    const val CALL_OUTCOME_GAP = 6
+    const val CALL_RINGING_BUTTONS_GAP = 22
+    const val CALL_BUTTONS_GAP = 26
+    const val CALL_BUTTON_SIZE = 76
+    const val CALL_BUTTON_SPACING = 64
+    const val CALL_BUTTON_BORDER = 1f
+    const val CALL_BUTTON_SHADOW_DY = 10f
+    const val CALL_BUTTON_SHADOW_BLUR = 26f
+    const val CALL_BUTTON_LABEL_GAP = 8
+    const val CALL_BUTTON_LABEL_TEXT = 16f
+    const val CALL_END_GLYPH_SIZE = 38
+    const val CALL_ANSWER_GLYPH_SIZE = 36
+    const val CALL_MICROPHONE_GLYPH_SIZE = 34
+
     const val TEXT_SHADOW_DY = 1f
     const val TEXT_SHADOW_BLUR = 10f
 
@@ -131,4 +179,23 @@ internal object MonjaroDashboardLayout {
     const val MAP_SHADOW = 0x73000000
     const val ARTWORK_SHADOW = 0x8C000000.toInt()
     const val PROGRESS_TRACK = 0x38FFFFFF
+    const val CALL_AVATAR_TOP = 0xFF5A6B85.toInt()
+    const val CALL_AVATAR_BOTTOM = 0xFF2C3647.toInt()
+    const val CALL_AVATAR_SHADOW = 0x8C000000.toInt()
+    const val CALL_ENDED_AVATAR_TOP = 0xFF3D4656.toInt()
+    const val CALL_ENDED_AVATAR_BOTTOM = 0xFF232A35.toInt()
+    const val CALL_ENDED_INITIALS = 0x8CFFFFFF.toInt()
+    const val CALL_ENDED_NAME = 0xFFD7DDE6.toInt()
+    const val CALL_BADGE_BORDER_COLOR = 0xFF11151C.toInt()
+    const val CALL_CAPTION = 0xFF3DDC5A.toInt()
+    const val CALL_GREEN = 0xFF30D158.toInt()
+    const val CALL_GREEN_SHADOW = 0x5930D158
+    const val CALL_RED = 0xFFFF3B30.toInt()
+    const val CALL_RED_SHADOW = 0x59FF3B30
+    const val CALL_OUTCOME = 0xFFFF6961.toInt()
+    const val CALL_MUTED = 0xFFFF9F0A.toInt()
+    const val CALL_MUTED_BACKGROUND = 0x26FF9F0A
+    const val CALL_BUTTON_IDLE = 0x1AFFFFFF
+    const val CALL_BUTTON_BORDER_COLOR = 0x38FFFFFF
+    const val CALL_MUTED_GLYPH = 0xFF0C0F14.toInt()
 }

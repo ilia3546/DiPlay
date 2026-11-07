@@ -81,6 +81,15 @@
     <string name="custom_dashboard_unit_minutes">dk</string>
     <string name="custom_dashboard_unit_litres_per_100_km">L/100 km</string>
     <string name="custom_dashboard_arrival">varış</string>
+    <string name="dashboard_call_incoming">Gelen arama</string>
+    <string name="dashboard_call_decline">Reddet</string>
+    <string name="dashboard_call_answer">Yanıtla</string>
+    <string name="dashboard_call_microphone">Mikrofon</string>
+    <string name="dashboard_call_end">Bitir</string>
+    <string name="dashboard_call_muted">Mikrofon kapalı</string>
+    <string name="dashboard_call_calling">Aranıyor…</string>
+    <string name="dashboard_call_declined">Arama reddedildi</string>
+    <string name="dashboard_call_ended">Arama sona erdi · %1$s</string>
     <string name="hud_unit_meters">m</string>
     <string name="hud_unit_kilometres">km</string>
     <string name="hud_unit_minutes">dk</string>

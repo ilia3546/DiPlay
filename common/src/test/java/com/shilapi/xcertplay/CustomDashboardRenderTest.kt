@@ -1,5 +1,6 @@
 package com.shilapi.xcertplay
 
+import android.animation.ValueAnimator
 import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -11,6 +12,9 @@ import android.graphics.Shader
 import android.net.Uri
 import android.os.Looper
 import android.view.View
+import android.view.ViewGroup
+import com.shilapi.xcertplay.hud.CarPlayCallCard
+import com.shilapi.xcertplay.hud.CarPlayCallOutcome
 import com.shilapi.xcertplay.hud.ClusterTurnGuidance
 import java.io.File
 import java.time.Duration
@@ -131,6 +135,67 @@ class CustomDashboardRenderTest {
     }
 
     private fun DashboardMediaBlock.childVisibility() = (0 until childCount).map { getChildAt(it).visibility }
+
+    @Test fun theCallBlockInEachState() {
+        val name = "Анна Смирнова"
+        val number = "+7 999 123-45-67"
+        val ringing = CarPlayCallCard(CarPlayCallCard.Phase.RINGING, name, number = number)
+        val active = ringing.copy(phase = CarPlayCallCard.Phase.ACTIVE, activeSinceMillis = evening - 42_000)
+        val pulsed = render("call-incoming", attached = true) {
+            showCall(DashboardCallShown.Live(ringing, "Мобильный", muted = false))
+            assertTrue(call.avatar.pulsing)
+            // Robolectric runs a repeating animation to its end within one idle, so the frame is set directly.
+            (DashboardCallAvatar::class.java.getDeclaredField("pulse").apply { isAccessible = true }
+                .get(call.avatar) as ValueAnimator).currentPlayTime = 500
+        }
+        val (centreX, centreY) = MonjaroDashboardLayout.call.let { it.left + it.width / 2 to it.top + 75 }
+        assertTrue("the pulse ring outside the avatar", (78..110).any { radius ->
+            val pixel = pulsed.getPixel(centreX - radius, centreY)
+            Color.green(pixel) > Color.red(pixel) + 0x40 && Color.green(pixel) > Color.blue(pixel)
+        })
+        render("call-incoming-number") {
+            showCall(DashboardCallShown.Live(ringing.copy(name = number), "", muted = false))
+        }
+        render("call-talking") { showCall(DashboardCallShown.Live(active, "", muted = false)) }
+        render("call-talking-muted") {
+            showCall(DashboardCallShown.Live(active.copy(activeSinceMillis = evening - 3_725_000), "", muted = true))
+        }
+        render("call-dialing") {
+            showCall(DashboardCallShown.Live(ringing.copy(phase = CarPlayCallCard.Phase.DIALING), "", muted = false))
+        }
+        render("call-ended") {
+            showCall(DashboardCallShown.Ended(CarPlayCallOutcome(CarPlayCallOutcome.Kind.ENDED, name, number, 134, evening)))
+        }
+        render("call-declined") {
+            showCall(DashboardCallShown.Ended(CarPlayCallOutcome(CarPlayCallOutcome.Kind.DECLINED, name, number, 0, evening)))
+        }
+    }
+
+    @Test fun thePulseRunsOnlyWhileTheCallBlockIsShown() {
+        val view = MonjaroDashboardView(context)
+        Robolectric.buildActivity(Activity::class.java).setup().visible().get().setContentView(view)
+        view.showCall(DashboardCallShown.Live(CarPlayCallCard(CarPlayCallCard.Phase.RINGING, "Анна"), "", muted = false))
+        assertTrue(view.call.avatar.pulsing)
+        view.call.visibility = View.GONE
+        assertFalse("hidden", view.call.avatar.pulsing)
+        view.call.visibility = View.VISIBLE
+        assertTrue(view.call.avatar.pulsing)
+        view.call.show(DashboardCallShown.Live(CarPlayCallCard(CarPlayCallCard.Phase.ACTIVE, "Анна", evening), "", false),
+            evening)
+        assertFalse("answered", view.call.avatar.pulsing)
+        view.call.show(DashboardCallShown.Live(CarPlayCallCard(CarPlayCallCard.Phase.RINGING, "Анна"), "", false), evening)
+        assertTrue(view.call.avatar.pulsing)
+        (view.parent as ViewGroup).removeView(view)
+        assertFalse("detached", view.call.avatar.pulsing)
+    }
+
+    private fun MonjaroDashboardView.showCall(shown: DashboardCallShown) {
+        showBackground(DashboardBackground.OCEAN, 0) { null }
+        showTemperature(6.4f)
+        media.visibility = View.GONE
+        call.visibility = View.VISIBLE
+        call.show(shown, evening)
+    }
 
     @Test fun theRouteCardsOverTheEmptyMap() {
         val frame = render("map-route") {

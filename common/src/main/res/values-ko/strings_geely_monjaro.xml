@@ -81,6 +81,15 @@
     <string name="custom_dashboard_unit_minutes">분</string>
     <string name="custom_dashboard_unit_litres_per_100_km">L/100km</string>
     <string name="custom_dashboard_arrival">도착</string>
+    <string name="dashboard_call_incoming">수신 전화</string>
+    <string name="dashboard_call_decline">거절</string>
+    <string name="dashboard_call_answer">응답</string>
+    <string name="dashboard_call_microphone">마이크</string>
+    <string name="dashboard_call_end">종료</string>
+    <string name="dashboard_call_muted">마이크 꺼짐</string>
+    <string name="dashboard_call_calling">전화 거는 중…</string>
+    <string name="dashboard_call_declined">통화 거절됨</string>
+    <string name="dashboard_call_ended">통화 종료 · %1$s</string>
     <string name="hud_unit_meters">m</string>
     <string name="hud_unit_kilometres">km</string>
     <string name="hud_unit_minutes">분</string>

@@ -81,6 +81,15 @@
     <string name="custom_dashboard_unit_minutes">хв</string>
     <string name="custom_dashboard_unit_litres_per_100_km">л/100 км</string>
     <string name="custom_dashboard_arrival">прибуття</string>
+    <string name="dashboard_call_incoming">Вхідний виклик</string>
+    <string name="dashboard_call_decline">Відхилити</string>
+    <string name="dashboard_call_answer">Відповісти</string>
+    <string name="dashboard_call_microphone">Мікрофон</string>
+    <string name="dashboard_call_end">Завершити</string>
+    <string name="dashboard_call_muted">Мікрофон вимк.</string>
+    <string name="dashboard_call_calling">Виклик…</string>
+    <string name="dashboard_call_declined">Виклик відхилено</string>
+    <string name="dashboard_call_ended">Виклик завершено · %1$s</string>
     <string name="hud_unit_meters">м</string>
     <string name="hud_unit_kilometres">км</string>
     <string name="hud_unit_minutes">хв</string>

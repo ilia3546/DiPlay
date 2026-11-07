@@ -81,6 +81,15 @@
     <string name="custom_dashboard_unit_minutes">分鐘</string>
     <string name="custom_dashboard_unit_litres_per_100_km">公升/百公里</string>
     <string name="custom_dashboard_arrival">抵達</string>
+    <string name="dashboard_call_incoming">來電</string>
+    <string name="dashboard_call_decline">拒絕</string>
+    <string name="dashboard_call_answer">接聽</string>
+    <string name="dashboard_call_microphone">麥克風</string>
+    <string name="dashboard_call_end">掛斷</string>
+    <string name="dashboard_call_muted">麥克風已關閉</string>
+    <string name="dashboard_call_calling">正在撥號…</string>
+    <string name="dashboard_call_declined">已拒絕來電</string>
+    <string name="dashboard_call_ended">通話結束 · %1$s</string>
     <string name="hud_unit_meters">公尺</string>
     <string name="hud_unit_kilometres">公里</string>
     <string name="hud_unit_minutes">分鐘</string>

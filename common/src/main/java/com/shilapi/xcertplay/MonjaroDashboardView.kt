@@ -19,8 +19,8 @@ import kotlin.math.max
 
 /**
  * The custom dashboard window's content, fixed at 1920x720 cluster pixels: background, clock, outside temperature,
- * the trip block, the map card and the media block. It always lays out left to right, because the firmware's
- * speed and warning lights sit at fixed places between the blocks.
+ * the trip block, the map card, and the media block or the call block in its place. It always lays out left to
+ * right, because the firmware's speed and warning lights sit at fixed places between the blocks.
  */
 internal class MonjaroDashboardView(context: Context) : FrameLayout(context) {
     private val clock = dashboardText(context, L.CLOCK_TEXT, 600).apply {
@@ -30,6 +30,7 @@ internal class MonjaroDashboardView(context: Context) : FrameLayout(context) {
     val trip = DashboardTripBlock(context)
     val map = DashboardMapCard(context)
     val media = DashboardMediaBlock(context)
+    val call = DashboardCallBlock(context).apply { visibility = View.GONE }
 
     init {
         layoutDirection = View.LAYOUT_DIRECTION_LTR
@@ -39,6 +40,7 @@ internal class MonjaroDashboardView(context: Context) : FrameLayout(context) {
         place(trip, L.trip)
         place(map, mapBox(L.defaultMap))
         place(media, L.media)
+        place(call, L.call)
         showBackground(DashboardBackground.OCEAN, 0) { null }
         showTemperature(null)
         trip.show(DashboardTrip())

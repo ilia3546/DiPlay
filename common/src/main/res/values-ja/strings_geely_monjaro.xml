@@ -81,6 +81,15 @@
     <string name="custom_dashboard_unit_minutes">分</string>
     <string name="custom_dashboard_unit_litres_per_100_km">L/100km</string>
     <string name="custom_dashboard_arrival">到着</string>
+    <string name="dashboard_call_incoming">着信</string>
+    <string name="dashboard_call_decline">拒否</string>
+    <string name="dashboard_call_answer">応答</string>
+    <string name="dashboard_call_microphone">マイク</string>
+    <string name="dashboard_call_end">終了</string>
+    <string name="dashboard_call_muted">マイクオフ</string>
+    <string name="dashboard_call_calling">発信中…</string>
+    <string name="dashboard_call_declined">通話を拒否しました</string>
+    <string name="dashboard_call_ended">通話終了 · %1$s</string>
     <string name="hud_unit_meters">m</string>
     <string name="hud_unit_kilometres">km</string>
     <string name="hud_unit_minutes">分</string>

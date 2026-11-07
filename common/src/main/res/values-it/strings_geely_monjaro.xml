@@ -81,6 +81,15 @@
     <string name="custom_dashboard_unit_minutes">min</string>
     <string name="custom_dashboard_unit_litres_per_100_km">L/100 km</string>
     <string name="custom_dashboard_arrival">arrivo</string>
+    <string name="dashboard_call_incoming">Chiamata in arrivo</string>
+    <string name="dashboard_call_decline">Rifiuta</string>
+    <string name="dashboard_call_answer">Rispondi</string>
+    <string name="dashboard_call_microphone">Microfono</string>
+    <string name="dashboard_call_end">Chiudi</string>
+    <string name="dashboard_call_muted">Microfono disattivato</string>
+    <string name="dashboard_call_calling">Chiamata in corso…</string>
+    <string name="dashboard_call_declined">Chiamata rifiutata</string>
+    <string name="dashboard_call_ended">Chiamata terminata · %1$s</string>
     <string name="hud_unit_meters">m</string>
     <string name="hud_unit_kilometres">km</string>
     <string name="hud_unit_minutes">min</string>

@@ -35,4 +35,10 @@ internal object DashboardFormat {
         if (seconds == null) UNKNOWN else String.format(locale, "%d", (seconds + 30) / 60)
 
     fun remainingKm(meters: Long?, locale: Locale = Locale.getDefault()): String = decimal(meters?.div(1000.0), locale)
+
+    fun callDuration(seconds: Long, locale: Locale = Locale.getDefault()): String {
+        val total = seconds.coerceAtLeast(0)
+        return if (total < 3_600) String.format(locale, "%02d:%02d", total / 60, total % 60)
+        else String.format(locale, "%d:%02d:%02d", total / 3_600, total / 60 % 60, total % 60)
+    }
 }
