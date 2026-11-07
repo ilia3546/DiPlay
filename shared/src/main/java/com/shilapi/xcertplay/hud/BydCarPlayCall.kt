@@ -48,8 +48,9 @@ class CarPlayCallState(private val clock: () -> Long = System::currentTimeMillis
     private var expectedBeforeMuteKey: Boolean? = null
 
     /**
-     * Returns true when the card changed; read it with [current]. The label, the microphone and the outcome
-     * of the last call can change without it; read them with [snapshot].
+     * Returns true when the card changed apart from its number, which BYD's call card does not show; read it with
+     * [current]. The number, the label, the microphone and the outcome of the last call can change without it;
+     * read them with [snapshot].
      */
     fun accept(frame: Iap2Frame): Boolean {
         if (frame.messageId == COMMUNICATIONS_UPDATE) {
@@ -84,9 +85,9 @@ class CarPlayCallState(private val clock: () -> Long = System::currentTimeMillis
             )
         }
         val next = card()
-        if (next == last) return false
+        val changed = next?.copy(number = "") != last?.copy(number = "")
         last = next
-        return true
+        return changed
     }
 
     fun current(): CarPlayCallCard? = last
@@ -230,9 +231,12 @@ object BydCarPlayCall {
     /** The current call, followed even while the setting is off so the wheel's call keys can act on it. */
     fun current(): CarPlayCallCard? = synchronized(state) { state.current() }
 
+    /** The current call as the car shows it, without the number it never writes. */
+    private fun carCard(): CarPlayCallCard? = current()?.copy(number = "")
+
     fun onFrame(frame: Iap2Frame) {
         trace.line(frame)?.let { Log.i(TAG, it) }
-        val (changed, card) = synchronized(state) { state.accept(frame) to state.current() }
+        val (changed, card) = synchronized(state) { state.accept(frame) to carCard() }
         if (changed) {
             Log.i(TAG, "CarPlay call ${card?.phase ?: "ended"}")
             PhoneAudioRoute.carPlayCall(card != null)
@@ -265,7 +269,7 @@ object BydCarPlayCall {
     /** The setting changed: show the current call now, or end the one DiPlay showed. */
     fun settingChanged(enabled: Boolean) {
         val app = context ?: return
-        val card = if (enabled) current() else null
+        val card = if (enabled) carCard() else null
         writer.execute {
             resetRetry(card)
             apply(app, card)
@@ -317,7 +321,7 @@ object BydCarPlayCall {
     private fun apply(app: Context, wanted: CarPlayCallCard?) {
         if (wanted != null && !BydOutputSettings.carPlayCalls(app)) return
         // Only the newest state matters; older queued ones are skipped.
-        if (wanted != current() && !(wanted == null && !BydOutputSettings.carPlayCalls(app))) return
+        if (wanted != carCard() && !(wanted == null && !BydOutputSettings.carPlayCalls(app))) return
         if (retryCard != wanted) resetRetry(wanted)
         if (wanted == shown && !cleanupPending) return
         if (wanted == null || cleanupPending) {
@@ -355,7 +359,7 @@ object BydCarPlayCall {
             return
         }
         // The readiness handshake can outlast a setting or session change.
-        if (!BydOutputSettings.carPlayCalls(app) || wanted != current()) {
+        if (!BydOutputSettings.carPlayCalls(app) || wanted != carCard()) {
             if (prepared) cancelUnprotected(app, token, null)
             else if (run(app, "end - $token")) clearLocalOwnership()
             else cleanupPending = true
@@ -397,7 +401,7 @@ object BydCarPlayCall {
             retry = null
             // One retry covers an unchanged card (onFrame deliberately deduplicates it).
             // Later state/setting events retain the ordinary retry path; no endless timer.
-            if (wanted == null || (BydOutputSettings.carPlayCalls(app) && current() == wanted)) apply(app, wanted)
+            if (wanted == null || (BydOutputSettings.carPlayCalls(app) && carCard() == wanted)) apply(app, wanted)
         }, 1, TimeUnit.SECONDS)
     }
 

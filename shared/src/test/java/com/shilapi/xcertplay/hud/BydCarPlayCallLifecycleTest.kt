@@ -82,6 +82,18 @@ class BydCarPlayCallLifecycleTest {
         assertEquals(CarPlayCallSnapshot(), CarPlayCalls.current())
     }
 
+    @Test fun aNewNumberAloneWritesNothingToTheCar() {
+        BydOutputSettings.setCarPlayCalls(app, true)
+        fun ringing(number: String) = Iap2Messages.buildRaw(CarPlayCallState.CALL_STATE_UPDATE) {
+            string(0, number); string(1, "Anna"); u8(2, 2); string(4, "a")
+        }
+        BydCarPlayCall.onFrame(ringing("+971500000001")); drain()
+        val commands = Shell.commands.size
+        BydCarPlayCall.onFrame(ringing("+971500000002")); drain()
+        assertEquals(commands, Shell.commands.size)
+        assertEquals("+971500000002", CarPlayCalls.current().card?.number)
+    }
+
     @Test fun backToBackCallsUseDifferentTokensForWritesWatcherAndCleanup() {
         BydOutputSettings.setCarPlayCalls(app, true)
         BydCarPlayCall.onFrame(ringing("a")); drain()

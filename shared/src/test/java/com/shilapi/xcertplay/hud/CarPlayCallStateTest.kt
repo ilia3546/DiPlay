@@ -224,6 +224,14 @@ class CarPlayCallStateTest {
     }
 
     @Test
+    fun aNewNumberAloneIsNoChangeOfBydsCardButIsFollowed() {
+        assertTrue(state.accept(update("a", status = 2, name = "Mum", remote = "+971500000001")))
+        assertFalse(state.accept(update("a", status = 2, name = "Mum", remote = "+971500000002")))
+        assertEquals("+971500000002", state.current()?.number)
+        assertEquals("+971500000002", state.snapshot().card?.number)
+    }
+
+    @Test
     fun otherMessagesAndClearLeaveNoCall() {
         assertFalse(state.accept(Iap2Messages.buildRaw(ClusterSongState.NOW_PLAYING_UPDATE) { u8(2, 2) }))
         assertNull(state.current())
