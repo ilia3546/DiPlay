@@ -34,8 +34,12 @@ internal object MonjaroDashboardLayout {
     const val TRIP_HOURS_GAP_AFTER = 10
     const val TRIP_MINUTES_GAP = 5
 
-    /** The map itself; the card's 1 px border lies around it, as CSS content-box sizing puts it. */
-    val map = Box(left = 611, top = 187, width = 700, height = 404)
+    /**
+     * The map itself; the card's 1 px border lies around it, as CSS content-box sizing puts it. It sits below the
+     * firmware's drive mode selector and above its bottom line, and both sides are multiples of 8 so the iPhone
+     * streams exactly this size.
+     */
+    val map = Box(left = (WIDTH - 592) / 2, top = 272, width = 592, height = 336)
     const val MAP_BORDER = 1
     const val MAP_RADIUS = 28f
     const val MAP_SHADOW_DY = 18f
@@ -45,10 +49,18 @@ internal object MonjaroDashboardLayout {
      * Where the iPhone keeps the car marker and route, in percent of the map: below the maneuver and arrival cards,
      * away from the sides.
      */
-    val MAP_SAFE_AREA_PERCENT = AirPlayInsets(top = 25, bottom = 0, left = 8, right = 8)
+    val MAP_SAFE_AREA_PERCENT = AirPlayInsets(top = 30, bottom = 0, left = 8, right = 8)
 
-    /** Over the map, in display pixels; [width] is the widest the card grows. */
-    val maneuverCard = Box(left = 626, top = 202, width = 330)
+    private const val ROUTE_CARD_INSET = 15
+    private const val ROUTE_CARD_GAP = 12
+    private const val ARRIVAL_WIDTH = 230
+
+    /** Over the map's top left corner, in display pixels; [width] is the widest the card grows. */
+    val maneuverCard = Box(
+        left = map.left + ROUTE_CARD_INSET,
+        top = map.top + ROUTE_CARD_INSET,
+        width = map.width - 2 * ROUTE_CARD_INSET - ROUTE_CARD_GAP - ARRIVAL_WIDTH,
+    )
     const val MANEUVER_PADDING_START = 12
     const val MANEUVER_PADDING_END = 24
     const val MANEUVER_PADDING_VERTICAL = 12
@@ -63,8 +75,12 @@ internal object MonjaroDashboardLayout {
     const val MANEUVER_SHADOW_DY = 10f
     const val MANEUVER_SHADOW_BLUR = 30f
 
-    /** Over the map, in display pixels, anchored on its right edge 626 px from the display's right. */
-    val arrivalCard = Box(left = WIDTH - 626 - 230, top = 208, width = 230)
+    /** Over the map's top right corner, in display pixels. */
+    val arrivalCard = Box(
+        left = map.left + map.width - ROUTE_CARD_INSET - ARRIVAL_WIDTH,
+        top = map.top + ROUTE_CARD_INSET + 6,
+        width = ARRIVAL_WIDTH,
+    )
     const val ARRIVAL_PADDING_HORIZONTAL = 20
     const val ARRIVAL_PADDING_VERTICAL = 12
     const val ARRIVAL_RADIUS = 18f

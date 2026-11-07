@@ -140,7 +140,7 @@ class CustomDashboardRenderTest {
                 arrivalEpochSeconds = evening / 1000 + 18 * 60, remainingSeconds = 1_080, remainingMeters = 9_400),
                 is24Hour = true, zone = moscow)
         }
-        assertEquals("the maneuver tile", Color.rgb(0x2f, 0x7b, 0xff), frame.getPixel(642, 248))
+        assertEquals("the maneuver tile", Color.rgb(0x2f, 0x7b, 0xff), frame.getPixel(MonjaroDashboardLayout.maneuverCard.left + 30, MonjaroDashboardLayout.maneuverCard.top + 40))
         assertEquals("the map below the cards", Color.rgb(0x12, 0x18, 0x21), frame.getPixel(960, 500))
     }
 

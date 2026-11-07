@@ -8,9 +8,9 @@ import org.junit.Test
 class DashboardMapStreamTest {
     @Test fun theStreamIsTheMapCardRoundedForTheIphone() {
         val config = DashboardMapStream.config
-        assertEquals(704 to 408, config.widthPixels to config.heightPixels)
+        assertEquals(592 to 336, config.widthPixels to config.heightPixels)
         assertEquals(CarPlayClusterDisplay.MAP_URL, config.initialUrl)
-        assertEquals("under the cards, clear of the sides", AirPlayInsets(top = 102, bottom = 0, left = 56, right = 56),
+        assertEquals("under the cards, clear of the sides", AirPlayInsets(top = 100, bottom = 0, left = 47, right = 47),
             config.safeArea)
     }
 

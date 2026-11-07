@@ -99,7 +99,6 @@ internal class MonjaroDashboardSources(private val view: MonjaroDashboardView) :
         val motion = EcarxWheelSpeed.motion()
         val wasParked = parking.parked
         val parked = parking.next(motion, SystemClock.elapsedRealtime())
-        view.map.video.showParked(parked)
         if (parked != wasParked) {
             val speed = motion?.metersPerSecond?.let { "%.1f km/h".format(it * 3.6) } ?: "unknown speed"
             Log.i(TAG, "map ${if (parked) "parked" else "driving"}: $speed, gear ${motion?.gear ?: "unknown"}")
