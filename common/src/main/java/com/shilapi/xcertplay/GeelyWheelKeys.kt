@@ -26,7 +26,8 @@ import com.shilapi.xcertplay.orchestration.CarPlayController
  *
  * With [AirPlayPersistence.loadCarBluetoothAudio] on, the car's own Bluetooth (AVRCP) control drives
  * the iPhone's music, so forwarding the media keys too would double-fire; only the microphone key is
- * registered then, for the long-press Siri shortcut.
+ * registered then, for the long-press Siri shortcut, plus previous and next for the CarPlay call keys
+ * while the Monjaro A3 calls option is on.
  *
  * The microphone key's long press is answered by the car's HiCar app, which registers for the same
  * code and cannot be intercepted from here; disable HiCar over ADB if Siri should answer instead
@@ -54,6 +55,14 @@ internal object GeelyWheelKeys {
         appContext = context.applicationContext
         if (bound) return
         bindLocked()
+    }
+
+    /** Subscribes again with the key codes the current settings need; does nothing while unbound. */
+    fun refreshRegistration() {
+        val (input, registered, context) = synchronized(this) { Triple(manager, listener, appContext) }
+        if (input == null || registered == null || context == null) return
+        runCatching { input.unregisterListener(registered, context.packageName) }
+        register(input, registered, context)
     }
 
     /** Unbinds when the CarPlay session ends. */
@@ -103,20 +112,7 @@ internal object GeelyWheelKeys {
                 manager = input
                 listener = registered
             }
-            runCatching {
-                // With CarPlay audio on the car's Bluetooth, the head unit's own AVRCP already drives
-                // the iPhone's music, so forwarding play/pause and skip over iAP2 as well would
-                // double-fire. Keep only the microphone key (long press -> Siri) then.
-                val bluetoothAudio = AirPlayPersistence.loadCarBluetoothAudio(context)
-                val codes = GeelyWheelKeyCodes.registeredCodes(bluetoothAudio)
-                if (bluetoothAudio) {
-                    Log.i(TAG, "car Bluetooth audio on: media keys pass to the head unit, only the Siri key is wired")
-                }
-                input.registerListener(registered, context.packageName, codes)
-                codes
-            }
-                .onSuccess { Log.i(TAG, "registered for wheel key codes=${it.joinToString()}") }
-                .onFailure { Log.w(TAG, "registerListener failed", it) }
+            register(input, registered, context)
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -140,6 +136,25 @@ internal object GeelyWheelKeys {
         }
     }
 
+    private fun register(input: IInputManager, registered: IInputListener, context: Context) {
+        runCatching {
+            // With CarPlay audio on the car's Bluetooth, the head unit's own AVRCP already drives
+            // the iPhone's music, so forwarding play/pause and skip over iAP2 as well would
+            // double-fire. Keep only the microphone key (long press -> Siri) then, and the call keys.
+            val bluetoothAudio = AirPlayPersistence.loadCarBluetoothAudio(context)
+            val calls = MonjaroDashboardCall.enabled(context)
+            val codes = GeelyWheelKeyCodes.registeredCodes(bluetoothAudio, calls)
+            if (bluetoothAudio) {
+                Log.i(TAG, "car Bluetooth audio on: media keys pass to the head unit, " +
+                    if (calls) "previous and next are wired for CarPlay calls only" else "only the Siri key is wired")
+            }
+            input.registerListener(registered, context.packageName, codes)
+            codes
+        }
+            .onSuccess { Log.i(TAG, "registered for wheel key codes=${it.joinToString()}") }
+            .onFailure { Log.w(TAG, "registerListener failed", it) }
+    }
+
     private fun forward(keyCode: Int) {
         val index = when (keyCode) {
             GeelyWheelKeyCodes.KEY_PLAY_PAUSE -> CarPlayMediaButton.PLAY_PAUSE
@@ -152,9 +167,14 @@ internal object GeelyWheelKeys {
         GeelyCallKeys.route(
             index,
             active = context != null && MonjaroDashboardCall.active(context),
+            bluetoothAudio = context != null && AirPlayPersistence.loadCarBluetoothAudio(context),
             card = CarPlayCalls.current().card,
             call = { action -> sendToCall(controller, index, action) },
             media = CarPlayMediaKeys::onExternalMediaKey,
+            carBluetooth = {
+                Log.i(TAG, "media key geely-wheel $it left to the car's Bluetooth")
+                WheelKeyLog.note("media key geely-wheel $it left to the car's Bluetooth")
+            },
         )
     }
 

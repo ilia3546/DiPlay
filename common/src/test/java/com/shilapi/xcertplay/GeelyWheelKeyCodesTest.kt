@@ -15,7 +15,7 @@ class GeelyWheelKeyCodesTest {
     @Test fun bluetoothAudioLeavesMediaKeysToTheHeadUnit() {
         assertEquals(
             listOf(GeelyWheelKeyCodes.KEY_VOICE_ASSIST),
-            GeelyWheelKeyCodes.registeredCodes(bluetoothAudio = true).toList(),
+            GeelyWheelKeyCodes.registeredCodes(bluetoothAudio = true, calls = false).toList(),
         )
     }
 
@@ -27,7 +27,7 @@ class GeelyWheelKeyCodesTest {
                 GeelyWheelKeyCodes.KEY_PREVIOUS,
                 GeelyWheelKeyCodes.KEY_VOICE_ASSIST,
             ),
-            GeelyWheelKeyCodes.registeredCodes(bluetoothAudio = false).toList(),
+            GeelyWheelKeyCodes.registeredCodes(bluetoothAudio = false, calls = false).toList(),
         )
     }
 
@@ -36,7 +36,7 @@ class GeelyWheelKeyCodesTest {
             assertTrue(
                 "voice key must be registered when bluetoothAudio=$bluetooth",
                 GeelyWheelKeyCodes.KEY_VOICE_ASSIST in
-                    GeelyWheelKeyCodes.registeredCodes(bluetooth).toList(),
+                    GeelyWheelKeyCodes.registeredCodes(bluetooth, calls = false).toList(),
             )
         }
     }
@@ -50,12 +50,23 @@ class GeelyWheelKeyCodesTest {
         mediaKeys.forEach { key ->
             assertFalse(
                 "media key $key must not double-fire over the car's Bluetooth",
-                key in GeelyWheelKeyCodes.registeredCodes(bluetoothAudio = true).toList(),
+                key in GeelyWheelKeyCodes.registeredCodes(bluetoothAudio = true, calls = false).toList(),
             )
             assertTrue(
                 "media key $key must reach CarPlay when the car's Bluetooth is not used",
-                key in GeelyWheelKeyCodes.registeredCodes(bluetoothAudio = false).toList(),
+                key in GeelyWheelKeyCodes.registeredCodes(bluetoothAudio = false, calls = false).toList(),
             )
         }
+    }
+
+    @Test fun theCallsOptionWiresPreviousAndNextButNotPlayPauseOverTheCarsBluetooth() {
+        assertEquals(
+            listOf(GeelyWheelKeyCodes.KEY_NEXT, GeelyWheelKeyCodes.KEY_PREVIOUS, GeelyWheelKeyCodes.KEY_VOICE_ASSIST),
+            GeelyWheelKeyCodes.registeredCodes(bluetoothAudio = true, calls = true).toList(),
+        )
+        assertEquals(
+            GeelyWheelKeyCodes.ALL.toList(),
+            GeelyWheelKeyCodes.registeredCodes(bluetoothAudio = false, calls = true).toList(),
+        )
     }
 }

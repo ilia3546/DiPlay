@@ -55,6 +55,7 @@ internal object MonjaroDashboardCall {
         main.post {
             app = context.applicationContext
             refresh()
+            GeelyWheelKeys.refreshRegistration()
         }
     }
 

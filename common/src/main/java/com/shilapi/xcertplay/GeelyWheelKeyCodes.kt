@@ -15,14 +15,20 @@ internal object GeelyWheelKeyCodes {
 
     val ALL = intArrayOf(KEY_PLAY_PAUSE, KEY_NEXT, KEY_PREVIOUS, KEY_VOICE_ASSIST)
     val SIRI_ONLY = intArrayOf(KEY_VOICE_ASSIST)
+    val CALLS_AND_SIRI = intArrayOf(KEY_NEXT, KEY_PREVIOUS, KEY_VOICE_ASSIST)
 
     /**
      * The key codes to subscribe to on the head unit's input service.
      *
      * With CarPlay audio on the car's Bluetooth, the head unit's own AVRCP already drives the
      * iPhone's music, so registering the media keys here too would double-fire play/pause and skip.
-     * Only the microphone key is registered then (long press -> Siri); otherwise all of them are.
+     * Only the microphone key is registered then (long press -> Siri), plus previous and next for the
+     * CarPlay call keys when [calls] is on ([GeelyCallKeys.route] keeps them from the iPhone outside a
+     * call); otherwise all of them are.
      */
-    fun registeredCodes(bluetoothAudio: Boolean): IntArray =
-        if (bluetoothAudio) SIRI_ONLY else ALL
+    fun registeredCodes(bluetoothAudio: Boolean, calls: Boolean): IntArray = when {
+        !bluetoothAudio -> ALL
+        calls -> CALLS_AND_SIRI
+        else -> SIRI_ONLY
+    }
 }

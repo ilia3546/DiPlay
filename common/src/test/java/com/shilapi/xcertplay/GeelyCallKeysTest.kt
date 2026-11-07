@@ -35,8 +35,9 @@ class GeelyCallKeysTest {
     }
 
     private fun route(index: Int, active: Boolean = true, card: CarPlayCallCard? = ringing,
-        media: (Int) -> Unit = { routed += "media $it" }) =
-        GeelyCallKeys.route(index, active, card, call = { routed += "call $it" }, media = media)
+        bluetoothAudio: Boolean = false, media: (Int) -> Unit = { routed += "media $it" }) =
+        GeelyCallKeys.route(index, active, bluetoothAudio, card, call = { routed += "call $it" }, media = media,
+            carBluetooth = { routed += "car Bluetooth $it" })
 
     @Test fun duringACallTheKeyGoesToTheCallAndNotToTheIphoneAsMedia() {
         route(CarPlayMediaButton.NEXT)
@@ -60,5 +61,13 @@ class GeelyCallKeysTest {
         route(CarPlayMediaButton.NEXT, card = active, media = carSourceOwnsTheWheel)
         route(CarPlayMediaButton.NEXT, card = null, media = carSourceOwnsTheWheel)
         assertEquals(listOf("call END", "left to the car ${CarPlayMediaButton.NEXT}"), routed)
+    }
+
+    @Test fun overTheCarsBluetoothOnlyACallTakesTheKeyAndNothingElseReachesTheIphone() {
+        route(CarPlayMediaButton.NEXT, bluetoothAudio = true)
+        route(CarPlayMediaButton.NEXT, card = null, bluetoothAudio = true)
+        route(CarPlayMediaButton.PREVIOUS, active = false, bluetoothAudio = true)
+        assertEquals(listOf("call ANSWER", "car Bluetooth ${CarPlayMediaButton.NEXT}",
+            "car Bluetooth ${CarPlayMediaButton.PREVIOUS}"), routed)
     }
 }

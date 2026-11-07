@@ -27,11 +27,17 @@ internal object GeelyCallKeys {
 
     /**
      * Gives the media key [index] to [call] when the option is [active] and [card] has a call for it, otherwise to
-     * [media]. Decided before [media], which may leave the key to the car's source: during a call the wheel belongs
-     * to it.
+     * [media], or to [carBluetooth] with CarPlay audio on the car's [bluetoothAudio], whose own AVRCP already sends
+     * the key to the iPhone. Decided before [media], which may leave the key to the car's source: during a call the
+     * wheel belongs to it.
      */
-    fun route(index: Int, active: Boolean, card: CarPlayCallCard?, call: (Action) -> Unit, media: (Int) -> Unit) {
+    fun route(index: Int, active: Boolean, bluetoothAudio: Boolean, card: CarPlayCallCard?, call: (Action) -> Unit,
+        media: (Int) -> Unit, carBluetooth: (Int) -> Unit) {
         val action = if (active) action(index, card) else Action.PASS
-        if (action == Action.PASS) media(index) else call(action)
+        when {
+            action != Action.PASS -> call(action)
+            bluetoothAudio -> carBluetooth(index)
+            else -> media(index)
+        }
     }
 }
