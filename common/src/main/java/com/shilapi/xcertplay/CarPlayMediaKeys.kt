@@ -375,8 +375,7 @@ internal object CarPlayMediaKeys {
                 val carAudio = change == AudioManager.AUDIOFOCUS_LOSS && pauseForCarAudio()
                 // The firmware's media centre hands each wheel key to its last own source too, so a car source
                 // starting right after a key DiPlay sent to CarPlay answered that key, not a choice of the driver.
-                takeBack = carAudio &&
-                    SystemClock.elapsedRealtime() - wheelKeyForwardedAt < WHEEL_KEY_ECHO_MILLIS
+                takeBack = carAudio && wheelKeyJustHandled()
                 if (carAudio && !takeBack) carAudioOwnsWheel = true
                 pauseIphone = carAudio && !takeBack && (nowPlaying.playing || mediaAudioActive)
                 focusEventRevision += 1
@@ -507,8 +506,16 @@ internal object CarPlayMediaKeys {
             WheelKeyLog.note("media key geely-wheel $index left to the car's source")
             return
         }
-        if (send(index, "geely-wheel")) synchronized(this) { wheelKeyForwardedAt = SystemClock.elapsedRealtime() }
+        if (send(index, "geely-wheel")) noteWheelKeyHandled()
     }
+
+    /** DiPlay acted on a steering-wheel key, for CarPlay's media or its call: the car may echo it for a moment. */
+    internal fun noteWheelKeyHandled() {
+        synchronized(this) { wheelKeyForwardedAt = SystemClock.elapsedRealtime() }
+    }
+
+    internal fun wheelKeyJustHandled(): Boolean =
+        synchronized(this) { SystemClock.elapsedRealtime() - wheelKeyForwardedAt < WHEEL_KEY_ECHO_MILLIS }
 
     /** A button of the stock Geely media widget while DiPlay's track is shown there. */
     internal fun onWidgetMediaKey(index: Int) { send(index, "geely-widget") }

@@ -178,13 +178,14 @@ internal object GeelyWheelKeys {
         )
     }
 
-    private fun sendToCall(controller: CarPlayController?, index: Int, action: GeelyCallKeys.Action) {
+    internal fun sendToCall(controller: CarPlayController?, index: Int, action: GeelyCallKeys.Action) {
         val sent = when (action) {
             GeelyCallKeys.Action.ANSWER -> controller?.answerCall()
             GeelyCallKeys.Action.END -> controller?.endCall()
             GeelyCallKeys.Action.MUTE -> controller?.toggleMute()
             GeelyCallKeys.Action.PASS -> null
         } == true
+        if (sent) CarPlayMediaKeys.noteWheelKeyHandled()
         Log.i(TAG, "media key geely-wheel $index -> CarPlay call $action sent=$sent")
         WheelKeyLog.note("media key geely-wheel $index -> CarPlay call $action sent=$sent")
     }
