@@ -18,9 +18,9 @@ class DashboardMapStreamTest {
 
     @Test fun theStreamIsTheMapCardRoundedForTheIphone() {
         val config = DashboardMapStream.config(MonjaroDashboardLayout.defaultMap)
-        assertEquals(592 to 336, config.widthPixels to config.heightPixels)
+        assertEquals(456 to 304, config.widthPixels to config.heightPixels)
         assertEquals(CarPlayClusterDisplay.MAP_URL, config.initialUrl)
-        assertEquals("under the cards, clear of the sides", AirPlayInsets(top = 100, bottom = 0, left = 47, right = 47),
+        assertEquals("under the cards, clear of the sides", AirPlayInsets(top = 91, bottom = 0, left = 36, right = 36),
             config.safeArea)
     }
 

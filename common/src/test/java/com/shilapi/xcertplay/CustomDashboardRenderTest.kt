@@ -151,8 +151,11 @@ class CustomDashboardRenderTest {
             map.video.showParked(true)
             shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(MonjaroDashboardLayout.PARKED_FADE_MILLIS * 2))
         }
-        val centre = Color.red(frame.getPixel(960, 390)) + Color.blue(frame.getPixel(960, 390))
-        val edge = Color.red(frame.getPixel(660, 560)) + Color.blue(frame.getPixel(660, 560))
+        val box = MonjaroDashboardLayout.defaultMap.map
+        val (centreX, centreY) = box.left + box.width / 2 to box.top + (box.height ?: 0) / 2
+        val (edgeX, edgeY) = box.left + 20 to box.top + (box.height ?: 0) - 20
+        val centre = Color.red(frame.getPixel(centreX, centreY)) + Color.blue(frame.getPixel(centreX, centreY))
+        val edge = Color.red(frame.getPixel(edgeX, edgeY)) + Color.blue(frame.getPixel(edgeX, edgeY))
         assertTrue(centre < edge)
         assertTrue(edge < 0x12 + 0x21)
     }

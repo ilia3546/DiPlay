@@ -59,7 +59,7 @@ internal object MonjaroDashboardLayout {
     private const val MAP_STEP = 8
     val mapWidths = (448..800 step MAP_STEP).toList()
     val mapHeights = (200..480 step MAP_STEP).toList()
-    val defaultMap = MapGeometry(width = 592, height = 336)
+    val defaultMap = MapGeometry(width = 456, height = 304)
 
     const val MAP_BORDER = 1
     const val MAP_RADIUS = 28f
