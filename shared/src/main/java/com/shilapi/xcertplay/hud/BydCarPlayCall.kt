@@ -226,6 +226,9 @@ object BydCarPlayCall {
      */
     fun sessionStarted() {
         sessionActive = true
+        // A session can restart on an iAP2 link that stays up and asks for nothing again; the calls were
+        // already forgotten in end(), so only the link's updates are taken back.
+        synchronized(state) { takingUpdates = true }
         val app = context ?: return
         writer.execute { arm(app) }
     }
@@ -297,7 +300,7 @@ object BydCarPlayCall {
         }
     }
 
-    /** The session ended: forget the calls, end the one DiPlay showed and take no updates until [subscribing]. */
+    /** The session ended: forget the calls, end the one DiPlay showed and take no updates until [subscribing] or [sessionStarted]. */
     fun end() {
         sessionActive = false
         PhoneAudioRoute.carPlayCall(false)

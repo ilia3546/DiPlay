@@ -105,6 +105,16 @@ class BydCarPlayCallLifecycleTest {
         assertNotNull(BydCarPlayCall.current())
     }
 
+    @Test fun aSessionRestartedOnTheSameLinkTakesCallsAgainWithoutTheOldOnes() {
+        BydCarPlayCall.subscribing()
+        BydCarPlayCall.onFrame(ringing("first-session")); drain()
+        BydCarPlayCall.end(); drain()
+        BydCarPlayCall.sessionStarted(); drain()
+        assertNull(CarPlayCalls.current().card)
+        BydCarPlayCall.onFrame(ringing("second-session")); drain()
+        assertEquals(CarPlayCallCard.Phase.RINGING, CarPlayCalls.current().card?.phase)
+    }
+
     @Test fun aCallReportedBeforeTheSessionStartsIsKeptAcrossSessionStarts() {
         BydCarPlayCall.subscribing()
         BydCarPlayCall.onFrame(ringing("before-the-session")); drain()
