@@ -23,17 +23,20 @@ internal object GeelyMediaCenterSource {
     private const val REQUEST_AUDIO_SOURCE = IBinder.FIRST_CALL_TRANSACTION + 2
     private const val AUDIO_SOURCE_CARPLAY = 7
     private const val APP_SOURCE_UNKNOWN = 0
+    private const val OK = "ok"
 
     private val worker = Executors.newSingleThreadExecutor { Thread(it, "DiPlay-MediaCenter").apply { isDaemon = true } }
 
-    /** May run on any thread. */
-    fun claimForCarPlay(context: Context) {
+    /** May run on any thread; [claimed] runs on a worker once the media centre took CarPlay as its source. */
+    fun claimForCarPlay(context: Context, claimed: () -> Unit = {}) {
         val app = context.applicationContext
         val connection = object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName?, service: IBinder) {
                 worker.execute {
-                    Log.i(TAG, "media centre source set to CarPlay: ${request(service)}")
+                    val result = request(service)
+                    Log.i(TAG, "media centre source set to CarPlay: $result")
                     runCatching { app.unbindService(this) }
+                    if (result == OK) claimed()
                 }
             }
 
@@ -57,7 +60,7 @@ internal object GeelyMediaCenterSource {
             data.writeInt(APP_SOURCE_UNKNOWN)
             if (!service.transact(REQUEST_AUDIO_SOURCE, data, reply, 0)) return "not handled"
             reply.readException()
-            "ok"
+            OK
         } catch (error: Exception) {
             "failed (${error.javaClass.simpleName})"
         } finally {

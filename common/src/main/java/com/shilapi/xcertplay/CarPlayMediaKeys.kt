@@ -39,6 +39,7 @@ import kotlin.math.roundToInt
 internal object CarPlayMediaKeys {
     private const val TAG = "DiPlay-MediaKeys"
     private const val WHEEL_KEY_ECHO_MILLIS = 1_500L
+    private const val WIDGET_RESEND_DELAY_MILLIS = 800L
     private const val ACTIONS = PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or
         PlaybackState.ACTION_PLAY_PAUSE or PlaybackState.ACTION_SKIP_TO_NEXT or PlaybackState.ACTION_SKIP_TO_PREVIOUS
 
@@ -468,7 +469,13 @@ internal object CarPlayMediaKeys {
 
     /** With CarPlay owning the wheel, the firmware's media centre must not answer its keys with the radio. */
     private fun claimMediaCentreLocked() {
-        if (pauseForCarAudio()) appContext?.let(GeelyMediaCenterSource::claimForCarPlay)
+        // The media centre then switches its home screen widget to its CarPlay view, which drops the shown track
+        // until the next one; send it again once the switch is done.
+        if (pauseForCarAudio()) appContext?.let { context ->
+            GeelyMediaCenterSource.claimForCarPlay(context) {
+                mainHandler.postDelayed(MonjaroDashboardMusic::resend, WIDGET_RESEND_DELAY_MILLIS)
+            }
+        }
     }
 
     private fun send(index: Int, source: String): Boolean {

@@ -18,6 +18,7 @@ internal object MonjaroDashboardMusic {
     private var iphonePlaying: () -> Boolean = { false }
     private var position: Pair<Long?, Long>? = null
     private var stopObserving: (() -> Unit)? = null
+    private var shown: ClusterMusicState.Snapshot? = null
 
     fun enabled(context: Context): Boolean = MonjaroA3Options.load(context).dashboardMusic
 
@@ -43,6 +44,17 @@ internal object MonjaroDashboardMusic {
         main.post {
             app = context.applicationContext
             refresh()
+        }
+    }
+
+    /** Sends the shown track again, for a widget that switched its view and dropped it; may run on any thread. */
+    fun resend() {
+        main.post {
+            val context = app ?: return@post
+            val snapshot = shown?.takeIf { stopObserving != null } ?: return@post
+            dashboard.show(context, snapshot.info.title, snapshot.info.artist, snapshot.info.album,
+                snapshot.info.durationMillis, snapshot.artwork?.takeUnless { it.isRecycled })
+            dashboard.playing(context, iphonePlaying())
         }
     }
 
@@ -76,6 +88,7 @@ internal object MonjaroDashboardMusic {
             dashboard.playing(context, iphonePlaying())
             position?.let { (elapsed, at) -> dashboard.position(context, elapsed, at) }
             stopObserving = ClusterMusicState.observe { snapshot ->
+                shown = snapshot
                 dashboard.show(context, snapshot.info.title, snapshot.info.artist, snapshot.info.album,
                     snapshot.info.durationMillis, snapshot.artwork)
             }
@@ -83,6 +96,7 @@ internal object MonjaroDashboardMusic {
             stopObserving?.let {
                 it()
                 stopObserving = null
+                shown = null
                 dashboard.stop(context)
             }
         }
