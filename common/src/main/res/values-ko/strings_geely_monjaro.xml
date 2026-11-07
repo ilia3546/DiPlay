@@ -14,6 +14,8 @@
     <string name="settings_microphone_input_all_cabin">실내 전체 마이크 (믹스)</string>
     <string name="settings_dashboard_music">계기판과 미디어 위젯에 CarPlay 음악 표시 (실험 기능)</string>
     <string name="settings_dashboard_music_description">CarPlay 곡, 아티스트, 앨범, 커버를 기본 계기판의 음악 위젯과 운전석 및 조수석 화면의 음악 위젯에 표시하고 CarPlay가 끝나면 지웁니다. 위젯 버튼으로 CarPlay를 제어합니다. 헤드 유닛이 DiPlay 자체 요청을 거부할 때만 루트(Magisk)를 사용합니다. 바로 적용됩니다.</string>
+    <string name="settings_pause_carplay_for_car_audio">차량 자체 오디오가 재생되면 CarPlay 일시정지 (실험 기능)</string>
+    <string name="settings_pause_carplay_for_car_audio_description">라디오나 헤드 유닛의 다른 앱이 재생을 시작하면 DiPlay가 두 소리가 동시에 나지 않도록 iPhone을 일시정지합니다. 플레이어가 Android 오디오 포커스를 가져가도 DiPlay 오디오가 계속 재생되는 펌웨어용입니다. 되돌리려면 CarPlay에서 음악을 다시 재생하세요. 즉시 적용됩니다.</string>
     <string name="settings_custom_dashboard">CarPlay 지도가 있는 사용자 계기판 (실험 기능)</string>
     <string name="settings_custom_dashboard_description">CarPlay가 연결된 동안 DiPlay가 계기판에 자체 화면을 그립니다. 가운데에 CarPlay 지도를, 그 주변에 순정 계기판의 양쪽 위젯 대신 시계, 외부 온도, 주행 정보, 음악을 표시합니다. 속도, 경고등, 하단 줄은 펌웨어가 계속 그 위에 그립니다. 엔지니어링 모드에서 Android 계기판 디스플레이를 보여 주는 펌웨어용입니다. 먼저 GMC 사용자 계기판을 끄세요. 센터 화면의 계기판 지도와 함께 사용하면 CarPlay에 비디오 디코더가 하나 더 필요합니다. \'다른 앱 위에 표시\' 권한이 필요합니다. 켜면 다음 연결부터, 끄면 바로 적용됩니다.</string>
     <string name="settings_custom_dashboard_background">계기판 배경</string>

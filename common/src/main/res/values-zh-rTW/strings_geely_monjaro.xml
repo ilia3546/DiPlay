@@ -14,6 +14,8 @@
     <string name="settings_microphone_input_all_cabin">全部車內麥克風（混音）</string>
     <string name="settings_dashboard_music">在儀表板和媒體元件上顯示 CarPlay 音樂（實驗性）</string>
     <string name="settings_dashboard_music_description">在原廠儀表板的音樂元件以及駕駛和乘客螢幕的音樂元件中顯示 CarPlay 的曲目、演出者、專輯和封面，CarPlay 結束時清除。元件上的按鈕可控制 CarPlay。只有車機拒絕 DiPlay 自身的要求時才使用 root（Magisk）。立即生效。</string>
+    <string name="settings_pause_carplay_for_car_audio">車機播放自身音訊時暫停 CarPlay（實驗性）</string>
+    <string name="settings_pause_carplay_for_car_audio_description">當收音機或車機的其他應用程式開始播放時，DiPlay 會暫停 iPhone，避免兩者同時發聲。適用於播放器會取得 Android 音訊焦點、但 DiPlay 的聲音仍繼續播放的韌體。要切換回來，請在 CarPlay 中重新播放音樂。立即生效。</string>
     <string name="settings_custom_dashboard">帶 CarPlay 地圖的自訂儀表板（實驗性）</string>
     <string name="settings_custom_dashboard_description">CarPlay 連線期間，DiPlay 會在儀表板上繪製自己的畫面：中間是 CarPlay 地圖，周圍以時鐘、車外溫度、行程和音樂取代原廠儀表板兩側的元件。車速、警示燈和底部資訊列仍由韌體繪製在上層。適用於在工程模式下顯示 Android 儀表板螢幕的韌體。請先關閉 GMC 自訂儀表板。與中控螢幕上的儀表板地圖同時使用時，CarPlay 需要多一個影片解碼器。需要「顯示在其他應用程式上層」權限。開啟後在下次連線時生效，關閉後立即生效。</string>
     <string name="settings_custom_dashboard_background">儀表板背景</string>

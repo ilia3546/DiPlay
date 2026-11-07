@@ -350,10 +350,13 @@ internal object CarPlayMediaKeys {
 
     private fun onFocusChanged(expectedController: CarPlayController, owner: Any, change: Int,
         grantedRevision: Long? = null) {
+        var pauseIphone = false
         val current = synchronized(this) {
             if (controller !== expectedController || focusOwner !== owner ||
                 (grantedRevision != null && grantedRevision != focusEventRevision)) false
             else {
+                pauseIphone = change == AudioManager.AUDIOFOCUS_LOSS && (nowPlaying.playing || mediaAudioActive) &&
+                    appContext?.let { MonjaroA3Options.load(it).pauseCarPlayForCarAudio } == true
                 focusEventRevision += 1
                 // Only permanent loss moves media keys elsewhere; transient losses come back.
                 when (change) {
@@ -374,6 +377,11 @@ internal object CarPlayMediaKeys {
         if (!current) return
         Log.i(TAG, "audio focus change=$change")
         WheelKeyLog.note("media keys audio focus change=$change")
+        // The car's own source took the audio for good; DiPlay keeps playing on that loss, so the iPhone has to stop.
+        if (pauseIphone) {
+            val sent = expectedController.sendMediaButton(CarPlayMediaButton.PAUSE)
+            Log.i(TAG, "car audio took focus, CarPlay paused sent=$sent")
+        }
         // Resolve the matching sink and invoke it outside the media-key monitor. An abandoned
         // request must never mute a newer controller, and these owners must not nest locks.
         val background = CarPlayBackgroundSession.snapshot()

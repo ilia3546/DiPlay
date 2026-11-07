@@ -2178,6 +2178,11 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 AirPlayPersistence.saveDashboardMusic(this, it)
                 MonjaroDashboardMusic.settingChanged(this)
             }
+            toggle(card, getString(R.string.settings_pause_carplay_for_car_audio),
+                getString(R.string.settings_pause_carplay_for_car_audio_description),
+                AirPlayPersistence.loadPauseCarPlayForCarAudio(this)) {
+                AirPlayPersistence.savePauseCarPlayForCarAudio(this, it)
+            }
             val microphoneInputs = MicrophoneInput.entries
             choice(card, getString(R.string.settings_microphone_input), microphoneInputs.map { input ->
                 when (input) {
