@@ -41,24 +41,52 @@ class CarPlayCallStateTest {
 
     @Test
     fun anOutgoingCallDialsThenConnects() {
-        state.accept(update("b", status = 1, remote = "+971500000000"))
-        assertEquals(CarPlayCallCard(CarPlayCallCard.Phase.DIALING, "+971500000000"), state.current())
+        val number = "+971500000000"
+        state.accept(update("b", status = 1, remote = number))
+        assertEquals(CarPlayCallCard(CarPlayCallCard.Phase.DIALING, number, number = number), state.current())
         state.accept(update("b", status = 3, name = "Office"))
-        assertEquals(CarPlayCallCard(CarPlayCallCard.Phase.DIALING, "Office"), state.current())
+        assertEquals(CarPlayCallCard(CarPlayCallCard.Phase.DIALING, "Office", number = number), state.current())
         state.accept(update("b", status = 4))
-        // The name sticks when a later update leaves it out.
-        assertEquals(CarPlayCallCard(CarPlayCallCard.Phase.ACTIVE, "Office", 1_000L), state.current())
+        // The name and number stick when a later update leaves them out.
+        assertEquals(CarPlayCallCard(CarPlayCallCard.Phase.ACTIVE, "Office", 1_000L, number), state.current())
+    }
+
+    @Test
+    fun theNumberIsTheRemoteIdAndEmptyWithoutOne() {
+        state.accept(update("a", status = 2, name = "Mum", remote = "+971500000001"))
+        assertEquals(CarPlayCallCard(CarPlayCallCard.Phase.RINGING, "Mum", number = "+971500000001"), state.current())
+        state.accept(update("b", status = 2, name = "Hidden"))
+        state.accept(update("a", status = 0))
+        assertEquals(CarPlayCallCard(CarPlayCallCard.Phase.RINGING, "Hidden"), state.current())
+    }
+
+    @Test
+    fun aHeldCallStaysActiveWithTheTimeItConnected() {
+        state.accept(update("a", status = 4, name = "Mum", remote = "+971500000001"))
+        now = 7_000L
+        assertFalse(state.accept(update("a", status = 5)))
+        assertEquals(CarPlayCallCard(CarPlayCallCard.Phase.ACTIVE, "Mum", 1_000L, "+971500000001"), state.current())
+        // A held call that connects only now counts from the time it connected.
+        state.clear()
+        state.accept(update("b", status = 5, name = "Boss"))
+        assertEquals(CarPlayCallCard(CarPlayCallCard.Phase.ACTIVE, "Boss", 7_000L), state.current())
     }
 
     @Test
     fun aWaitingCallRingsOverTheActiveOneAndTheActiveOneReturns() {
         state.accept(update("a", status = 4, name = "Mum"))
-        state.accept(update("b", status = 2, name = "Boss"))
-        assertEquals(CarPlayCallCard.Phase.RINGING, state.current()?.phase)
-        assertEquals("Boss", state.current()?.name)
+        state.accept(update("b", status = 2, name = "Boss", remote = "+971500000002"))
+        assertEquals(CarPlayCallCard(CarPlayCallCard.Phase.RINGING, "Boss", number = "+971500000002"), state.current())
 
         state.accept(update("b", status = 6))
         assertEquals(CarPlayCallCard(CarPlayCallCard.Phase.ACTIVE, "Mum", 1_000L), state.current())
+
+        // Answering the waiting call holds the first one; the answered call is shown.
+        state.accept(update("b", status = 2, name = "Boss", remote = "+971500000002"))
+        now = 4_000L
+        state.accept(update("a", status = 5))
+        state.accept(update("b", status = 4))
+        assertEquals(CarPlayCallCard(CarPlayCallCard.Phase.ACTIVE, "Boss", 4_000L, "+971500000002"), state.current())
     }
 
     @Test

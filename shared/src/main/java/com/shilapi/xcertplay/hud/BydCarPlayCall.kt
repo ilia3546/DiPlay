@@ -13,8 +13,11 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
-/** What the car shows for the CarPlay call: the phase and the caller, and since when it is connected. */
-data class CarPlayCallCard(val phase: Phase, val name: String, val activeSinceMillis: Long? = null) {
+/**
+ * What the car shows for the CarPlay call: the phase and the caller, and since when it is connected. [name] falls
+ * back to the number; [number] is the remote id, empty when the iPhone sends none.
+ */
+data class CarPlayCallCard(val phase: Phase, val name: String, val activeSinceMillis: Long? = null, val number: String = "") {
     enum class Phase { RINGING, DIALING, ACTIVE }
 }
 
@@ -25,7 +28,7 @@ data class CarPlayCallCard(val phase: Phase, val name: String, val activeSinceMi
  * first, then a connected (active or held) one, then an outgoing one.
  */
 class CarPlayCallState(private val clock: () -> Long = System::currentTimeMillis) {
-    private data class Call(val status: Int, val name: String, val activeSince: Long?)
+    private data class Call(val status: Int, val name: String, val number: String, val activeSince: Long?)
 
     private val calls = LinkedHashMap<String, Call>()
     private var last: CarPlayCallCard? = null
@@ -46,6 +49,7 @@ class CarPlayCallState(private val clock: () -> Long = System::currentTimeMillis
             calls[id] = Call(
                 status = status,
                 name = display.ifEmpty { remote }.ifEmpty { previous?.name.orEmpty() },
+                number = remote.ifEmpty { previous?.number.orEmpty() },
                 activeSince = previous?.activeSince ?: if (connected) clock() else null,
             )
         }
@@ -57,18 +61,22 @@ class CarPlayCallState(private val clock: () -> Long = System::currentTimeMillis
 
     fun current(): CarPlayCallCard? = last
 
+    fun snapshot(): CarPlayCallSnapshot = CarPlayCallSnapshot(last)
+
     fun clear() {
         calls.clear()
         last = null
     }
 
     private fun card(): CarPlayCallCard? {
-        calls.values.firstOrNull { it.status == RINGING }?.let { return CarPlayCallCard(CarPlayCallCard.Phase.RINGING, it.name) }
+        calls.values.firstOrNull { it.status == RINGING }?.let {
+            return CarPlayCallCard(CarPlayCallCard.Phase.RINGING, it.name, number = it.number)
+        }
         (calls.values.firstOrNull { it.status == ACTIVE } ?: calls.values.firstOrNull { it.status == HELD })?.let {
-            return CarPlayCallCard(CarPlayCallCard.Phase.ACTIVE, it.name, it.activeSince)
+            return CarPlayCallCard(CarPlayCallCard.Phase.ACTIVE, it.name, it.activeSince, it.number)
         }
         calls.values.firstOrNull { it.status == SENDING || it.status == CONNECTING }?.let {
-            return CarPlayCallCard(CarPlayCallCard.Phase.DIALING, it.name)
+            return CarPlayCallCard(CarPlayCallCard.Phase.DIALING, it.name, number = it.number)
         }
         return null
     }
@@ -158,9 +166,12 @@ object BydCarPlayCall {
         }
         Log.i(TAG, "CarPlay call ${card?.phase ?: "ended"}")
         PhoneAudioRoute.carPlayCall(card != null)
+        publish()
         val app = context ?: return
         if (BydOutputSettings.carPlayCalls(app)) writer.execute { apply(app, card); if (card == null) arm(app) }
     }
+
+    private fun publish() = CarPlayCalls.publish { synchronized(state) { state.snapshot() } }
 
     /** The setting changed: show the current call now, or end the one DiPlay showed. */
     fun settingChanged(enabled: Boolean) {
@@ -178,6 +189,7 @@ object BydCarPlayCall {
         sessionActive = false
         PhoneAudioRoute.carPlayCall(false)
         synchronized(state) { state.clear() }
+        publish()
         val app = context ?: return
         writer.execute { resetRetry(null); apply(app, null); disarm(app) }
     }
