@@ -20,9 +20,24 @@ internal enum class DashboardMediaSource {
          */
         /** As [of], but a paused radio stays shown after [previous] showed it, until CarPlay plays or another source does. */
         fun after(previous: DashboardMediaSource?, signals: DashboardMediaSignals): DashboardMediaSource {
+            signals.carSource?.let { return ofMode(it, signals) }
             val next = of(signals)
             val radioHeld = previous == RADIO && next != OTHER && !signals.carPlayPlaying
             return if (radioHeld) RADIO else next
+        }
+
+        /**
+         * With the option to pause CarPlay for the car's audio, the wheel's owner decides: the car's source while
+         * it has the wheel, paused or not, and CarPlay's track otherwise, so a key the firmware also hands its radio
+         * does not flip the block.
+         */
+        private fun ofMode(carSource: Boolean, signals: DashboardMediaSignals): DashboardMediaSource = with(signals) {
+            when {
+                !carSource -> if (carPlayTrack || carPlayPlaying) CARPLAY else UNKNOWN
+                bluetoothPlaying || usbPlaying -> OTHER
+                radioPlaying -> RADIO
+                else -> UNKNOWN
+            }
         }
 
         fun of(signals: DashboardMediaSignals): DashboardMediaSource = with(signals) {
@@ -56,6 +71,7 @@ internal data class DashboardMediaSignals(
     val bluetoothPlaying: Boolean = false,
     val usbPlaying: Boolean = false,
     val radioServicePlaying: Boolean? = null,
+    val carSource: Boolean? = null,
 )
 
 internal object DashboardProgress {

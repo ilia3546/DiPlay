@@ -41,6 +41,18 @@ class DashboardMediaSourceTest {
             source(carPlayPlays.copy(carPlayPlaying = false, radioPlaying = true)))
     }
 
+    @Test fun withThePauseOptionTheWheelOwnerPicksTheSource() {
+        val both = carPlayPlays.copy(radioPlaying = true, radioServicePlaying = true)
+        assertEquals(DashboardMediaSource.CARPLAY, DashboardMediaSource.after(null, both.copy(carSource = false)))
+        assertEquals(DashboardMediaSource.RADIO, DashboardMediaSource.after(null, both.copy(carSource = true)))
+        assertEquals("a paused radio", DashboardMediaSource.RADIO, DashboardMediaSource.after(null,
+            both.copy(carSource = true, carPlayPlaying = false, radioServicePlaying = false)))
+        assertEquals(DashboardMediaSource.OTHER,
+            DashboardMediaSource.after(null, DashboardMediaSignals(usbPlaying = true, carSource = true)))
+        assertEquals("CarPlay without a track yet", DashboardMediaSource.UNKNOWN,
+            DashboardMediaSource.after(null, DashboardMediaSignals(carSource = false)))
+    }
+
     @Test fun aPausedRadioStaysUntilCarPlayPlays() {
         val radioPaused = carPlayPlays.copy(carPlayPlaying = false, radioPlaying = true, radioServicePlaying = false)
         assertEquals(DashboardMediaSource.RADIO, DashboardMediaSource.after(DashboardMediaSource.RADIO, radioPaused))

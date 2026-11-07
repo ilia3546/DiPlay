@@ -74,6 +74,7 @@ internal class DashboardMediaFeed(private val block: DashboardMediaBlock) {
             bluetoothPlaying = heard.bluetooth,
             usbPlaying = heard.usb,
             radioServicePlaying = radio.servicePlaying,
+            carSource = playback.carSource,
         )
         val next = DashboardMediaSource.after(source, signals)
         if (next != source) {
@@ -133,16 +134,22 @@ internal class HeadUnitMediaFlags(context: Context, private val changed: () -> U
 
     private fun read() {
         if (!observing) return
-        val next = Flags(playing(RADIO), playing(BLUETOOTH), playing(USB), playing(CARPLAY))
+        val next = read(resolver)
         if (next == current) return
         Log.i(TAG, "head-unit media flags $next")
         current = next
         changed()
     }
 
-    private fun playing(key: String): Boolean = runCatching { Settings.Global.getInt(resolver, key, 0) == 1 }.getOrDefault(false)
-
     companion object {
+        fun read(context: Context): Flags = read(context.applicationContext.contentResolver)
+
+        private fun read(resolver: android.content.ContentResolver) = Flags(playing(resolver, RADIO),
+            playing(resolver, BLUETOOTH), playing(resolver, USB), playing(resolver, CARPLAY))
+
+        private fun playing(resolver: android.content.ContentResolver, key: String): Boolean =
+            runCatching { Settings.Global.getInt(resolver, key, 0) == 1 }.getOrDefault(false)
+
         private const val TAG = "DiPlay-CustomDashboard"
         private const val RADIO = "radio_is_playing"
         private const val BLUETOOTH = "bt_is_playing"

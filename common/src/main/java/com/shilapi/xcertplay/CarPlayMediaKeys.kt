@@ -82,6 +82,8 @@ internal object CarPlayMediaKeys {
             artworkOwner = artworkQueue.newSession()
         }
         appContext = context.applicationContext
+        if (controller !== next) carAudioOwnsWheel = pauseForCarAudio() && !next.nowPlayingSnapshot().playing &&
+            HeadUnitMediaFlags.read(context).let { it.radio || it.bluetooth || it.usb }
         controller = next
         GeelyWheelKeys.start(context)
         MonjaroDashboardMusic.sessionStarted(context) { next.nowPlayingSnapshot().playing }
@@ -363,8 +365,7 @@ internal object CarPlayMediaKeys {
             if (controller !== expectedController || focusOwner !== owner ||
                 (grantedRevision != null && grantedRevision != focusEventRevision)) false
             else {
-                val carAudio = change == AudioManager.AUDIOFOCUS_LOSS &&
-                    appContext?.let { MonjaroA3Options.load(it).pauseCarPlayForCarAudio } == true
+                val carAudio = change == AudioManager.AUDIOFOCUS_LOSS && pauseForCarAudio()
                 // The firmware's media centre hands each wheel key to its last own source too, so a car source
                 // starting right after a key DiPlay sent to CarPlay answered that key, not a choice of the driver.
                 takeBack = carAudio &&
@@ -456,7 +457,10 @@ internal object CarPlayMediaKeys {
     }
 
     private fun publishClusterPlaybackLocked() = ClusterPlaybackState.publish(ClusterPlaybackState.Snapshot(
-        nowPlaying.playing, nowPlaying.elapsedMillis, elapsedUpdatedAt, focusHeld))
+        nowPlaying.playing, nowPlaying.elapsedMillis, elapsedUpdatedAt, focusHeld,
+        carAudioOwnsWheel.takeIf { pauseForCarAudio() }))
+
+    private fun pauseForCarAudio() = appContext?.let { MonjaroA3Options.load(it).pauseCarPlayForCarAudio } == true
 
     private fun send(index: Int, source: String): Boolean {
         // While the car's video player is on screen the wheel drives it: a CarPlay play/pause would
