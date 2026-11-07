@@ -39,6 +39,9 @@
         <intent>
             <action android:name="com.ts.radio.intent.action.SERVICE" />
         </intent>
+        <intent>
+            <action android:name="android.intent.action.GEELY_MEDIACENTER_SERVICE" />
+        </intent>
     </queries>
     <application>
         <provider

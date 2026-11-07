@@ -82,8 +82,11 @@ internal object CarPlayMediaKeys {
             artworkOwner = artworkQueue.newSession()
         }
         appContext = context.applicationContext
-        if (controller !== next) carAudioOwnsWheel = pauseForCarAudio() && !next.nowPlayingSnapshot().playing &&
-            HeadUnitMediaFlags.read(context).let { it.radio || it.bluetooth || it.usb }
+        if (controller !== next) {
+            carAudioOwnsWheel = pauseForCarAudio() && !next.nowPlayingSnapshot().playing &&
+                HeadUnitMediaFlags.read(context).let { it.radio || it.bluetooth || it.usb }
+            if (!carAudioOwnsWheel && next.nowPlayingSnapshot().playing) claimMediaCentreLocked()
+        }
         controller = next
         GeelyWheelKeys.start(context)
         MonjaroDashboardMusic.sessionStarted(context) { next.nowPlayingSnapshot().playing }
@@ -126,6 +129,7 @@ internal object CarPlayMediaKeys {
                 if (controller === expected) {
                     carAudioOwnsWheel = false
                     regainFocusLocked(onIphonePlaybackResume = true)
+                    claimMediaCentreLocked()
                 }
             }
         }
@@ -461,6 +465,11 @@ internal object CarPlayMediaKeys {
         carAudioOwnsWheel.takeIf { pauseForCarAudio() }))
 
     private fun pauseForCarAudio() = appContext?.let { MonjaroA3Options.load(it).pauseCarPlayForCarAudio } == true
+
+    /** With CarPlay owning the wheel, the firmware's media centre must not answer its keys with the radio. */
+    private fun claimMediaCentreLocked() {
+        if (pauseForCarAudio()) appContext?.let(GeelyMediaCenterSource::claimForCarPlay)
+    }
 
     private fun send(index: Int, source: String): Boolean {
         // While the car's video player is on screen the wheel drives it: a CarPlay play/pause would
