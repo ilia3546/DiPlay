@@ -43,6 +43,12 @@
     <string name="settings_custom_dashboard_maneuver_description">Mientras CarPlay te guía, el próximo giro, su distancia y la calle aparecen en la esquina superior izquierda del mapa. Se aplica al instante.</string>
     <string name="settings_custom_dashboard_arrival">Llegada sobre el mapa</string>
     <string name="settings_custom_dashboard_arrival_description">Mientras CarPlay te guía, la hora de llegada y los minutos y kilómetros restantes aparecen en la esquina superior derecha del mapa. Se aplica al instante.</string>
+    <string name="settings_custom_dashboard_trip_qnx">Datos del viaje desde QNX…</string>
+    <string name="settings_custom_dashboard_trip_qnx_on">Datos del viaje: leídos desde QNX</string>
+    <string name="settings_custom_dashboard_trip_qnx_off">Datos del viaje: desactivados, sin contraseña de QNX</string>
+    <string name="settings_custom_dashboard_trip_qnx_description">Para firmware que guarda el ordenador de a bordo en su lado QNX. Mientras se muestra el cuadro, DiPlay inicia sesión como root en el shell de QNX en 192.168.8.1:3333 y cada 5 segundos solo lee el viaje del cuadro original (distancia, tiempo de conducción, consumo medio). La contraseña se queda en esta unidad y no entra en las copias de seguridad.</string>
+    <string name="settings_custom_dashboard_trip_qnx_hint">Contraseña root de QNX</string>
+    <string name="settings_custom_dashboard_trip_qnx_forget">Olvidar</string>
     <string name="settings_hud_maneuvers">Navegación en el HUD (experimental)</string>
     <string name="settings_hud_maneuvers_description">Mientras CarPlay te guía por una ruta, DiPlay dibuja la siguiente maniobra en el head-up display: la señal con la salida de la rotonda, la distancia y la calle, y debajo los carriles y el tiempo y la distancia restantes. Sin ruta, el head-up display queda vacío. Para firmware que muestra una pantalla de Android en el head-up display. Si tienes instalada la app HUD Renderer (org.monjaro.hudrenderer), desactiva antes su salida o ambas dibujarán a la vez. Requiere \"Mostrar sobre otras aplicaciones\". Se aplica de inmediato.</string>
     <string name="settings_hud_density">Diseño del HUD</string>

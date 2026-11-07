@@ -43,6 +43,12 @@
     <string name="settings_custom_dashboard_maneuver_description">Поки CarPlay веде маршрутом, у лівому верхньому куті мапи показуються наступний поворот, відстань до нього та вулиця. Застосовується одразу.</string>
     <string name="settings_custom_dashboard_arrival">Прибуття на мапі</string>
     <string name="settings_custom_dashboard_arrival_description">Поки CarPlay веде маршрутом, у правому верхньому куті мапи показуються час прибуття та залишок хвилин і кілометрів. Застосовується одразу.</string>
+    <string name="settings_custom_dashboard_trip_qnx">Дані поїздки з QNX…</string>
+    <string name="settings_custom_dashboard_trip_qnx_on">Дані поїздки: читаються з QNX</string>
+    <string name="settings_custom_dashboard_trip_qnx_off">Дані поїздки: вимкнено, немає пароля QNX</string>
+    <string name="settings_custom_dashboard_trip_qnx_description">Для прошивок, де бортовий комп\'ютер працює на боці QNX. Поки показана приладова панель, DiPlay входить у шел QNX на 192.168.8.1:3333 як root і раз на 5 секунд лише читає поїздку штатної панелі (пробіг, час у дорозі, середня витрата). Пароль залишається на цьому головному пристрої й не потрапляє в резервні копії налаштувань.</string>
+    <string name="settings_custom_dashboard_trip_qnx_hint">Пароль root QNX</string>
+    <string name="settings_custom_dashboard_trip_qnx_forget">Забути</string>
     <string name="settings_hud_maneuvers">Навігація на HUD (експериментально)</string>
     <string name="settings_hud_maneuvers_description">Поки CarPlay веде маршрутом, DiPlay малює на проєкційному дисплеї наступний маневр: знак із номером з\'їзду з кільця, відстань і вулицю, а під ними смуги та час і відстань, що залишилися. Без маршруту проєкційний дисплей порожній. Для прошивок, які показують на проєкційному дисплеї дисплей Android. Якщо встановлено застосунок HUD Renderer (org.monjaro.hudrenderer), спочатку вимкніть його виведення, інакше обидва малюватимуть одночасно. Потрібен дозвіл «Показ поверх інших застосунків». Застосовується одразу.</string>
     <string name="settings_hud_density">Вигляд рядка HUD</string>

@@ -43,6 +43,12 @@
     <string name="settings_custom_dashboard_maneuver_description">CarPlay가 경로를 안내하는 동안 다음 회전, 거리, 도로명을 지도 왼쪽 위에 표시합니다. 즉시 적용됩니다.</string>
     <string name="settings_custom_dashboard_arrival">지도 위 도착 정보</string>
     <string name="settings_custom_dashboard_arrival_description">CarPlay가 경로를 안내하는 동안 도착 시간과 남은 분과 킬로미터를 지도 오른쪽 위에 표시합니다. 즉시 적용됩니다.</string>
+    <string name="settings_custom_dashboard_trip_qnx">QNX에서 주행 데이터…</string>
+    <string name="settings_custom_dashboard_trip_qnx_on">주행 데이터: QNX에서 읽는 중</string>
+    <string name="settings_custom_dashboard_trip_qnx_off">주행 데이터: 꺼짐, QNX 비밀번호 없음</string>
+    <string name="settings_custom_dashboard_trip_qnx_description">트립 컴퓨터를 QNX 쪽에 두는 펌웨어용입니다. 계기판이 표시되는 동안 DiPlay는 192.168.8.1:3333의 QNX 셸에 root로 로그인해 5초마다 순정 계기판의 주행(거리, 주행 시간, 평균 연비)만 읽습니다. 비밀번호는 이 헤드 유닛에만 남고 설정 백업에 포함되지 않습니다.</string>
+    <string name="settings_custom_dashboard_trip_qnx_hint">QNX root 비밀번호</string>
+    <string name="settings_custom_dashboard_trip_qnx_forget">삭제</string>
     <string name="settings_hud_maneuvers">HUD에 내비게이션 표시 (실험 기능)</string>
     <string name="settings_hud_maneuvers_description">CarPlay가 경로를 안내하는 동안 DiPlay가 헤드업 디스플레이에 다음 안내를 그립니다. 회전 교차로 출구 번호가 있는 표지, 거리, 도로 이름과 그 아래에 차로, 남은 시간과 거리를 표시합니다. 경로가 없으면 아무것도 표시하지 않습니다. 헤드업 디스플레이에 Android 디스플레이를 보여 주는 펌웨어용입니다. HUD Renderer 앱(org.monjaro.hudrenderer)이 설치되어 있으면 먼저 그 출력을 끄세요. 그렇지 않으면 둘이 동시에 그립니다. \'다른 앱 위에 표시\' 권한이 필요합니다. 바로 적용됩니다.</string>
     <string name="settings_hud_density">HUD 레이아웃</string>

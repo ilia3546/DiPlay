@@ -43,6 +43,12 @@
     <string name="settings_custom_dashboard_maneuver_description">أثناء توجيه CarPlay، يظهر المنعطف التالي ومسافته والشارع في الزاوية العلوية اليسرى من الخريطة. يُطبّق فورًا.</string>
     <string name="settings_custom_dashboard_arrival">الوصول على الخريطة</string>
     <string name="settings_custom_dashboard_arrival_description">أثناء توجيه CarPlay، يظهر وقت الوصول والدقائق والكيلومترات المتبقية في الزاوية العلوية اليمنى من الخريطة. يُطبّق فورًا.</string>
+    <string name="settings_custom_dashboard_trip_qnx">بيانات الرحلة من QNX…</string>
+    <string name="settings_custom_dashboard_trip_qnx_on">بيانات الرحلة: تُقرأ من QNX</string>
+    <string name="settings_custom_dashboard_trip_qnx_off">بيانات الرحلة: متوقفة، لا توجد كلمة مرور QNX</string>
+    <string name="settings_custom_dashboard_trip_qnx_description">للبرامج الثابتة التي تحتفظ بحاسوب الرحلة في جانب QNX. أثناء عرض لوحة العدادات يسجّل DiPlay الدخول إلى صدفة QNX على 192.168.8.1:3333 بصفة root ويقرأ كل 5 ثوانٍ رحلة اللوحة الأصلية فقط (المسافة ومدة القيادة ومتوسط الاستهلاك). تبقى كلمة المرور على هذه الوحدة ولا تدخل في النسخ الاحتياطية للإعدادات.</string>
+    <string name="settings_custom_dashboard_trip_qnx_hint">كلمة مرور root لـ QNX</string>
+    <string name="settings_custom_dashboard_trip_qnx_forget">نسيان</string>
     <string name="settings_hud_maneuvers">الملاحة على شاشة HUD (تجريبي)</string>
     <string name="settings_hud_maneuvers_description">أثناء توجيه CarPlay على مسار، يرسم DiPlay المناورة التالية على شاشة العرض الأمامية: الإشارة مع مخرج الدوار والمسافة والشارع، وتحتها الحارات والوقت والمسافة المتبقيان. بدون مسار تبقى شاشة العرض الأمامية فارغة. للبرامج الثابتة التي تعرض شاشة Android على شاشة العرض الأمامية. إذا كان تطبيق HUD Renderer (org.monjaro.hudrenderer) مثبتاً فأوقف إخراجه أولاً، وإلا فسيرسم الاثنان معاً. يتطلب إذن \"الظهور فوق التطبيقات الأخرى\". يُطبَّق فوراً.</string>
     <string name="settings_hud_density">تخطيط HUD</string>

@@ -27,6 +27,7 @@ internal class MonjaroDashboardSources(private val view: MonjaroDashboardView) :
     private var stopFollowingSpeed: (() -> Unit)? = null
     private val parking = DashboardParking()
     private val media = DashboardMediaFeed(view.media)
+    private val trip = QnxTripReader(app) { reading -> view.trip.show(reading ?: DashboardTrip()) }
     private val streamChanged: (Boolean) -> Unit = { active -> if (!active) view.map.video.streamStopped() }
     // A route expires without a new frame, and the glance notices that only when asked.
     private val routeTick = object : Runnable {
@@ -65,6 +66,7 @@ internal class MonjaroDashboardSources(private val view: MonjaroDashboardView) :
         stopFollowingSpeed = EcarxWheelSpeed.follow(app)
         parkingTick.run()
         media.start()
+        trip.start()
     }
 
     override fun onViewDetachedFromWindow(detached: View) {
@@ -83,6 +85,7 @@ internal class MonjaroDashboardSources(private val view: MonjaroDashboardView) :
         stopFollowingSpeed = null
         main.removeCallbacks(parkingTick)
         media.stop()
+        trip.stop()
     }
 
     private fun showTime() = view.showTime(System.currentTimeMillis(), DateFormat.is24HourFormat(app))
@@ -94,6 +97,7 @@ internal class MonjaroDashboardSources(private val view: MonjaroDashboardView) :
         view.map.maneuverShown = options.dashboardManeuver
         view.map.arrivalShown = options.dashboardArrival
         showRoute(CarPlayGlance.snapshot())
+        if (view.isAttachedToWindow) trip.start()
     }
 
     private fun showRoute(glance: CarPlayGlance.Snapshot) =

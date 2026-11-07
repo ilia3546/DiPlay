@@ -2285,6 +2285,11 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     AirPlayPersistence.saveDashboardManeuver(this, it)
                     MonjaroCustomDashboard.settingChanged()
                 }
+                val tripPassword = QnxTripCredentials.load(this) != null
+                card.addView(button(getString(R.string.settings_custom_dashboard_trip_qnx), false) { askQnxTripPassword() },
+                    matchButton(0, 60))
+                card.addView(choiceNote(getString(if (tripPassword) R.string.settings_custom_dashboard_trip_qnx_on
+                    else R.string.settings_custom_dashboard_trip_qnx_off)))
                 toggle(card, getString(R.string.settings_custom_dashboard_arrival),
                     getString(R.string.settings_custom_dashboard_arrival_description),
                     AirPlayPersistence.loadDashboardArrival(this)) {
@@ -4189,6 +4194,37 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
     }
 
     /** A 1%-step slider row for overlay placement; every step saves, so the card moves live. */
+    private fun askQnxTripPassword() {
+        val dialogContext = appDialogContext()
+        val fields = column().apply { setPadding(dp(24), dp(12), dp(24), dp(12)) }
+        fields.addView(label(getString(R.string.settings_custom_dashboard_trip_qnx_description), 15, MUTED))
+        val password = EditText(dialogContext).apply {
+            hint = getString(R.string.settings_custom_dashboard_trip_qnx_hint)
+            setSingleLine()
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+            imeOptions = android.view.inputmethod.EditorInfo.IME_FLAG_NO_EXTRACT_UI
+        }
+        fields.addView(password)
+        AlertDialog.Builder(dialogContext)
+            .setTitle(getString(R.string.settings_custom_dashboard_trip_qnx))
+            .setView(fields)
+            .setPositiveButton(getString(R.string.save)) { _, _ ->
+                val entered = password.text.toString()
+                if (entered.isNotEmpty()) {
+                    QnxTripCredentials.save(this, entered)
+                    MonjaroCustomDashboard.settingChanged()
+                    render()
+                }
+            }
+            .setNeutralButton(getString(R.string.settings_custom_dashboard_trip_qnx_forget)) { _, _ ->
+                QnxTripCredentials.save(this, null)
+                MonjaroCustomDashboard.settingChanged()
+                render()
+            }
+            .setNegativeButton(getString(R.string.cancel), null)
+            .show()
+    }
+
     private fun overlaySliderRow(title: String, values: List<Int>, current: Int, describe: (Int) -> String): OverlaySliderRow =
         OverlaySliderRow(this, title, values, current, describe)
 

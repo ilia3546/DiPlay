@@ -43,6 +43,12 @@
     <string name="settings_custom_dashboard_maneuver_description">While CarPlay guides you, the next turn, its distance and the street are in the map\'s top left corner. Applies at once.</string>
     <string name="settings_custom_dashboard_arrival">Arrival over the map</string>
     <string name="settings_custom_dashboard_arrival_description">While CarPlay guides you, the arrival time and the minutes and kilometres left are in the map\'s top right corner. Applies at once.</string>
+    <string name="settings_custom_dashboard_trip_qnx">Trip data from the QNX side…</string>
+    <string name="settings_custom_dashboard_trip_qnx_on">Trip data: read from QNX</string>
+    <string name="settings_custom_dashboard_trip_qnx_off">Trip data: off, no QNX password</string>
+    <string name="settings_custom_dashboard_trip_qnx_description">For firmware that keeps the trip computer on its QNX side. DiPlay logs in to the QNX shell at 192.168.8.1:3333 as root while the dashboard shows and every 5 seconds only reads the trip (distance, driving time, average consumption) from the stock cluster. The password stays on this head unit and is not in settings backups.</string>
+    <string name="settings_custom_dashboard_trip_qnx_hint">QNX root password</string>
+    <string name="settings_custom_dashboard_trip_qnx_forget">Forget</string>
     <string name="settings_hud_maneuvers">Navigation on the HUD (experimental)</string>
     <string name="settings_hud_maneuvers_description">While CarPlay guides you along a route, DiPlay draws the next maneuver on the head-up display: the sign with the roundabout exit, the distance and the street, and below them the lanes and the time and distance left. Without a route the head-up display stays empty. For firmware that shows an Android display on the head-up display. If the HUD Renderer app (org.monjaro.hudrenderer) is installed, turn its output off first, or both draw at once. Needs \"Draw over other apps\". Applies at once.</string>
     <string name="settings_hud_density">HUD layout</string>

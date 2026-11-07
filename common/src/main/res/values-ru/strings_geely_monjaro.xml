@@ -43,6 +43,12 @@
     <string name="settings_custom_dashboard_maneuver_description">Пока CarPlay ведёт по маршруту, в левом верхнем углу карты показываются следующий поворот, расстояние до него и улица. Применяется сразу.</string>
     <string name="settings_custom_dashboard_arrival">Прибытие на карте</string>
     <string name="settings_custom_dashboard_arrival_description">Пока CarPlay ведёт по маршруту, в правом верхнем углу карты показываются время прибытия и оставшиеся минуты и километры. Применяется сразу.</string>
+    <string name="settings_custom_dashboard_trip_qnx">Данные поездки с QNX…</string>
+    <string name="settings_custom_dashboard_trip_qnx_on">Данные поездки: читаются с QNX</string>
+    <string name="settings_custom_dashboard_trip_qnx_off">Данные поездки: выключены, нет пароля QNX</string>
+    <string name="settings_custom_dashboard_trip_qnx_description">Для прошивок, где бортовой компьютер живёт на стороне QNX. Пока показана приборка, DiPlay входит в шелл QNX на 192.168.8.1:3333 как root и раз в 5 секунд только читает поездку штатной приборки (пробег, время в пути, средний расход). Пароль остаётся на этом головном устройстве и не попадает в резервные копии настроек.</string>
+    <string name="settings_custom_dashboard_trip_qnx_hint">Пароль root QNX</string>
+    <string name="settings_custom_dashboard_trip_qnx_forget">Забыть</string>
     <string name="settings_hud_maneuvers">Навигация на HUD (экспериментально)</string>
     <string name="settings_hud_maneuvers_description">Пока CarPlay ведёт по маршруту, DiPlay рисует на проекционном дисплее следующий манёвр: знак с номером съезда с кольца, расстояние и улицу, а под ними полосы и оставшиеся время и путь. Без маршрута проекционный дисплей пустой. Для прошивок, которые показывают на проекционном дисплее дисплей Android. Если установлено приложение HUD Renderer (org.monjaro.hudrenderer), сначала выключите его вывод, иначе оба будут рисовать одновременно. Нужно разрешение «Поверх других приложений». Применяется сразу.</string>
     <string name="settings_hud_density">Вид строки HUD</string>
