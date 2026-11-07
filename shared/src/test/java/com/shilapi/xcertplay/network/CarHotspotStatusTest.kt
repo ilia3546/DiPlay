@@ -41,4 +41,14 @@ class CarHotspotStatusTest {
         assertNull(CarHotspotStatus.read({ null }, { null }, { sticky(null) }))
         assertNull(CarHotspotStatus.read({ null }, { null }, { throw SecurityException() }))
     }
+
+    @Test fun anApThatIsStartingIsEnablingWhileItStillCountsAsNotOn() {
+        assertEquals(false, CarHotspotStatus.read({ 12 }, { null }, { null }))
+        assertTrue(CarHotspotStatus.enabling({ 12 }, { fail("Do not read stale broadcast"); sticky(13) }))
+        assertFalse(CarHotspotStatus.enabling({ 13 }, { sticky(12) }))
+        assertFalse(CarHotspotStatus.enabling({ 11 }, { sticky(12) }))
+        assertTrue(CarHotspotStatus.enabling({ null }, { sticky(12, 1) }))
+        assertFalse(CarHotspotStatus.enabling({ null }, { sticky(12, 2) }))
+        assertFalse(CarHotspotStatus.enabling({ throw SecurityException() }, { throw SecurityException() }))
+    }
 }

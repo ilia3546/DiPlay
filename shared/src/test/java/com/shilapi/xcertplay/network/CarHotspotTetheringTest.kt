@@ -14,6 +14,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import com.shilapi.xcertplay.network.CarHotspotTethering.Result
+import com.shilapi.xcertplay.network.RootShell.Result.Completed
+import com.shilapi.xcertplay.network.RootShell.Result.Unavailable
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [29], manifest = Config.NONE)
@@ -225,6 +227,143 @@ class CarHotspotTetheringTest {
         assertEquals(Result.READY, first); assertEquals(Result.READY, second)
         assertEquals(1, calls.get())
     }
+
+    @Test fun rootStartNeedsNoAccessAndNoAndroidStartCall() {
+        val on = AtomicBoolean(false)
+        val commands = mutableListOf<String>()
+        val result = root(state = { on.get() }) { command ->
+            commands += command
+            if (command == "helper") { on.set(true); Completed(0, "${CarHotspotStartMain.HEADER}|result 0") } else noStartCommand
+        }
+        assertEquals(Result.READY, result)
+        assertEquals(listOf("cmd connectivity help", "cmd tethering help", "helper"), commands)
+    }
+
+    @Test fun anApThatIsAlreadyOnNeedsNoRoot() {
+        assertEquals(Result.READY, root(state = { true }) { fail("No root call for a running hotspot"); noStartCommand })
+    }
+
+    @Test fun missingRootIsItsOwnReasonAndDoesNotWaitForTheDeadline() {
+        val logs = mutableListOf<String>()
+        val started = System.nanoTime()
+        val result = root(timeoutMillis = 5_000, log = { logs += it }) { Unavailable("su unavailable (IOException)") }
+        assertEquals(Result.ROOT_UNAVAILABLE, result)
+        assertTrue(System.nanoTime() - started < TimeUnit.SECONDS.toNanos(2))
+        assertTrue(logs.toString(), logs.contains("car hotspot: root is unavailable: su unavailable (IOException)"))
+    }
+
+    @Test fun deniedRootIsRootUnavailable() {
+        assertEquals(Result.ROOT_UNAVAILABLE, root(timeoutMillis = 5_000) { Completed(1, "Permission denied\n") })
+    }
+
+    @Test fun aRejectedHelperStillWaitsForTheApUntilTheDeadline() {
+        val on = AtomicBoolean(false)
+        val result = root(state = { on.get() }) { command ->
+            if (command == "helper") {
+                thread { Thread.sleep(100); on.set(true) }
+                Completed(0, "${CarHotspotStartMain.HEADER}|result 11")
+            } else noStartCommand
+        }
+        assertEquals(Result.READY, result)
+    }
+
+    @Test fun aRejectedHelperWhoseApNeverComesUpFails() {
+        val helperCalls = AtomicInteger(0)
+        val result = root(timeoutMillis = 300) { command ->
+            if (command == "helper") { helperCalls.incrementAndGet(); Completed(0, "${CarHotspotStartMain.HEADER}|result 11") }
+            else noStartCommand
+        }
+        assertEquals(Result.FAILED, result)
+        assertEquals(1, helperCalls.get())
+    }
+
+    @Test fun anAcceptedRequestWhoseApNeverComesUpTimesOut() {
+        assertEquals(Result.TIMED_OUT, root(timeoutMillis = 300) { command ->
+            if (command == "helper") Completed(0, "${CarHotspotStartMain.HEADER}|result 0") else noStartCommand
+        })
+    }
+
+    @Test fun anApThatIsStartingIsAwaitedWithoutAnotherRequest() {
+        val on = AtomicBoolean(false)
+        thread { Thread.sleep(150); on.set(true) }
+        val result = root(state = { on.get() }, enabling = { !on.get() }) { command ->
+            if (command == "helper") fail("Do not request a start that is under way")
+            noStartCommand
+        }
+        assertEquals(Result.READY, result)
+    }
+
+    @Test fun anApThatStopsStartingIsRequestedOnce() {
+        val on = AtomicBoolean(false)
+        val enabling = AtomicBoolean(true)
+        val helperCalls = AtomicInteger(0)
+        thread { Thread.sleep(150); enabling.set(false) }
+        val result = root(state = { on.get() }, enabling = { enabling.get() }) { command ->
+            if (command == "helper") {
+                helperCalls.incrementAndGet()
+                on.set(true)
+                Completed(0, "${CarHotspotStartMain.HEADER}|result 0")
+            } else noStartCommand
+        }
+        assertEquals(Result.READY, result)
+        assertEquals(1, helperCalls.get())
+    }
+
+    @Test fun cancellationStopsABlockedSuCallAndReleasesTheLock() {
+        val cancelled = AtomicBoolean(false)
+        val interrupted = CountDownLatch(1)
+        thread { Thread.sleep(100); cancelled.set(true) }
+        val started = System.nanoTime()
+        val result = root(timeoutMillis = 10_000, cancelled = { cancelled.get() }) {
+            try {
+                Thread.sleep(10_000)
+                noStartCommand
+            } catch (_: InterruptedException) {
+                interrupted.countDown()
+                Unavailable(RootShell.INTERRUPTED_REASON)
+            }
+        }
+        assertEquals(Result.CANCELLED, result)
+        assertTrue(System.nanoTime() - started < TimeUnit.SECONDS.toNanos(2))
+        assertTrue(interrupted.await(1, TimeUnit.SECONDS))
+        assertEquals(Result.READY, root(state = { true }) { noStartCommand })
+    }
+
+    @Test fun theHelperReplyIsLoggedWhenTheRunIsCancelledAfterItRan() {
+        val cancelled = AtomicBoolean(false)
+        val logs = java.util.Collections.synchronizedList(mutableListOf<String>())
+        val result = root(cancelled = { cancelled.get() }, log = { logs += it }) { command ->
+            if (command == "helper") { cancelled.set(true); Completed(0, "${CarHotspotStartMain.HEADER}|result 0") }
+            else noStartCommand
+        }
+        assertEquals(Result.CANCELLED, result)
+        assertTrue(logs.toString(), logs.any { it.startsWith("car hotspot: shell tethering request result 0") })
+    }
+
+    @Test fun anApStateThatNeitherAndroidNorRootCanReadIsUnsupported() {
+        assertEquals(Result.UNSUPPORTED, root(state = { null }) { command ->
+            if (command == "helper") fail("Do not start blindly")
+            if (command == "dumpsys wifi") Completed(0, "Wi-Fi is enabled") else noStartCommand
+        })
+    }
+
+    @Test fun aSuTimeoutIsATimeoutNotMissingRoot() {
+        assertEquals(Result.TIMED_OUT, root(timeoutMillis = 200) { command ->
+            if (command == "helper") { Thread.sleep(250); Unavailable(RootShell.TIMED_OUT_REASON) } else noStartCommand
+        })
+    }
+
+    private val noStartCommand: RootShell.Result = Completed(0, "Connectivity service commands:\n  help\n")
+
+    private fun root(
+        timeoutMillis: Long = 1_000,
+        cancelled: () -> Boolean = { false },
+        state: () -> Boolean? = { false },
+        enabling: () -> Boolean = { false },
+        log: (String) -> Unit = { },
+        shell: (String) -> RootShell.Result,
+    ): Result = CarHotspotTethering.enableThroughRoot(System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis),
+        cancelled, state, enabling, { command, _ -> shell(command) }, "helper", log)
 
     private fun enable(
         canWrite: Boolean = true,

@@ -559,7 +559,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         }
         handler.removeCallbacks(tick); handler.post(tick)
         // Back with the hotspot access now allowed: the start-up attempt that lacked it runs again.
-        if (hotspotStartupResult == CarHotspotTethering.Result.PERMISSION_REQUIRED && CarHotspotTethering.permitted(this)) {
+        if (hotspotStartupResult == CarHotspotTethering.Result.PERMISSION_REQUIRED && CarHotspotTethering.canStart(this)) {
             hotspotStartupResult = null
             startupHotspotCancelled = false
             startCarHotspotOnLaunch()
@@ -988,7 +988,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         if (startupProblem != null) {
             // Off BYD units the access is allowed on Android's "Modify system settings" screen; ADB plays no part.
             val allowOnSystemScreen = startupProblem == CarHotspotTethering.Result.PERMISSION_REQUIRED &&
-                !CarHotspotSetup.isBydHeadUnit(this) && CarHotspotTethering.appStartSupported()
+                CarHotspotTethering.startMode(this) == CarHotspotTethering.StartMode.SYSTEM_ACCESS
             card.addView(label(if (allowOnSystemScreen) getString(R.string.settings_write_settings_missing)
                 else hotspotResultText(startupProblem), 15, WARNING))
             if (!compact) card.addView(
@@ -1825,8 +1825,11 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             adbToggle(card, R.string.open_after_the_car_starts,
                 R.string.availability_depends_on_your_head_unit_s_startup_settings,
                 read = { AirPlayPersistence.loadAutoStartOnBoot(this) },
-                needsAdb = { CarHotspotSettings.enabled(this) &&
-                    AirPlayPersistence.loadWirelessHotspotMode(this) == WirelessHotspotMode.MANUAL },
+                needsAdb = { AirPlayPersistence.loadWirelessHotspotMode(this) == WirelessHotspotMode.MANUAL &&
+                    when (CarHotspotTethering.startMode(this)) {
+                        CarHotspotTethering.StartMode.SYSTEM_ACCESS, CarHotspotTethering.StartMode.ADB -> true
+                        CarHotspotTethering.StartMode.ROOT, CarHotspotTethering.StartMode.NONE -> false
+                    } },
                 permissions = { listOf(CarHotspotSetup.Permission.BOOT_LAUNCH) }) {
                 AirPlayPersistence.saveAutoStartOnBoot(this, it)
             }
@@ -2162,9 +2165,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             }
             toggle(card, getString(R.string.settings_root_hotspot_start),
                 getString(R.string.settings_root_hotspot_start_description),
-                CarHotspotSettings.rootStart(this) && CarHotspotSettings.enabled(this)) {
+                CarHotspotSettings.rootStart(this)) {
                 CarHotspotSettings.setRootStart(this, it)
-                CarHotspotSettings.setEnabled(this, it)
                 if (!it) startupHotspotCancelled = true
             }
             toggle(card, getString(R.string.settings_disconnect_phone_bluetooth),
@@ -3060,8 +3062,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
     private fun carHotspotOff(): Boolean =
         AirPlayPersistence.loadWirelessHotspotMode(this) == WirelessHotspotMode.MANUAL &&
             CarHotspotSettings.reportedOff(this, com.shilapi.xcertplay.network.CarHotspotStatus.isEnabled(this)) &&
-            !(CarHotspotSettings.enabled(this) &&
-                (CarHotspotTethering.permitted(this) || CarHotspotSettings.rootStart(this)))
+            !CarHotspotTethering.canStart(this)
 
     /**
      * Other head units: starting the hotspot needs only Android's "Modify system settings" access
@@ -3389,6 +3390,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         CarHotspotTethering.Result.PERMISSION_REQUIRED -> R.string.hotspot_control_missing
         CarHotspotTethering.Result.UNSUPPORTED -> R.string.hotspot_control_unsupported
         CarHotspotTethering.Result.TIMED_OUT -> R.string.hotspot_control_timeout
+        CarHotspotTethering.Result.ROOT_UNAVAILABLE -> R.string.hotspot_control_root_unavailable
         else -> R.string.hotspot_control_failed
     })
 
@@ -6303,6 +6305,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         appendLine("Startup settings: openAfterBoot=${AirPlayPersistence.loadAutoStartOnBoot(appContext)} " +
             "connectWhenOpened=${DiPlayPreferences.autoConnect(appContext)}")
         appendLine("Car hotspot control: autoEnable=${CarHotspotSettings.enabled(appContext)} " +
+            "rootStart=${CarHotspotSettings.rootStart(appContext)} " +
+            "startMode=${runCatching { CarHotspotTethering.startMode(appContext) }.getOrNull()} " +
             "writeSettings=${CarHotspotTethering.permitted(appContext)} " +
             "bydHeadUnit=${runCatching { CarHotspotSetup.isBydHeadUnit(appContext) }.getOrNull()} " +
             "hotspotOn=${runCatching { com.shilapi.xcertplay.network.CarHotspotStatus.isEnabled(appContext) }.getOrNull()}")

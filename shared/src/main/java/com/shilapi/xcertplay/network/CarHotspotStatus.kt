@@ -14,6 +14,7 @@ object CarHotspotStatus {
     private const val ACTION_WIFI_AP_STATE_CHANGED = "android.net.wifi.WIFI_AP_STATE_CHANGED"
     private const val EXTRA_WIFI_AP_STATE = "wifi_state"
     private const val EXTRA_WIFI_AP_MODE = "wifi_ap_mode"
+    private const val WIFI_AP_STATE_ENABLING = 12
 
     /**
      * True/false from the Wi-Fi AP state, or null when the firmware hides it (then callers must
@@ -30,6 +31,16 @@ object CarHotspotStatus {
         )
     }
 
+    /** Whether Android reports the AP as starting (WIFI_AP_STATE_ENABLING), which [isEnabled] reports as off. */
+    fun isEnabling(context: Context): Boolean {
+        val app = context.applicationContext
+        val wifi = app.getSystemService(WifiManager::class.java)
+        return enabling(
+            state = { wifi?.let { WifiManager::class.java.getMethod("getWifiApState").invoke(it) as? Int } },
+            sticky = { app.registerReceiver(null, IntentFilter(ACTION_WIFI_AP_STATE_CHANGED)) },
+        )
+    }
+
     internal fun stateEnabled(state: Int?): Boolean? = state?.takeIf { it in 10..14 }?.let { it == 13 }
 
     internal fun read(state: () -> Int?, enabled: () -> Boolean?, sticky: () -> Intent?): Boolean? {
@@ -39,5 +50,12 @@ object CarHotspotStatus {
         // Local-only AP state says nothing about the car's tethered hotspot, including on multi-AP firmware.
         if (intent.hasExtra(EXTRA_WIFI_AP_MODE) && intent.getIntExtra(EXTRA_WIFI_AP_MODE, -1) != 1) return null
         return stateEnabled(intent.getIntExtra(EXTRA_WIFI_AP_STATE, -1))
+    }
+
+    internal fun enabling(state: () -> Int?, sticky: () -> Intent?): Boolean {
+        runCatching(state).getOrNull()?.takeIf { it in 10..14 }?.let { return it == WIFI_AP_STATE_ENABLING }
+        val intent = runCatching(sticky).getOrNull() ?: return false
+        if (intent.hasExtra(EXTRA_WIFI_AP_MODE) && intent.getIntExtra(EXTRA_WIFI_AP_MODE, -1) != 1) return false
+        return intent.getIntExtra(EXTRA_WIFI_AP_STATE, -1) == WIFI_AP_STATE_ENABLING
     }
 }

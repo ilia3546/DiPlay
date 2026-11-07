@@ -2532,7 +2532,8 @@ class CarPlayController(
             val result = com.shilapi.xcertplay.network.CarHotspotTethering.enable(
                 appContext,
                 isCancelled = { isStaleWirelessRun(generation) ||
-                    !com.shilapi.xcertplay.network.CarHotspotSettings.enabled(appContext) },
+                    com.shilapi.xcertplay.network.CarHotspotTethering.startMode(appContext) ==
+                    com.shilapi.xcertplay.network.CarHotspotTethering.StartMode.NONE },
                 timeoutMillis = ((readyDeadline - System.nanoTime()) / 1_000_000).coerceAtLeast(1),
                 log = { debugLog("generation=$generation atNs=${System.nanoTime()} $it; awaiting hotspot interface") },
             )

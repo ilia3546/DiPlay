@@ -178,4 +178,13 @@ class CarHotspotAdbFallbackTest {
         assertFalse(CarHotspotStartMain.accepted("result 12"))
         assertTrue(CarHotspotStartMain.accepted("requested"))
     }
+
+    @Test fun theHelperReplyIsLoggedWhenTheAttemptIsCancelledAfterItRan() {
+        var cancelled = false
+        val logs = mutableListOf<String>()
+        assertFalse(CarHotspotAdbFallback.start(deadline(), { cancelled }, { false }, { command, _ ->
+            if (command.endsWith("help")) "  help" else { cancelled = true; "${CarHotspotStartMain.HEADER}|result 0" }
+        }, { logs += it }, "helper"))
+        assertEquals("car hotspot: shell tethering request result 0; waiting for AP enabled state", logs.last())
+    }
 }

@@ -5,6 +5,7 @@ import android.content.pm.PackageInfo
 import com.shilapi.xcertplay.adb.LocalAdb
 import com.shilapi.xcertplay.hud.BydOutputSettings
 import com.shilapi.xcertplay.network.CarHotspotSettings
+import com.shilapi.xcertplay.network.CarHotspotTethering
 import com.shilapi.xcertplay.orchestration.WirelessHotspotMode
 import org.junit.Assert.*
 import org.junit.Before
@@ -112,6 +113,32 @@ class CarHotspotSetupTest {
         assertEquals("Car hotspot", AirPlayPersistence.loadManualHotspotSsid(context))
         assertEquals("12345678", AirPlayPersistence.loadManualHotspotPassphrase(context))
         assertEquals(WirelessHotspotMode.MANUAL, AirPlayPersistence.loadWirelessHotspotMode(context))
+    }
+
+    @Test fun rootStartPreparesTheHotspotOnLaunchWithTheSameConditions() {
+        CarHotspotSettings.setRootStart(context, true)
+        assertFalse(CarHotspotSettings.enabled(context))
+        assertFalse(eligible())
+        configureHotspot()
+        assertTrue(eligible())
+        assertFalse(CarHotspotSetup.shouldStartOnLaunch(context, hasSession = true))
+        AirPlayPersistence.saveWirelessEnabled(context, false)
+        assertFalse(eligible())
+    }
+
+    @Test @Config(sdk = [30]) fun bydKeepsItsAdbPathWhereAndroidLetsNoAppStartTheHotspot() {
+        installPackage("com.byd.carsettings", system = true)
+        configureHotspot()
+        CarHotspotSettings.setEnabled(context, true)
+        assertEquals(CarHotspotTethering.StartMode.ADB, CarHotspotTethering.startMode(context))
+        assertTrue(eligible())
+    }
+
+    @Test @Config(sdk = [30]) fun aRestoredChoiceOffBydOnNewerAndroidDoesNotPrepareTheHotspot() {
+        configureHotspot()
+        CarHotspotSettings.setEnabled(context, true)
+        assertEquals(CarHotspotTethering.StartMode.NONE, CarHotspotTethering.startMode(context))
+        assertFalse(eligible())
     }
 
     private fun eligible() = CarHotspotSetup.shouldStartOnLaunch(context, hasSession = false)

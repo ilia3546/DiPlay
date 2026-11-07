@@ -5,6 +5,7 @@
     <string name="settings_root_hotspot_details_description">Android가 차량 핫스팟의 채널을 숨기면 펌웨어의 핫스팟 설정에서 채널을 읽고, 핫스팟의 BSSID도 iPhone에 알려 줍니다. 루트(Magisk)가 필요합니다. 다음 연결부터 적용됩니다.</string>
     <string name="settings_root_hotspot_start">root로 차량 핫스팟 켜기 (실험 기능)</string>
     <string name="settings_root_hotspot_start_description">DiPlay를 열 때와 무선 연결 전에 차량에 저장된 핫스팟이 꺼져 있으면 ADB와 같은 단계를 root에서 shell 사용자로 실행해 켭니다. 앱이 핫스팟을 켤 수 없는 Android 펌웨어용입니다. 매번 시동 때 핫스팟이 켜지도록 차량 시동 후 DiPlay 열기를 켜세요. root(Magisk)가 필요합니다. 핫스팟은 자동으로 꺼지지 않습니다. 즉시 적용됩니다.</string>
+    <string name="hotspot_control_root_unavailable">DiPlay가 핫스팟을 켜기 위한 root 권한을 얻지 못했습니다. Magisk에서 DiPlay에 root를 허용하거나 차량 설정에서 핫스팟을 여세요.</string>
     <string name="settings_disconnect_phone_bluetooth">무선 CarPlay 중 iPhone Bluetooth 연결 해제 (실험 기능)</string>
     <string name="settings_disconnect_phone_bluetooth_description">무선 CarPlay가 시작되면 차량 기본 CarPlay처럼 iPhone의 Bluetooth 통화, 음악, 연락처, 미디어 제어를 헤드 유닛에서 연결 해제합니다. Bluetooth로 CarPlay 음악을 일시 정지시키는 펌웨어용입니다. CarPlay는 Wi-Fi로 계속 작동하며, 이후 iPhone이 Bluetooth를 스스로 다시 연결하지 않습니다. 페어링된 iPhone이 여러 대라면 DiPlay에서 사용할 iPhone을 선택하세요. Bluetooth 연결이 해제되면 다음번에 DiPlay가 스스로 고를 수 없습니다. 루트(Magisk)가 필요합니다. 다음 연결부터 적용됩니다.</string>
     <string name="settings_hotspot_audio_firewall">차량 방화벽에서 CarPlay 오디오 허용 (실험 기능)</string>

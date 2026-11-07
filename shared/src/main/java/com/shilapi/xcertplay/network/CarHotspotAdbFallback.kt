@@ -13,55 +13,119 @@ internal object CarHotspotAdbFallback {
 
     fun start(deadline: Long, cancelled: () -> Boolean, state: () -> Boolean?,
         shell: (String, Int) -> String?, log: (String) -> Unit, helper: String? = null): Boolean {
-        fun remaining() = ((deadline - System.nanoTime()) / 1_000_000L).coerceAtMost(30_000).toInt()
-        fun stopped() = cancelled() || Thread.currentThread().isInterrupted || remaining() <= 0
-        fun read(command: String): String? = if (stopped()) null else shell(command, remaining().coerceAtLeast(1))
-        fun observed(): Boolean? = state() ?: apState(read("dumpsys wifi"))
-        if (stopped()) return false
+        val run = Run(deadline, cancelled, state, shell)
+        if (run.stopped()) return false
         // No blind mutation when no AP state can be observed.
-        val initial = observed() ?: return false.also { log("car hotspot: ADB cannot read the AP state; not starting it") }
-        if (stopped()) return false
+        val initial = run.observed() ?: return false.also { log("car hotspot: ADB cannot read the AP state; not starting it") }
+        if (run.stopped()) return false
         if (initial) return true
+        if (request(run, helper, log) != true) return false
+        while (!run.stopped()) {
+            if (run.observed() == true && !run.stopped()) {
+                log("car hotspot: AP enabled state confirmed after local ADB request")
+                return true
+            }
+            if (!run.pause()) return false
+        }
+        return false
+    }
+
+    enum class Outcome { ON, UNOBSERVABLE, STOPPED }
+
+    /**
+     * Like [start], for a shell that runs through root. An AP that Android reports [enabling] is awaited instead of
+     * requested again, and a rejected request ([onRejected]) still waits for the AP until [deadline]: the helper also
+     * rejects a start that is already under way.
+     */
+    fun startAndWait(deadline: Long, cancelled: () -> Boolean, state: () -> Boolean?, enabling: () -> Boolean,
+        shell: (String, Int) -> String?, log: (String) -> Unit, helper: String, onRejected: () -> Unit): Outcome {
+        val run = Run(deadline, cancelled, state, shell)
+        if (run.stopped()) return Outcome.STOPPED
+        val initial = run.observed()
+            ?: return Outcome.UNOBSERVABLE.also { log("car hotspot: root cannot read the AP state; not starting it") }
+        if (run.stopped()) return Outcome.STOPPED
+        if (initial) return Outcome.ON
+        var requested = false
+        var awaitingStart = false
+        var on: Boolean? = initial
+        while (!run.stopped()) {
+            if (on == true) {
+                log("car hotspot: AP enabled state confirmed after the root request")
+                return Outcome.ON
+            }
+            if (!requested && enabling()) {
+                if (!awaitingStart) log("car hotspot: Android reports the AP starting; waiting for it instead of another request")
+                awaitingStart = true
+            } else if (!requested) {
+                requested = true
+                when (request(run, helper, log)) {
+                    null -> return Outcome.STOPPED
+                    false -> {
+                        onRejected()
+                        log("car hotspot: waiting for the AP until the deadline in case it is starting anyway")
+                    }
+                    true -> Unit
+                }
+            }
+            if (!run.pause()) return Outcome.STOPPED
+            on = run.observed()
+        }
+        return Outcome.STOPPED
+    }
+
+    /** True when the firmware command or [helper] accepted the start, false when it was rejected, null when stopped. */
+    private fun request(run: Run, helper: String?, log: (String) -> Unit): Boolean? {
         var command: String? = null
         for (service in listOf("connectivity", "tethering")) {
-            command = advertisedCommand(service, read("cmd $service help"))
+            command = advertisedCommand(service, run.read("cmd $service help"))
             if (command != null) break
         }
-        if (stopped()) return false
+        if (run.stopped()) return null
         if (command == null) {
             log("car hotspot: firmware lists no hotspot start command in cmd connectivity/tethering help")
             if (helper == null) return false
             // #616: an Android 10 head unit had no such command, and its app-side call was blocked.
-            val reply = CarHotspotStartMain.parse(read(helper))
-            if (stopped()) return false
-            if (!CarHotspotStartMain.accepted(reply)) {
-                log("car hotspot: shell tethering request failed: ${reply ?: "no reply"}")
-                return false
+            val output = run.read(helper)
+            val reply = CarHotspotStartMain.parse(output)
+            val accepted = CarHotspotStartMain.accepted(reply)
+            // The helper may have started tethering although the attempt was cancelled meanwhile.
+            if (output != null || !run.stopped()) {
+                log(if (accepted) "car hotspot: shell tethering request $reply; waiting for AP enabled state"
+                    else "car hotspot: shell tethering request failed: ${reply ?: "no reply"}")
             }
-            log("car hotspot: shell tethering request $reply; waiting for AP enabled state")
-        } else {
-            val output = read("$command 2>&1; printf '\\n$EXIT%s\\n' \"\$?\"")
-            if (stopped()) return false
-            if (!accepted(output)) {
-                log("car hotspot: firmware rejected '$command': " +
-                    output.orEmpty().lineSequence().map(String::trim).firstOrNull { it.isNotEmpty() }.orEmpty().take(120))
-                return false
-            }
-            log("car hotspot: firmware ADB start request accepted; waiting for AP enabled state")
+            if (run.stopped()) return null
+            return accepted
         }
-        while (!stopped()) {
-            if (observed() == true && !stopped()) {
-                log("car hotspot: AP enabled state confirmed after local ADB request")
-                return true
-            }
-            try {
-                Thread.sleep(minOf(250, remaining().coerceAtLeast(1)).toLong())
-            } catch (_: InterruptedException) {
-                Thread.currentThread().interrupt()
-                return false
-            }
+        val output = run.read("$command 2>&1; printf '\\n$EXIT%s\\n' \"\$?\"")
+        if (run.stopped()) return null
+        if (!accepted(output)) {
+            log("car hotspot: firmware rejected '$command': " +
+                output.orEmpty().lineSequence().map(String::trim).firstOrNull { it.isNotEmpty() }.orEmpty().take(120))
+            return false
         }
-        return false
+        log("car hotspot: firmware ADB start request accepted; waiting for AP enabled state")
+        return true
+    }
+
+    private class Run(
+        private val deadline: Long,
+        private val cancelled: () -> Boolean,
+        private val state: () -> Boolean?,
+        private val shell: (String, Int) -> String?,
+    ) {
+        fun remaining() = ((deadline - System.nanoTime()) / 1_000_000L).coerceAtMost(30_000).toInt()
+        fun stopped() = cancelled() || Thread.currentThread().isInterrupted || remaining() <= 0
+        fun read(command: String): String? = if (stopped()) null else shell(command, remaining().coerceAtLeast(1))
+        fun observed(): Boolean? = state() ?: apState(read("dumpsys wifi"))
+
+        /** False when interrupted. */
+        fun pause(): Boolean = try {
+            Thread.sleep(minOf(250, remaining().coerceAtLeast(1)).toLong())
+            true
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+            false
+        }
     }
 
     /** The PR's command forms are vendor extensions, not generic Android commands. */

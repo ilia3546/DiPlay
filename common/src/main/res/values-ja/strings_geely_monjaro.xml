@@ -5,6 +5,7 @@
     <string name="settings_root_hotspot_details_description">Android が車のホットスポットのチャンネルを公開しない場合、ファームウェアのホットスポット設定から読み取り、ホットスポットの BSSID も iPhone に伝えます。root（Magisk）が必要です。次回の接続から反映されます。</string>
     <string name="settings_root_hotspot_start">root で車のホットスポットをオンにする（実験的機能）</string>
     <string name="settings_root_hotspot_start_description">DiPlay を開いたときとワイヤレス接続の前に、車に保存されたホットスポットがオフならオンにします。ADB と同じ手順を root から shell ユーザーとして実行します。アプリがホットスポットをオンにできない Android のファームウェア向けです。毎回の起動でホットスポットが出るよう、車の起動後に DiPlay を開く設定をオンにしてください。root（Magisk）が必要です。ホットスポットは自動ではオフになりません。すぐに適用されます。</string>
+    <string name="hotspot_control_root_unavailable">DiPlay がホットスポットをオンにするための root 権限を取得できませんでした。Magisk で DiPlay に root を許可するか、車の設定からホットスポットを開いてください。</string>
     <string name="settings_disconnect_phone_bluetooth">ワイヤレス CarPlay 中は iPhone の Bluetooth を切断（実験的機能）</string>
     <string name="settings_disconnect_phone_bluetooth_description">ワイヤレス CarPlay が始まると、純正の CarPlay と同じように iPhone の Bluetooth の通話、音楽、連絡先、メディア操作をヘッドユニットから切断します。Bluetooth 経由で CarPlay の音楽を一時停止してしまうファームウェア向けです。CarPlay は Wi-Fi で動作し続けます。その後 iPhone が Bluetooth を自動で再接続することはありません。複数の iPhone をペアリングしている場合は、DiPlay で使う iPhone を選んでください。Bluetooth が切断されていると、次回 DiPlay は自動で選べません。root（Magisk）が必要です。次回の接続から反映されます。</string>
     <string name="settings_hotspot_audio_firewall">CarPlay の音声を車のファイアウォールに通す（実験的機能）</string>

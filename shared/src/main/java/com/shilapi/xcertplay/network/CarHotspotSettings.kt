@@ -1,18 +1,33 @@
 package com.shilapi.xcertplay.network
 
 import android.content.Context
+import android.content.SharedPreferences
 import com.shilapi.xcertplay.adb.LocalAdb
 import com.shilapi.xcertplay.orchestration.WirelessHotspotMode
 
 object CarHotspotSettings {
+    private const val ROOT_START_MIGRATED = "root_start_migrated"
+
     private fun prefs(context: Context) = context.getSharedPreferences("diplay_car_hotspot", Context.MODE_PRIVATE)
+        .also(::migrateRootStart)
+
+    // The first build with root start saved "auto_enable" with it; that choice travels in backups and asks for ADB.
+    private fun migrateRootStart(prefs: SharedPreferences) {
+        if (!GeelyHeadUnit.monjaroA3 || prefs.getBoolean(ROOT_START_MIGRATED, false)) return
+        val edit = prefs.edit().putBoolean(ROOT_START_MIGRATED, true)
+        if (prefs.getBoolean("root_start", false)) edit.putBoolean("auto_enable", false)
+        edit.apply()
+    }
 
     fun enabled(context: Context): Boolean = prefs(context).getBoolean("auto_enable", false)
 
     fun setEnabled(context: Context, enabled: Boolean) =
         prefs(context).edit().putBoolean("auto_enable", enabled).apply()
 
-    /** Start the hotspot through root as the shell user, for firmware where only ADB could start it otherwise. */
+    /**
+     * Start the hotspot through root as the shell user, for firmware where only ADB could start it otherwise. This is
+     * its own choice, apart from [enabled]: see [CarHotspotTethering.startMode].
+     */
     fun rootStart(context: Context): Boolean = prefs(context).getBoolean("root_start", false)
 
     fun setRootStart(context: Context, enabled: Boolean) =
@@ -28,7 +43,8 @@ object CarHotspotSettings {
         bydAvailable && (access == LocalAdb.Access.READY || access == LocalAdb.Access.NOT_APPROVED)
 
     fun shouldEnable(context: Context, wireless: Boolean, mode: WirelessHotspotMode): Boolean =
-        enabled(context) && wireless && mode == WirelessHotspotMode.MANUAL
+        wireless && mode == WirelessHotspotMode.MANUAL &&
+            CarHotspotTethering.startMode(context) != CarHotspotTethering.StartMode.NONE
 
     /**
      * Set when the driver connects although Android reports the car hotspot off. Some firmware reports it off

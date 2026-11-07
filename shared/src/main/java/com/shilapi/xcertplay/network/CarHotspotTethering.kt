@@ -1,12 +1,15 @@
 package com.shilapi.xcertplay.network
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import android.os.ResultReceiver
 import android.provider.Settings
 import com.shilapi.xcertplay.adb.AdbKeys
 import com.shilapi.xcertplay.adb.LocalAdb
+import com.shilapi.xcertplay.hud.BydOutputSettings
 import java.lang.reflect.InvocationTargetException
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.TimeUnit
@@ -23,7 +26,44 @@ object CarHotspotTethering {
         FAILED("The car could not start its hotspot"),
         TIMED_OUT("Timed out waiting for the car hotspot"),
         CANCELLED("Hotspot startup was cancelled"),
+        ROOT_UNAVAILABLE("Root access is unavailable or was denied"),
     }
+
+    /** How DiPlay turns the car hotspot on before a wireless connection. */
+    enum class StartMode {
+        /** Not opted in, or this head unit gives DiPlay no way to start it: the driver turns it on. */
+        NONE,
+
+        /** Android's tethering call, with the access the driver allows on the "Modify system settings" screen. */
+        SYSTEM_ACCESS,
+
+        /** BYD: the same call with the access granted over the car's ADB, and its shell steps as the fallback. */
+        ADB,
+
+        /** The shell steps through root as the shell user ([CarHotspotSettings.rootStart]); no access is needed. */
+        ROOT,
+    }
+
+    fun startMode(context: Context): StartMode = when {
+        CarHotspotSettings.rootStart(context) -> StartMode.ROOT
+        !CarHotspotSettings.enabled(context) -> StartMode.NONE
+        bydHeadUnit(context) -> StartMode.ADB
+        appStartSupported() -> StartMode.SYSTEM_ACCESS
+        // A restored backup can carry the choice to a head unit whose settings never show it.
+        else -> StartMode.NONE
+    }
+
+    /** Whether [enable] can turn the hotspot on now, without the driver granting anything first. */
+    fun canStart(context: Context): Boolean = when (startMode(context)) {
+        StartMode.ROOT -> true
+        StartMode.SYSTEM_ACCESS, StartMode.ADB -> permitted(context)
+        StartMode.NONE -> false
+    }
+
+    // Older BYD units report QUALCOMM/qti and have no supported navigation-output service.
+    fun bydHeadUnit(context: Context): Boolean = BydOutputSettings.navigationAvailable(context) || runCatching {
+        context.packageManager.getApplicationInfo("com.byd.carsettings", 0).flags and ApplicationInfo.FLAG_SYSTEM != 0
+    }.getOrDefault(false)
 
     fun permitted(context: Context): Boolean = Settings.System.canWrite(context)
 
@@ -66,31 +106,91 @@ object CarHotspotTethering {
                 }
             }
         }
-        // The same shell steps as over ADB, run through root as the shell user; the app needs no permission then.
-        val startRoot: () -> Boolean = {
-            CarHotspotAdbFallback.start(deadline, isCancelled,
-                state = { CarHotspotStatus.isEnabled(context) },
-                shell = { command, timeout ->
-                    (RootShell.runAsShell(command, timeout.toLong()) as? RootShell.Result.Completed)?.stdout
-                },
-                log = log, helper = shellTetheringHelper(context))
-                .also { if (it) observedAdbState.set(true) }
+        val mode = startMode(context)
+        val result = if (mode == StartMode.ROOT) {
+            log("car hotspot: starting through root as the shell user")
+            enableThroughRoot(deadline, isCancelled,
+                isEnabled = { CarHotspotStatus.isEnabled(context) },
+                isEnabling = { CarHotspotStatus.isEnabling(context) },
+                shell = { command, timeout -> RootShell.runAsShell(command, timeout) },
+                helper = shellTetheringHelper(context), log = log)
+        } else {
+            enableUntil(
+                deadline,
+                isCancelled,
+                { permitted(context) },
+                stateWithAdbObservation({ CarHotspotStatus.isEnabled(context) }, observedAdbState),
+                startAdb,
+                startReflection,
+            )
         }
-        val root = CarHotspotSettings.rootStart(context)
-        if (root) log("car hotspot: starting through root as the shell user")
-        return enableUntil(
-            deadline,
-            isCancelled,
-            { root || permitted(context) },
-            stateWithAdbObservation({ CarHotspotStatus.isEnabled(context) }, observedAdbState),
-            startFallback = if (root) startRoot else startAdb,
-            start = if (root) { _ -> throw SecurityException("hotspot started through root") } else startReflection,
-        ).also {
-            if (it != Result.READY && it != Result.CANCELLED)
-                log("car hotspot: Android state=${CarHotspotStatus.isEnabled(context) ?: "unknown"} writeSettings=${permitted(context)}")
-            log("car hotspot auto-enable: ${it.diagnostic}")
+        if (result != Result.READY && result != Result.CANCELLED)
+            log("car hotspot: Android state=${CarHotspotStatus.isEnabled(context) ?: "unknown"} " +
+                "writeSettings=${permitted(context)} mode=$mode")
+        log("car hotspot auto-enable: ${result.diagnostic}")
+        return result
+    }
+
+    /** [enable] for [StartMode.ROOT]: no access check and no Android start call, only the shell steps through root. */
+    internal fun enableThroughRoot(
+        deadline: Long,
+        isCancelled: () -> Boolean,
+        isEnabled: () -> Boolean?,
+        isEnabling: () -> Boolean,
+        shell: (String, Long) -> RootShell.Result,
+        helper: String,
+        log: (String) -> Unit,
+    ): Result = enableUntil(deadline, isCancelled, canWrite = { false }, isEnabled, startFallback = null,
+        start = { }, startRoot = { startThroughRoot(deadline, isCancelled, isEnabled, isEnabling, shell, helper, log) })
+
+    private fun startThroughRoot(
+        deadline: Long,
+        isCancelled: () -> Boolean,
+        isEnabled: () -> Boolean?,
+        isEnabling: () -> Boolean,
+        shell: (String, Long) -> RootShell.Result,
+        helper: String,
+        log: (String) -> Unit,
+    ): Result {
+        val unavailable = AtomicReference<String?>()
+        val rejected = AtomicBoolean(false)
+        val outcome = AtomicReference<CarHotspotAdbFallback.Outcome?>()
+        val stopped = { isCancelled() || unavailable.get() != null }
+        val rootShell: (String, Int) -> String? = { command, timeout ->
+            when (val reply = shell(command, timeout.toLong())) {
+                is RootShell.Result.Completed -> if (rootDenied(reply)) {
+                    unavailable.compareAndSet(null, "su denied (exit ${reply.exitCode})")
+                    null
+                } else reply.stdout
+                is RootShell.Result.Unavailable -> {
+                    if (reply.reason != RootShell.TIMED_OUT_REASON && reply.reason != RootShell.INTERRUPTED_REASON)
+                        unavailable.compareAndSet(null, reply.reason)
+                    else log("car hotspot: root shell: ${reply.reason}")
+                    null
+                }
+            }
+        }
+        // The su call runs on its own thread, so cancellation interrupts it and kills su instead of waiting it out.
+        val on = CarHotspotAdbFallback.bounded(deadline, stopped, abort = { }) {
+            CarHotspotAdbFallback.startAndWait(deadline, stopped, isEnabled, isEnabling, rootShell, log, helper,
+                onRejected = { rejected.set(true) })
+                .also(outcome::set) == CarHotspotAdbFallback.Outcome.ON
+        }
+        unavailable.get()?.let { log("car hotspot: root is unavailable: $it") }
+        return when {
+            on -> Result.READY
+            isCancelled() || Thread.currentThread().isInterrupted -> Result.CANCELLED
+            unavailable.get() != null -> Result.ROOT_UNAVAILABLE
+            outcome.get() == CarHotspotAdbFallback.Outcome.UNOBSERVABLE -> Result.UNSUPPORTED
+            rejected.get() -> Result.FAILED
+            System.nanoTime() >= deadline -> Result.TIMED_OUT
+            else -> Result.FAILED
         }
     }
+
+    // Magisk's su prints only this line and exits non-zero when root is denied to the app.
+    private fun rootDenied(reply: RootShell.Result.Completed): Boolean =
+        reply.exitCode != 0 && reply.stdout.trim().lowercase().removePrefix("su: ") == "permission denied"
 
     /** The shell's own tethering call ([CarHotspotStartMain]), for firmware without a hotspot command. */
     private fun shellTetheringHelper(context: Context): String = CarHotspotStartMain.command(context.applicationInfo.sourceDir)
@@ -132,6 +232,7 @@ object CarHotspotTethering {
         isEnabled: () -> Boolean?,
         startFallback: (() -> Boolean)?,
         start: (ResultReceiver) -> Unit,
+        startRoot: (() -> Result)? = null,
     ): Result {
         fun stopped(): Result? = when {
             isCancelled() || Thread.currentThread().isInterrupted -> Result.CANCELLED
@@ -154,6 +255,7 @@ object CarHotspotTethering {
             val initialState = isEnabled()
             stopped()?.let { return it }
             if (initialState == true) return Result.READY
+            if (startRoot != null) return startRoot()
             val permission = canWrite()
             stopped()?.let { return it }
             if (!permission) return Result.PERMISSION_REQUIRED
