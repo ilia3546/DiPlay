@@ -2,7 +2,15 @@ package com.shilapi.xcertplay.network
 
 import com.shilapi.xcertplay.network.RootShell.CommandOutput
 import com.shilapi.xcertplay.network.RootShell.Result
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
+import java.io.PipedInputStream
+import java.io.PipedOutputStream
+import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -71,5 +79,28 @@ class RootShellTest {
         for (name in listOf(null, "", "wlan1 ", "wlan1;id", "wlan1'", "\$(id)", "a".repeat(16))) {
             assertFalse("$name", RootShell.isSafeInterfaceName(name))
         }
+    }
+
+    @Test fun outputLargerThanThePipeIsReadWhileTheCommandRuns() {
+        // dumpsys wifi prints far more than a pipe holds; the command cannot exit until its output is read.
+        val payload = "x".repeat(1_000_000)
+        val pipe = PipedOutputStream()
+        val stdout = PipedInputStream(pipe, 1_024)
+        val writer = thread { pipe.use { it.write(payload.toByteArray()) } }
+        val process = object : Process() {
+            override fun getOutputStream(): OutputStream = ByteArrayOutputStream()
+            override fun getInputStream(): InputStream = stdout
+            override fun getErrorStream(): InputStream = ByteArrayInputStream(ByteArray(0))
+            override fun waitFor(): Int { writer.join(); return 0 }
+            override fun waitFor(timeout: Long, unit: TimeUnit): Boolean {
+                writer.join(unit.toMillis(timeout))
+                return !writer.isAlive
+            }
+            override fun exitValue(): Int = if (writer.isAlive) throw IllegalThreadStateException() else 0
+            override fun destroy() = Unit
+        }
+        val output = RootShell.execute(process, timeoutMillis = 5_000) { it.close() }
+        assertEquals(0, output.exitCode)
+        assertEquals(payload.length, output.stdout.length)
     }
 }
