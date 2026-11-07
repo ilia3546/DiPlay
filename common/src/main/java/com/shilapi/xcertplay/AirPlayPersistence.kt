@@ -2,6 +2,7 @@ package com.shilapi.xcertplay
 
 import android.content.Context
 import android.os.Build
+import androidx.annotation.RawRes
 import com.shilapi.xcertplay.airplay.AirPlayDisplaySettings
 import com.shilapi.xcertplay.airplay.AirPlayPhysicalSizeBasis
 import com.shilapi.xcertplay.airplay.CarPlayDisplayScale
@@ -19,6 +20,8 @@ import com.shilapi.xcertplay.orchestration.ManualHotspotBand
 import com.shilapi.xcertplay.orchestration.ManualHotspotSecurity
 import com.shilapi.xcertplay.orchestration.MfiTarget
 import com.shilapi.xcertplay.orchestration.WirelessHotspotMode
+import com.shilapi.xcertplay.host.R
+import com.shilapi.xcertplay.network.GeelyHeadUnit
 import com.shilapi.xcertplay.network.WifiP2pChannels
 import com.shilapi.xcertplay.transport.LockdownPairRecord
 import java.io.File
@@ -167,6 +170,7 @@ object AirPlayPersistence {
     const val DEFAULT_MANUFACTURER = "DiPlay"
     const val DEFAULT_MODEL = "DiPlay"
     const val DEFAULT_OEM_LABEL = "BYD"
+    const val GEELY_OEM_LABEL = "Geely"
     const val DEFAULT_MFI_I2C_PATH = "/dev/i2c-1"
 
     fun loadAmbientDelaySeconds(context: Context): Int =
@@ -821,11 +825,20 @@ object AirPlayPersistence {
             .apply()
     }
 
+    /** The car button's label until the driver names it: the brand of a known head unit, otherwise BYD. */
+    val defaultOemLabel: String
+        get() = if (GeelyHeadUnit.monjaroA3) GEELY_OEM_LABEL else DEFAULT_OEM_LABEL
+
+    /** The packaged car-button icon used until the driver picks one, matching [defaultOemLabel]'s brand. */
+    @get:RawRes
+    val defaultCarButtonIcon: Int
+        get() = if (GeelyHeadUnit.monjaroA3) R.raw.ic_car_home_geely else R.raw.ic_car_home
+
     fun loadOemLabel(context: Context): String =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getString(KEY_OEM_LABEL, DEFAULT_OEM_LABEL)
+            .getString(KEY_OEM_LABEL, defaultOemLabel)
             // iOS hides the car icon without a label.
-            .orEmpty().ifBlank { DEFAULT_OEM_LABEL }
+            .orEmpty().ifBlank { defaultOemLabel }
 
     fun saveOemLabel(context: Context, oemLabel: String) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
