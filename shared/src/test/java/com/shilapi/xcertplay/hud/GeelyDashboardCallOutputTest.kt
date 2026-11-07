@@ -31,6 +31,9 @@ class GeelyDashboardCallOutputTest {
     private fun call(name: String, number: String, state: Int) =
         Triple("root", GeelyCallMessages.CALL, GeelyCallMessages.call(name, number, state))
 
+    private fun direct(name: String, number: String, state: Int) =
+        Triple("app", GeelyCallMessages.CALL, GeelyCallMessages.call(name, number, state))
+
     private fun duration(seconds: Long) = Triple("app", GeelyCallMessages.DURATION, GeelyCallMessages.duration(seconds))
 
     private val ringing = CarPlayCallCard(CarPlayCallCard.Phase.RINGING, "Anna", number = "+7 900 000-00-00")
@@ -211,7 +214,7 @@ class GeelyDashboardCallOutputTest {
         assertEquals(listOf(
             call("Anna", "+7 900 000-00-00", GeelyCallMessages.INCOMING),
             call("Anna", "+7 900 000-00-00", GeelyCallMessages.TALKING),
-            call("Anna", "+7 900 000-00-00", GeelyCallMessages.TALKING),
+            direct("Anna", "+7 900 000-00-00", GeelyCallMessages.TALKING),
             duration(3),
         ), sent)
     }
@@ -230,8 +233,8 @@ class GeelyDashboardCallOutputTest {
         assertEquals(listOf(
             call("Anna", "+7 900 000-00-00", GeelyCallMessages.INCOMING),
             call("Anna", "+7 900 000-00-00", GeelyCallMessages.ENDED),
-            call("Anna", "+7 900 000-00-00", GeelyCallMessages.ENDED),
-            call("Anna", "+7 900 000-00-00", GeelyCallMessages.IDLE),
+            direct("Anna", "+7 900 000-00-00", GeelyCallMessages.ENDED),
+            direct("Anna", "+7 900 000-00-00", GeelyCallMessages.IDLE),
         ), sent)
     }
 
@@ -248,7 +251,7 @@ class GeelyDashboardCallOutputTest {
             call("Anna", "+7 900 000-00-00", GeelyCallMessages.INCOMING),
             call("Anna", "+7 900 000-00-00", GeelyCallMessages.ENDED),
             call("Anna", "+7 900 000-00-00", GeelyCallMessages.IDLE),
-            call("Anna", "+7 900 000-00-00", GeelyCallMessages.IDLE),
+            direct("Anna", "+7 900 000-00-00", GeelyCallMessages.IDLE),
         ), sent)
     }
 
@@ -283,5 +286,52 @@ class GeelyDashboardCallOutputTest {
     @Test fun retriesWaitLongerUpToTenSeconds() {
         assertEquals(listOf(1_000L, 2_000L, 5_000L, 10_000L, 10_000L, 10_000L),
             (0..5).map(GeelyDashboardCallOutput::retryDelayMillis))
+    }
+
+    @Test fun onlyARetryAfterTheLongestWaitMayStartSu() {
+        val output = output()
+        output.show(ringing)
+        accept = false
+        acceptApp = false
+        output.clear()
+        val waits = (1..6).map {
+            val wait = output.retryDelayMillis
+            sent.clear()
+            output.retry()
+            wait to sent.single().first
+        }
+        assertEquals(listOf(1_000L to "app", 2_000L to "app", 5_000L to "app", 10_000L to "root", 10_000L to "root",
+            10_000L to "root"), waits)
+    }
+
+    @Test fun aCloseIsDeliveredOnceRootWorksAgainAfterItsFailuresStoppedItWithoutANewSession() {
+        var roots = 0
+        var rootWorks = true
+        var clock = 0L
+        val sender = GeelyCabinLan.Sender(
+            direct = { _, _, _ -> throw SecurityException("policy") },
+            root = { _, _, _ -> roots++; if (rootWorks) null else "FAILED Refused" },
+            log = {},
+            now = { clock },
+        )
+        val output = GeelyDashboardCallOutput(
+            send = { subtype, json -> sender.send(GeelyCabinLan.PHONE, subtype, json) },
+            resend = { subtype, json -> sender.sendWithoutRoot(GeelyCabinLan.PHONE, subtype, json) },
+            widgetShown = { marks += it },
+            renewTransport = sender::newSession,
+        )
+        output.show(ringing)
+        rootWorks = false
+        output.clear()
+        while (roots < 1 + GeelyCabinLan.Sender.MAX_ROOT_FAILURES) {
+            clock += output.retryDelayMillis
+            output.retry()
+        }
+        assertTrue(output.undelivered)
+        rootWorks = true
+        clock += output.retryDelayMillis
+        output.retry()
+        assertFalse(output.undelivered)
+        assertEquals(listOf(true, false), marks)
     }
 }

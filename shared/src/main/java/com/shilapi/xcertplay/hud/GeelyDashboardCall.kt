@@ -47,8 +47,9 @@ internal object GeelyCallMessages {
  * What the dashboard's call widget shows. Keeps the wanted call, or the wanted close, until it is delivered: sends
  * the call only when its state, name or number changed, the talk time every [tick] of a delivered call in progress
  * when the second changed, and on [clear] the end of the call and then the idle state, only while a widget of ours
- * may be shown. A message that was not sent leaves [undelivered] set until [retry] or a new wish delivers it. Not
- * thread-safe: [GeelyDashboardCall] calls it from one worker.
+ * may be shown. A message that was not sent leaves [undelivered] set until [retry] or a new wish delivers it; only a
+ * retry after the longest wait may start su, so su starts at most once in that time. Not thread-safe:
+ * [GeelyDashboardCall] calls it from one worker.
  */
 internal class GeelyDashboardCallOutput(
     private val send: (subtype: Int, json: String) -> Boolean,
@@ -61,6 +62,8 @@ internal class GeelyDashboardCallOutput(
     private val log: (String) -> Unit = {},
     /** The clock of [CarPlayCallCard.activeSinceMillis]. */
     private val now: () -> Long = System::currentTimeMillis,
+    /** Lets the transport try again a path it gave up on until its next session. */
+    private val renewTransport: () -> Unit = {},
 ) {
     private var shown = leftBehind
     private var wanted: CarPlayCallCard? = null
@@ -71,10 +74,18 @@ internal class GeelyDashboardCallOutput(
     private var activeSince: Long? = null
     private var lastSecond: Long? = null
 
+    private var retries = 0
+
     var undelivered = false
-        private set
+        private set(value) {
+            field = value
+            if (!value) retries = 0
+        }
 
     val ticking: Boolean get() = activeSince != null
+
+    /** How long to wait before the next [retry]. */
+    val retryDelayMillis: Long get() = retryDelayMillis(retries)
 
     fun show(card: CarPlayCallCard?) {
         wanted = card
@@ -85,7 +96,11 @@ internal class GeelyDashboardCallOutput(
 
     /** Sends again what was not delivered; does nothing once it was. */
     fun retry() {
-        if (undelivered) deliver()
+        if (!undelivered) return
+        val mayStartSu = retryDelayMillis == RETRY_DELAYS_MILLIS.last()
+        retries++
+        if (mayStartSu) renewTransport()
+        deliver(if (mayStartSu) send else resend)
     }
 
     fun tick() {
@@ -95,8 +110,8 @@ internal class GeelyDashboardCallOutput(
         if (resend(GeelyCallMessages.DURATION, GeelyCallMessages.duration(second))) lastSecond = second
     }
 
-    private fun deliver() {
-        val card = wanted ?: return close()
+    private fun deliver(via: (subtype: Int, json: String) -> Boolean = send) {
+        val card = wanted ?: return close(via)
         val json = GeelyCallMessages.call(card.name, card.number, GeelyCallMessages.state(card.phase))
         if (json != lastCall) {
             // Marked before the message: a process killed right after it must still close the widget.
@@ -104,7 +119,7 @@ internal class GeelyDashboardCallOutput(
                 shown = true
                 widgetShown(true)
             }
-            if (!send(GeelyCallMessages.CALL, json)) {
+            if (!via(GeelyCallMessages.CALL, json)) {
                 activeSince = null
                 undelivered = true
                 return
@@ -121,21 +136,21 @@ internal class GeelyDashboardCallOutput(
         tick()
     }
 
-    private fun close() {
+    private fun close(via: (subtype: Int, json: String) -> Boolean) {
         activeSince = null
         if (!shown) {
             undelivered = false
             return
         }
         if (!endSent) {
-            if (!send(GeelyCallMessages.CALL, GeelyCallMessages.call(lastName, lastNumber, GeelyCallMessages.ENDED))) {
+            if (!via(GeelyCallMessages.CALL, GeelyCallMessages.call(lastName, lastNumber, GeelyCallMessages.ENDED))) {
                 undelivered = true
                 return
             }
             endSent = true
             lastCall = null
         }
-        if (!send(GeelyCallMessages.CALL, GeelyCallMessages.call(lastName, lastNumber, GeelyCallMessages.IDLE))) {
+        if (!via(GeelyCallMessages.CALL, GeelyCallMessages.call(lastName, lastNumber, GeelyCallMessages.IDLE))) {
             undelivered = true
             return
         }
@@ -189,7 +204,6 @@ object GeelyDashboardCall : DashboardCall {
     private var link: Link? = null
     private var duration: ScheduledFuture<*>? = null
     private var retry: ScheduledFuture<*>? = null
-    private var retryAttempt = 0
 
     private class Link(val sender: GeelyCabinLan.Sender, val output: GeelyDashboardCallOutput)
 
@@ -237,16 +251,14 @@ object GeelyDashboardCall : DashboardCall {
         if (!output.undelivered) {
             retry?.cancel(false)
             retry = null
-            retryAttempt = 0
             return
         }
         if (retry != null) return
-        val delay = GeelyDashboardCallOutput.retryDelayMillis(retryAttempt++)
         retry = worker.schedule({
             retry = null
             output.retry()
             follow()
-        }, delay, TimeUnit.MILLISECONDS)
+        }, output.retryDelayMillis, TimeUnit.MILLISECONDS)
     }
 
     private fun followDuration() {
@@ -281,6 +293,7 @@ object GeelyDashboardCall : DashboardCall {
             // A commit, not an apply: the process may be killed right after the message.
             widgetShown = { prefs.edit().putBoolean(KEY_WIDGET_SHOWN, it).commit() },
             log = { Log.i(TAG, it) },
+            renewTransport = sender::newSession,
         )
         output.clear()
         Link(sender, output).also { link = it }
