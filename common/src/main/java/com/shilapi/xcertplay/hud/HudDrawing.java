@@ -2,12 +2,16 @@ package com.shilapi.xcertplay.hud;
 
 public final class HudDrawing {
     public static final int WIDTH=800,HEIGHT=480;
-    private static final int CYAN=0xff54d5ff,WHITE=0xfff4fbff,MUTED=0xffc8e2ec,INACTIVE=0xff7a97a3;
+    private static final int CYAN=0xff54d5ff,WHITE=0xfff4fbff,MUTED=0xffc8e2ec,INACTIVE=0xff7a97a3,CALL_GREEN=0xff30d158,CALL_MUTED=0xffff9f0a;
     static final int OTHER_LANE_COLOR=0xffaec6d0;
     static final double OTHER_LANE_OPACITY=1,OTHER_LANE_STROKE=2.2;
     private static final HudPath LANE_UNDERLINE=new HudPath("M8 26.5 H16");
+    private static final HudPath PHONE=new HudPath("M6.6 10.8 A15.1 15.1 0 0 0 13.2 17.4 L15.4 15.2 A1 1 0 0 1 16.4 14.95 C17.5 15.32 18.7 15.52 20 15.52 A1 1 0 0 1 21 16.52 V20 A1 1 0 0 1 20 21 A17 17 0 0 1 3 4 A1 1 0 0 1 4 3 H7.5 A1 1 0 0 1 8.5 4 C8.5 5.25 8.7 6.45 9.07 7.57 A1 1 0 0 1 8.82 8.57 Z");
     private HudDrawing() {}
     public static void draw(HudCanvas canvas,HudFrame frame,HudSettings settings) {
+        draw(canvas,frame,null,settings);
+    }
+    public static void draw(HudCanvas canvas,HudFrame frame,HudCall call,HudSettings settings) {
         float icon,numberFont,unitFont,roadFont,stroke,lane,trip;
         switch (settings.variant) {
             case COMPACT:icon=46;numberFont=48;unitFont=21;roadFont=24;stroke=5;lane=24;trip=20;break;
@@ -16,12 +20,20 @@ public final class HudDrawing {
         }
         canvas=new ScaledCanvas(canvas,settings.scalePercent,settings.centerY);
         double left=64,right=736,y=settings.centerY,k=icon/56.0,x0=left+icon+20*k;
+        if(frame==null){
+            if(call!=null)call(canvas,call,left,right,y,icon,roadFont*1.25f,roadFont*.8f,k,true);
+            return;
+        }
         ManeuverIcon.draw(canvas,frame.kind,left+icon/2,y,icon,stroke,CYAN,frame.exitNumber);
         float baseline=(float)(y+.355*numberFont);double x=x0;
         canvas.text(frame.number,(float)x,baseline,numberFont,WHITE,true);x+=canvas.measure(frame.number,numberFont,true)+5*k;
         canvas.text(frame.unit,(float)x,baseline,unitFont,MUTED,false);x+=canvas.measure(frame.unit,unitFont,false)+20*k;
         canvas.text(fit(canvas,frame.instructionLabel,roadFont,false,(float)(right-x)),(float)x,baseline,roadFont,WHITE,false);
         double rowY=y+icon/2+12*k,tripX=x0;
+        if(call!=null){
+            call(canvas,call,x0,right,rowY+lane/2,lane*1.2,trip*1.15f,trip*.85f,k,false);
+            return;
+        }
         HudLane[] lanes=settings.showLanes ? frame.lanes.toArray(new HudLane[0]) : new HudLane[0];
         if(lanes.length>0){
             double pitch=lane*1.5,gap=pitch-lane,bx=x0+gap/2;
@@ -54,6 +66,21 @@ public final class HudDrawing {
         if(width>available)return;
         for(int i=0;i<spans.length;i++){canvas.text(spans[i],x,baseline,size,colors[i],false);x+=canvas.measure(spans[i],size,false);}
     }
+    private static void call(HudCanvas canvas,HudCall call,double left,double right,double y,double size,float textFont,float mutedFont,double k,boolean centred){
+        double gap=14*k,mutedGap=12*k;
+        double muted=call.mutedLabel.isEmpty() ? 0 : mutedGap+canvas.measure(call.mutedLabel,mutedFont,true);
+        String text=fit(canvas,call.text,textFont,true,(float)(right-left-size-gap-muted));
+        double width=size+gap+canvas.measure(text,textFont,true)+muted;
+        double x=centred ? Math.max(left,(left+right-width)/2) : left;
+        canvas.dot(12,12,12,x,y-size/2,size/24,CALL_GREEN);
+        double glyph=size*.56;
+        canvas.fill(PHONE,x+(size-glyph)/2,y-glyph/2,glyph/24,WHITE);
+        x+=size+gap;
+        canvas.text(text,(float)x,(float)(y+.355*textFont),textFont,WHITE,true);
+        if(muted==0)return;
+        x+=canvas.measure(text,textFont,true)+mutedGap;
+        canvas.text(call.mutedLabel,(float)x,(float)(y+.355*mutedFont),mutedFont,CALL_MUTED,true);
+    }
     private static final class ScaledCanvas implements HudCanvas {
         private final HudCanvas delegate;private final float scale,y;private final double vectorScale;
         ScaledCanvas(HudCanvas delegate,int percent,int y){this.delegate=delegate;this.scale=percent/100f;this.vectorScale=percent/100.0;this.y=y;}
@@ -66,6 +93,7 @@ public final class HudDrawing {
         public void line(float[] points,float width,int color){float[] scaled=new float[points.length];for(int i=0;i<points.length;i+=2){scaled[i]=x(points[i]);scaled[i+1]=y(points[i+1]);}delegate.line(scaled,width*scale,color);}
         public void circle(float x,float y,float radius,float width,int color){delegate.circle(x(x),y(y),radius*scale,width*scale,color);}
         public void path(HudPath path,double x,double y,double pathScale,double width,int color,double opacity){delegate.path(path,400+vectorScale*(x-400),this.y+vectorScale*(y-this.y),pathScale*vectorScale,width,color,opacity);}
+        public void fill(HudPath path,double x,double y,double pathScale,int color){delegate.fill(path,400+vectorScale*(x-400),this.y+vectorScale*(y-this.y),pathScale*vectorScale,color);}
         public void rule(double x,double top,double bottom,double width,int color,double opacity,double dash,double gap){delegate.rule(400+vectorScale*(x-400),y+vectorScale*(top-y),y+vectorScale*(bottom-y),width*vectorScale,color,opacity,dash*vectorScale,gap*vectorScale);}
         public void dot(double cx,double cy,double radius,double x,double y,double pathScale,int color){delegate.dot(cx,cy,radius,400+vectorScale*(x-400),this.y+vectorScale*(y-this.y),pathScale*vectorScale,color);}
         public void beginOpacity(double opacity){delegate.beginOpacity(opacity);}

@@ -30,7 +30,7 @@ public final class AndroidHudCanvas implements HudCanvas {
     @Override public void circle(float x,float y,float radius,float width,int color) {
         stroke(width,color);canvas.drawCircle(x,y,radius,paint);
     }
-    @Override public void path(HudPath source,double x,double y,double scale,double width,int color,double opacity){
+    private static Path android(HudPath source){
         final Path path=new Path();source.replay(new HudPath.Sink(){
             public void move(float x,float y){path.moveTo(x,y);}
             public void line(float x,float y){path.lineTo(x,y);}
@@ -39,7 +39,15 @@ public final class AndroidHudCanvas implements HudCanvas {
             public void arc(float cx,float cy,float radius,float start,float sweep){path.arcTo(new RectF(cx-radius,cy-radius,cx+radius,cy+radius),start,sweep);}
             public void close(){path.close();}
         });
+        return path;
+    }
+    @Override public void path(HudPath source,double x,double y,double scale,double width,int color,double opacity){
+        Path path=android(source);
         canvas.save();canvas.translate((float)x,(float)y);canvas.scale((float)scale,(float)scale);stroke((float)width,color);paint.setAlpha((int)Math.round(((color>>>24)&255)*opacity));canvas.drawPath(path,paint);canvas.restore();
+    }
+    @Override public void fill(HudPath source,double x,double y,double scale,int color){
+        Path path=android(source);paint.setColor(color);paint.setStyle(Paint.Style.FILL);
+        canvas.save();canvas.translate((float)x,(float)y);canvas.scale((float)scale,(float)scale);canvas.drawPath(path,paint);canvas.restore();
     }
     @Override public void rule(double x,double top,double bottom,double width,int color,double opacity,double dash,double gap){
         stroke((float)width,color);paint.setStrokeCap(Paint.Cap.BUTT);paint.setAlpha((int)Math.round(((color>>>24)&255)*opacity));

@@ -49,21 +49,50 @@ class HudRenderTest {
             Triple("ferry", route.copy(maneuverType = 15, distanceMeters = 2500, road = "Паромная переправа",
                 remainingSeconds = 3600, remainingMeters = 41_000), full),
         )
-        val directory = File("build/reports/hud-render").apply { mkdirs() }
         for ((name, glance, settings) in examples) {
-            val bitmap = Bitmap.createBitmap(HudDrawing.WIDTH, HudDrawing.HEIGHT, Bitmap.Config.ARGB_8888)
-            try {
-                val canvas = Canvas(bitmap)
-                canvas.drawColor(Color.BLACK)
-                HudDrawing.draw(AndroidHudCanvas(canvas), HudFrame.from(glance, HudUnits.of(RuntimeEnvironment.getApplication()))!!, settings)
-                val pixels = IntArray(bitmap.width * bitmap.height).also {
-                    bitmap.getPixels(it, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-                }
-                assertTrue("$name draws something", pixels.any { it != Color.BLACK })
-                File(directory, "$name.png").outputStream().use { assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)) }
-            } finally {
-                bitmap.recycle()
+            render(name, HudFrame.from(glance, HudUnits.of(RuntimeEnvironment.getApplication()))!!, null, settings)
+        }
+    }
+
+    @Test fun callsRenderAs800x480Pngs() {
+        val words = HudCallWords.of(RuntimeEnvironment.getApplication())
+        val turn = HudFrame.from(route.copy(maneuverType = 2, distanceMeters = 350, road = "Садовое кольцо",
+            remainingSeconds = 720, remainingMeters = 4200, lanes = lanes(
+                LaneGuidanceLane(0, 0, -90, null), LaneGuidanceLane(1, 0, 0, null),
+                LaneGuidanceLane(2, 2, 0, 90), LaneGuidanceLane(3, 2, 90, null),
+            )), HudUnits.of(RuntimeEnvironment.getApplication()))!!
+        val ringing = HudCall("Анна Петрова", "")
+        val talkingMuted = HudCall("00:05", words.muted)
+        val long = HudCall("Константин Константинопольский, ООО «Международные грузоперевозки»", words.muted)
+        val examples = listOf(
+            Triple("call-ringing", null to ringing, full),
+            Triple("call-incoming-default", null to HudCall(words.incoming, ""),
+                HudSettings(HudSettings.Variant.BALANCED, HudSettings.DEFAULT_Y, HudSettings.DEFAULT_SCALE, true, true)),
+            Triple("call-talking-muted", null to talkingMuted, full),
+            Triple("call-long-name", null to long, full),
+            Triple("call-route", turn to talkingMuted, full),
+            Triple("call-route-long-name", turn to long, full),
+            Triple("call-route-compact", turn to ringing, HudSettings(HudSettings.Variant.COMPACT, HudSettings.DEFAULT_Y, 100, true, true)),
+            Triple("call-route-bold", turn to talkingMuted, HudSettings(HudSettings.Variant.BOLD, HudSettings.DEFAULT_Y, 100, true, true)),
+            Triple("call-bold", null to talkingMuted, HudSettings(HudSettings.Variant.BOLD, HudSettings.DEFAULT_Y, 100, true, true)),
+        )
+        for ((name, shown, settings) in examples) render(name, shown.first, shown.second, settings)
+    }
+
+    private fun render(name: String, frame: HudFrame?, call: HudCall?, settings: HudSettings) {
+        val directory = File("build/reports/hud-render").apply { mkdirs() }
+        val bitmap = Bitmap.createBitmap(HudDrawing.WIDTH, HudDrawing.HEIGHT, Bitmap.Config.ARGB_8888)
+        try {
+            val canvas = Canvas(bitmap)
+            canvas.drawColor(Color.BLACK)
+            HudDrawing.draw(AndroidHudCanvas(canvas), frame, call, settings)
+            val pixels = IntArray(bitmap.width * bitmap.height).also {
+                bitmap.getPixels(it, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
             }
+            assertTrue("$name draws something", pixels.any { it != Color.BLACK })
+            File(directory, "$name.png").outputStream().use { assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)) }
+        } finally {
+            bitmap.recycle()
         }
     }
 }

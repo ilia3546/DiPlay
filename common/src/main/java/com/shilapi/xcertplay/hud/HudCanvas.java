@@ -8,6 +8,7 @@ public interface HudCanvas {
     void line(float[] points,float width,int color);
     void circle(float x,float y,float radius,float width,int color);
     void path(HudPath path,double x,double y,double scale,double width,int color,double opacity);
+    void fill(HudPath path,double x,double y,double scale,int color);
     void rule(double x,double top,double bottom,double width,int color,double opacity,double dash,double gap);
     void dot(double cx,double cy,double radius,double x,double y,double scale,int color);
     void beginOpacity(double opacity);

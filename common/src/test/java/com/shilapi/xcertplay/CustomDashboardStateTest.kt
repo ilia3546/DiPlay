@@ -104,6 +104,22 @@ class CustomDashboardStateTest {
         assertTrue(current!!())
     }
 
+    @Test fun engineeringModeIsWantedFromTheFirstFrameUntilTheExitIsAsked() {
+        connect()
+        assertFalse(state.engineeringModeWanted)
+        drawFirstFrame()
+        assertTrue(state.engineeringModeWanted)
+        state.connectedChanged(false)
+        advance(CustomDashboardState.SESSION_END_GRACE_MILLIS)
+        assertFalse(state.engineeringModeWanted)
+    }
+
+    @Test fun aWindowThatIsNotShownNeverWantsEngineeringMode() {
+        showWorks = false
+        connect()
+        assertFalse(state.engineeringModeWanted)
+    }
+
     @Test fun aSessionThatEndsBeforeTheFirstFrameNeverEnters() {
         connect()
         val frame = pendingFrame!!

@@ -61,6 +61,7 @@ internal object MonjaroDashboardCall {
             app = context.applicationContext
             refresh()
             GeelyWheelKeys.refreshRegistration()
+            MonjaroHud.callsChanged()
         }
     }
 

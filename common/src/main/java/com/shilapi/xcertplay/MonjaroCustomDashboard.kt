@@ -70,6 +70,12 @@ internal class CustomDashboardState(
     private var drawnGeneration: Long? = null
     private var leavingGeneration: Long? = null
     @Volatile private var enterableGeneration: Long? = null
+
+    /**
+     * Whether the window drew its first frame and engineering mode was asked to come on for it and stay; a failed
+     * enter does not turn it off.
+     */
+    val engineeringModeWanted: Boolean get() = enterableGeneration != null
     private val sessionEnd = Runnable {
         sessionActive = false
         update()
@@ -206,6 +212,9 @@ internal object MonjaroCustomDashboard {
 
     /** Main thread: whether the running session has the custom dashboard, until the option is turned off. */
     val sessionEnabled: Boolean get() = state?.sessionEnabled ?: false
+
+    /** Main thread: [CustomDashboardState.engineeringModeWanted] for the running session. */
+    val engineeringModeWanted: Boolean get() = state?.engineeringModeWanted ?: false
 
     /** Main thread: whether the running session's cluster stream was sized for the dashboard. */
     val sessionStream: Boolean get() = state?.sessionStream ?: false

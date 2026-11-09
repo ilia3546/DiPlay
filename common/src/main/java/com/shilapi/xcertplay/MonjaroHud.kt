@@ -17,6 +17,9 @@ import android.view.WindowManager
 import androidx.annotation.RequiresApi
 import com.shilapi.xcertplay.glance.CarPlayGlance
 import com.shilapi.xcertplay.hud.AndroidHudCanvas
+import com.shilapi.xcertplay.hud.CarPlayCalls
+import com.shilapi.xcertplay.hud.HudCall
+import com.shilapi.xcertplay.hud.HudCallWords
 import com.shilapi.xcertplay.hud.HudDrawing
 import com.shilapi.xcertplay.hud.HudFrame
 import com.shilapi.xcertplay.hud.HudSettings
@@ -40,21 +43,25 @@ internal interface HudWindow {
 
     fun hide()
 
-    /** Draws [frame] with [settings] in the shown window; null draws nothing. */
-    fun draw(frame: HudFrame?, settings: HudSettings)
+    /** Draws [frame] and [call] with [settings] in the shown window; null draws nothing. */
+    fun draw(frame: HudFrame?, call: HudCall?, settings: HudSettings)
 }
 
 /**
  * The HUD line during a CarPlay session: the window is wanted while the option is on and a session is connected,
- * and shown while the overlay permission and the head-up display are there too. It stays for the whole session,
- * empty without a route, and redraws on every glance change and once a second, so guidance that expires without
- * another frame leaves the HUD. Main thread only.
+ * or while there is a [call] to show, and shown while the overlay permission and the head-up display are there too.
+ * It stays for the whole session, empty without a route, and redraws on every glance or call change. It also reads
+ * both once a second while it is shown or the iPhone has a call ([calling]): guidance that expires without another
+ * frame leaves the HUD, a call's time runs, and a call that the HUD may show only from some moment on, such as the
+ * AirPlay session going live, appears without a change of its own. Main thread only.
  */
 internal class HudState(
     private val options: () -> MonjaroA3Options,
     private val window: HudWindow,
     private val glance: () -> CarPlayGlance.Snapshot,
     private val units: () -> HudUnits,
+    private val call: () -> HudCall? = { null },
+    private val calling: () -> Boolean = { false },
     private val postDelayed: (delayMillis: Long, Runnable) -> Unit,
     private val cancel: (Runnable) -> Unit,
     private val log: (String) -> Unit = {},
@@ -62,15 +69,17 @@ internal class HudState(
     private var current: MonjaroA3Options? = null
     private var settings: HudSettings? = null
     private var snapshot = CarPlayGlance.Snapshot()
+    private var shownCall: HudCall? = null
+    private var lineWanted = false
     private var watching = false
     private var shown = false
-    private var drawn: Pair<HudFrame?, HudSettings>? = null
+    private var ticking = false
+    private var callDrawn = false
+    private var drawn: Triple<HudFrame?, HudCall?, HudSettings>? = null
     private var loggedManeuver: Triple<Long, Int?, Int?>? = null
-    private val tick = object : Runnable {
-        override fun run() {
-            glanceChanged()
-            if (shown) postDelayed(TICK_MILLIS, this)
-        }
+    private val tick = Runnable {
+        ticking = false
+        glanceChanged()
     }
 
     /** Reads [glance] now: a snapshot posted from another thread may be older than one posted after it. */
@@ -78,12 +87,28 @@ internal class HudState(
         val next = glance()
         val sessionChanged = next.connected != snapshot.connected || next.session != snapshot.session
         snapshot = next
-        if (sessionChanged) update() else redraw()
+        refresh(sessionChanged)
     }
+
+    /** Reads [call] now, as [glanceChanged] reads the glance. */
+    fun callChanged() = refresh(sessionChanged = false)
 
     fun settingChanged() {
         load()
         update()
+    }
+
+    private fun refresh(sessionChanged: Boolean) {
+        val hadCall = shownCall != null
+        shownCall = call()
+        if (sessionChanged || hadCall != (shownCall != null)) place() else redraw()
+        keepTicking()
+    }
+
+    private fun update() {
+        shownCall = call()
+        place()
+        keepTicking()
     }
 
     private fun load(): MonjaroA3Options = options().also {
@@ -91,21 +116,22 @@ internal class HudState(
         settings = it.hudSettings
     }
 
-    private fun update() {
+    private fun place() {
         val options = current ?: load()
-        val wanted = options.hudManeuvers && snapshot.connected
+        lineWanted = options.hudManeuvers && snapshot.connected
+        val wanted = lineWanted || shownCall != null
         if (wanted != watching) {
             watching = wanted
             if (wanted) window.startWatching(::update) else window.stopWatching()
         }
         if (!wanted || !window.available()) {
             if (shown) {
-                cancel(tick)
                 window.hide()
                 shown = false
                 drawn = null
+                logCall(false)
                 // Shows a new window on a head-up display that came back under a new id.
-                if (wanted) update()
+                if (wanted) place()
             }
             return
         }
@@ -115,24 +141,37 @@ internal class HudState(
                 return
             }
             shown = true
-            postDelayed(TICK_MILLIS, tick)
         }
         redraw()
     }
 
+    private fun keepTicking() {
+        val wanted = shown || calling()
+        if (wanted == ticking) return
+        ticking = wanted
+        if (wanted) postDelayed(TICK_MILLIS, tick) else cancel(tick)
+    }
+
     private fun redraw() {
         if (!shown) return
-        val frame = HudFrame.from(snapshot, units())
+        val frame = if (lineWanted) HudFrame.from(snapshot, units()) else null
         val maneuver = Triple(snapshot.session, snapshot.maneuverIndex, snapshot.maneuverType)
         if (frame != null && maneuver != loggedManeuver) {
             loggedManeuver = maneuver
             log("maneuver index=${snapshot.maneuverIndex} type=${snapshot.maneuverType} sign=${frame.kind}" +
                 if (frame.exitNumber > 0) " exit=${frame.exitNumber}" else "")
         }
-        val next = frame to (settings ?: return)
+        val next = Triple(frame, shownCall, settings ?: return)
+        logCall(next.second != null)
         if (next == drawn) return
         drawn = next
-        window.draw(next.first, next.second)
+        window.draw(next.first, next.second, next.third)
+    }
+
+    private fun logCall(drawing: Boolean) {
+        if (drawing == callDrawn) return
+        callDrawn = drawing
+        log(if (drawing) "HUD call shown" else "HUD call hidden")
     }
 
     companion object {
@@ -147,27 +186,29 @@ internal object MonjaroHudDisplay :
 /** Draws one [HudFrame] in the HUD's 800x480 pixels, scaled to fit the view. */
 internal class HudLineView(context: Context) : View(context) {
     private var frame: HudFrame? = null
+    private var call: HudCall? = null
     private var settings: HudSettings? = null
 
     init {
         importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
     }
 
-    fun show(frame: HudFrame?, settings: HudSettings) {
+    fun show(frame: HudFrame?, call: HudCall?, settings: HudSettings) {
         this.frame = frame
+        this.call = call
         this.settings = settings
         invalidate()
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        val frame = frame ?: return
+        if (frame == null && call == null) return
         val settings = settings ?: return
         val scale = minOf(width / HudDrawing.WIDTH.toFloat(), height / HudDrawing.HEIGHT.toFloat())
         canvas.save()
         canvas.translate((width - HudDrawing.WIDTH * scale) / 2, (height - HudDrawing.HEIGHT * scale) / 2)
         canvas.scale(scale, scale)
-        HudDrawing.draw(AndroidHudCanvas(canvas), frame, settings)
+        HudDrawing.draw(AndroidHudCanvas(canvas), frame, call, settings)
         canvas.restore()
     }
 }
@@ -273,8 +314,8 @@ internal class MonjaroHudWindow(
         log("HUD window removed")
     }
 
-    override fun draw(frame: HudFrame?, settings: HudSettings) {
-        view?.show(frame, settings)
+    override fun draw(frame: HudFrame?, call: HudCall?, settings: HudSettings) {
+        view?.show(frame, call, settings)
     }
 }
 
@@ -293,15 +334,32 @@ internal object MonjaroHud {
             window = MonjaroHudWindow(app) { Log.i(TAG, it) },
             glance = CarPlayGlance::snapshot,
             units = { HudUnits.of(AppLocale.wrap(app)) },
+            call = {
+                HudCall.of(
+                    calls = CarPlayCalls.current(),
+                    engineeringMode = MonjaroCustomDashboard.engineeringModeWanted,
+                    callsActive = { MonjaroDashboardCall.active(app) },
+                    nowMillis = System.currentTimeMillis(),
+                    words = { HudCallWords.of(AppLocale.wrap(app)) },
+                )
+            },
+            calling = { CarPlayCalls.current().card != null },
             postDelayed = { delayMillis, task -> main.postDelayed(task, delayMillis) },
             cancel = main::removeCallbacks,
             log = { Log.i(TAG, it) },
         )
         state = created
         CarPlayGlance.observe { main.post(created::glanceChanged) }
+        CarPlayCalls.observe { main.post(created::callChanged) }
+        MonjaroCustomDashboard.observeSettings(created::callChanged)
     }
 
     fun settingChanged() {
         main.post { state?.settingChanged() }
+    }
+
+    /** After a change to whether the calls option acts. */
+    fun callsChanged() {
+        main.post { state?.callChanged() }
     }
 }

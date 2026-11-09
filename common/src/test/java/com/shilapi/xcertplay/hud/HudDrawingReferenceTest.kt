@@ -58,6 +58,7 @@ class HudDrawingReferenceTest {
                 it.width = width.toFloat(); it.color = color; it.opacity = opacity.toFloat()
             }
         }
+        override fun fill(path: HudPath, x: Double, y: Double, scale: Double, color: Int) = throw AssertionError("unexpected fill")
         override fun rule(x: Double, top: Double, bottom: Double, width: Double, color: Int, opacity: Double, dash: Double, gap: Double) {
             op("rule").also {
                 it.x = x.toFloat(); it.y = top.toFloat(); it.size = bottom.toFloat(); it.width = width.toFloat()
