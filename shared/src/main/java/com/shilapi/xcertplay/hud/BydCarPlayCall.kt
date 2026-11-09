@@ -27,7 +27,7 @@ data class CarPlayCallCard(val phase: Phase, val name: String, val activeSinceMi
  * call UUID (4), label (7) and disconnect reason (11). Status: 0 disconnected, 1 sending, 2 ringing,
  * 3 connecting, 4 active, 5 held, 6 disconnecting. Several calls can exist at once (call waiting); the
  * card shows a ringing call first, then a connected (active or held) one, then an outgoing one.
- * The microphone state comes from CommunicationsUpdate (0x4158) mute status (8).
+ * The microphone state comes from CommunicationsUpdate (0x4158) mute status (9).
  */
 class CarPlayCallState(private val clock: () -> Long = System::currentTimeMillis) {
     private data class Call(
@@ -160,7 +160,7 @@ class CarPlayCallState(private val clock: () -> Long = System::currentTimeMillis
         private const val CALL_UUID = 4
         internal const val LABEL = 7
         internal const val DISCONNECT_REASON = 11
-        internal const val MUTE_STATUS = 8
+        internal const val MUTE_STATUS = 9
         private const val REASON_DECLINED = 1
         private const val DISCONNECTED = 0
         private const val SENDING = 1

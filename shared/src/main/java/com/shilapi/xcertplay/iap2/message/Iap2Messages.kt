@@ -301,7 +301,7 @@ object Iap2ControlMessages {
             void(0)
             void(4)
             void(5)
-            void(8)
+            void(9)
         },
         Iap2Messages.build(Iap2Endpoints.START_CALL_STATE_UPDATES) {
             void(0)
