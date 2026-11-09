@@ -35,6 +35,7 @@ class Iap2WirelessControlClient(
         // The caller must prove that the current CarPlay session is usable before keeping it alive.
         keepAliveAfterDeadline: () -> Boolean = { false },
         onProgress: (String) -> Unit = {},
+        onIdentified: (Iap2IdentificationAccepted) -> Unit = {},
     ): Iap2WirelessControlResult {
         require(identification.wireless != null) {
             "Wireless control requires an Iap2IdentificationConfig with wireless transport"
@@ -48,8 +49,9 @@ class Iap2WirelessControlClient(
         if (identified.vehicleStatusEnabled != identification.vehicleStatusEnabled) {
             onProgress("iap2 no battery reading: not declaring an electric vehicle")
         }
-        Iap2IdentificationClient(session).identify(identified, deadline.requireRemaining(), onProgress)
+        val accepted = Iap2IdentificationClient(session).identify(identified, deadline.requireRemaining(), onProgress)
         onProgress("iap2 identification accepted")
+        onIdentified(accepted)
         var stage = Iap2WirelessControlStage.IDENTIFIED
 
         mfi.run(session, deadline.requireRemaining(), onProgress)

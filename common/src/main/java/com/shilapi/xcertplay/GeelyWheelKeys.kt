@@ -61,6 +61,8 @@ internal object GeelyWheelKeys {
     fun refreshRegistration() {
         val (input, registered, context) = synchronized(this) { Triple(manager, listener, appContext) }
         if (input == null || registered == null || context == null) return
+        // The release of a key held now may not come back after the listener is registered again.
+        CarPlayMediaKeys.onExternalHoldStopped("key registration refreshed")
         runCatching { input.unregisterListener(registered, context.packageName) }
         register(input, registered, context)
     }
@@ -97,8 +99,12 @@ internal object GeelyWheelKeys {
                 override fun onShortClick(keyCode: Int, softKeyFunction: Int) {
                     forward(keyCode)
                 }
-                override fun onHoldingPressStarted(keyCode: Int, softKeyFunction: Int) {}
-                override fun onHoldingPressStopped(keyCode: Int, softKeyFunction: Int) {}
+                override fun onHoldingPressStarted(keyCode: Int, softKeyFunction: Int) {
+                    hold(keyCode)
+                }
+                override fun onHoldingPressStopped(keyCode: Int, softKeyFunction: Int) {
+                    if (seekIndex(keyCode) != null) CarPlayMediaKeys.onExternalHoldStopped("released")
+                }
                 override fun onLongPressTriggered(keyCode: Int, softKeyFunction: Int) {
                     Log.i(TAG, "long press key=$keyCode func=$softKeyFunction")
                     // The microphone key's long press: Siri, once the car's HiCar app is disabled.
@@ -116,6 +122,7 @@ internal object GeelyWheelKeys {
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
+            CarPlayMediaKeys.onExternalHoldStopped("input service disconnected")
             val retry: Boolean
             synchronized(this@GeelyWheelKeys) {
                 manager = null
@@ -176,6 +183,17 @@ internal object GeelyWheelKeys {
                 WheelKeyLog.note("media key geely-wheel $it left to the car's Bluetooth")
             },
         )
+    }
+
+    private fun seekIndex(keyCode: Int): Int? = when (keyCode) {
+        GeelyWheelKeyCodes.KEY_NEXT -> CarPlayMediaButton.NEXT
+        GeelyWheelKeyCodes.KEY_PREVIOUS -> CarPlayMediaButton.PREVIOUS
+        else -> null
+    }
+
+    // The firmware sends no short click after a hold, so a hold and [forward] never both act on one press.
+    private fun hold(keyCode: Int) {
+        seekIndex(keyCode)?.let(CarPlayMediaKeys::onExternalHoldStarted)
     }
 
     internal fun sendToCall(controller: CarPlayController?, index: Int, action: GeelyCallKeys.Action) {

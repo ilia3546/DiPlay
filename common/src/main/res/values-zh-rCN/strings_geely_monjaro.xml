@@ -21,6 +21,8 @@
     <string name="settings_dashboard_calls_description">在原厂仪表盘和 HUD 的通话组件以及自定义仪表盘上显示 CarPlay 通话。来电响铃时，方向盘上的“上一曲”键拒接、“下一曲”键接听；通话中“上一曲”键关闭或打开麦克风，“下一曲”键挂断。适用于在 CarPlay 期间断开蓝牙电话的固件，否则仪表盘可能重复显示通话。立即生效。</string>
     <string name="settings_pause_carplay_for_car_audio">车机播放自身音频时暂停 CarPlay（实验性）</string>
     <string name="settings_pause_carplay_for_car_audio_description">当收音机或车机的其他应用开始播放时，DiPlay 会暂停 iPhone，避免两者同时发声。适用于播放器会获取 Android 音频焦点、但 DiPlay 的声音仍继续播放的固件。要切换回来，请在 CarPlay 中重新播放音乐。在此之前，方向盘媒体按键控制车机音源。立即生效。</string>
+    <string name="settings_wheel_seek">长按方向盘上一曲/下一曲快进或快退（实验性）</string>
+    <string name="settings_wheel_seek_description">按住方向盘的下一曲或上一曲键时，CarPlay 曲目每半秒前进或后退 10 秒。短按仍会切换曲目。适用于会把方向盘按键长按告知应用、但不切换曲目的固件。直播和电台、CarPlay 通话期间、方向盘按键归车机音源或视频播放器时，以及 CarPlay 音频走车机蓝牙时不起作用。下次连接时生效。</string>
     <string name="settings_custom_dashboard">带 CarPlay 地图的自定义仪表盘（实验性）</string>
     <string name="settings_custom_dashboard_description">CarPlay 连接期间，DiPlay 在仪表盘上绘制自己的界面：中间是 CarPlay 地图，周围以时钟、车外温度、行程和音乐取代原厂仪表盘两侧的组件。车速、警告灯和底部信息栏仍由固件绘制在上层。适用于在工程模式下显示 Android 仪表盘屏幕的固件。请先关闭 GMC 自定义仪表盘。与中控屏上的仪表盘地图同时使用时，CarPlay 需要多一个视频解码器。需要“显示在其他应用上层”权限。开启后在下次连接时生效，关闭后立即生效。</string>
     <string name="settings_custom_dashboard_background">仪表盘背景</string>

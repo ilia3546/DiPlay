@@ -2,6 +2,7 @@ package com.shilapi.xcertplay.transport
 
 import com.shilapi.xcertplay.iap2.body.Iap2BodyReader
 import com.shilapi.xcertplay.iap2.catalog.Iap2Endpoints
+import com.shilapi.xcertplay.iap2.message.Iap2ControlMessages
 import com.shilapi.xcertplay.iap2.message.Iap2LaneGuidance
 import com.shilapi.xcertplay.iap2.message.Iap2Messages
 import com.shilapi.xcertplay.iap2.session.Iap2Session
@@ -59,6 +60,8 @@ data class Iap2IdentificationConfig(
     val chargingConnectors: EvChargingConnectors = EvChargingConnectors.CCS2_TYPE2,
     /** Also offer wheel speed ($PASCD) in the location component; needs [locationInformationEnabled]. */
     val vehicleSpeedEnabled: Boolean = false,
+    /** Declares SetNowPlayingInformation (0x5003), which moves the iPhone's playback position. */
+    val nowPlayingSeekEnabled: Boolean = false,
 ) {
     constructor(
         name: String,
@@ -105,6 +108,16 @@ data class Iap2IdentificationConfig(
             "carPlayUsbInterfaceNumber must be in 0..255"
         }
     }
+}
+
+/** Identification the iPhone accepted: [config] as sent, less the [omittedMessages] a rejection made it leave out. */
+data class Iap2IdentificationAccepted(
+    val config: Iap2IdentificationConfig,
+    val omittedMessages: Set<Int> = emptySet(),
+) {
+    /** The accessory declared SetNowPlayingInformation and the iPhone kept it. */
+    val nowPlayingSeek: Boolean
+        get() = config.nowPlayingSeekEnabled && Iap2ControlMessages.SET_NOW_PLAYING_INFORMATION !in omittedMessages
 }
 
 /** The two iAP2 links used during one wireless CarPlay connection have different responsibilities. */
@@ -191,7 +204,8 @@ class Iap2IdentificationClient(private val session: Iap2Session) {
         config: Iap2IdentificationConfig,
         timeoutMillis: Long = DEFAULT_TIMEOUT_MILLIS,
         onProgress: (String) -> Unit = {},
-    ) = exchange(session::awaitReady, session::recv, session::send, config, timeoutMillis, onProgress)
+    ): Iap2IdentificationAccepted =
+        exchange(session::awaitReady, session::recv, session::send, config, timeoutMillis, onProgress)
 
     companion object {
         /** The identification exchange over any message link; [identify] runs it on the session. */
@@ -202,7 +216,7 @@ class Iap2IdentificationClient(private val session: Iap2Session) {
             config: Iap2IdentificationConfig,
             timeoutMillis: Long,
             onProgress: (String) -> Unit,
-        ) {
+        ): Iap2IdentificationAccepted {
             require(timeoutMillis in 1..MAXIMUM_TIMEOUT_MILLIS) {
                 "timeoutMillis must be in 1..$MAXIMUM_TIMEOUT_MILLIS"
             }
@@ -217,7 +231,7 @@ class Iap2IdentificationClient(private val session: Iap2Session) {
                     ?: throw IphoneUsbException.TimedOut("Timed out waiting for iAP2 identification")
                 when (frame.messageId) {
                     START_IDENTIFICATION -> send(identificationInformation(config, omitted.orEmpty()), remainingMillis(deadlineNanos))
-                    IDENTIFICATION_ACCEPTED -> return
+                    IDENTIFICATION_ACCEPTED -> return Iap2IdentificationAccepted(config, omitted.orEmpty())
                     IDENTIFICATION_REJECTED -> {
                         val rejection = identificationRejection(frame)
                         if (omitted != null) throw rejection
@@ -319,6 +333,7 @@ class Iap2IdentificationClient(private val session: Iap2Session) {
                     Iap2VehicleStatus.STOP_VEHICLE_STATUS_UPDATES,
                 )
             }
+            if (config.nowPlayingSeekEnabled) sentMessages += Iap2ControlMessages.SET_NOW_PLAYING_INFORMATION
             return Iap2Messages.build(Iap2Endpoints.IDENTIFICATION_INFORMATION) {
                 string(0, config.name)
                 string(1, config.modelIdentifier)

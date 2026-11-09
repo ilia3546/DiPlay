@@ -2198,6 +2198,12 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 AirPlayPersistence.loadPauseCarPlayForCarAudio(this)) {
                 AirPlayPersistence.savePauseCarPlayForCarAudio(this, it)
             }
+            toggle(card, getString(R.string.settings_wheel_seek),
+                getString(R.string.settings_wheel_seek_description),
+                AirPlayPersistence.loadWheelSeek(this)) {
+                AirPlayPersistence.saveWheelSeek(this, it)
+                markReconnectNeeded()
+            }
             val microphoneInputs = MicrophoneInput.entries
             choice(card, getString(R.string.settings_microphone_input), microphoneInputs.map { input ->
                 when (input) {

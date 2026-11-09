@@ -21,6 +21,8 @@
     <string name="settings_dashboard_calls_description">CarPlay の通話を純正メーターと HUD の通話ウィジェット、およびカスタムメーターに表示します。着信中はステアリングの「前へ」で拒否、「次へ」で応答し、通話中は「前へ」でマイクのオン/オフ、「次へ」で通話を終了します。CarPlay 中に Bluetooth 電話を切断するファームウェア向けです。そうでない場合、メーターに通話が二重に表示されることがあります。すぐに反映されます。</string>
     <string name="settings_pause_carplay_for_car_audio">車の音声が再生されたら CarPlay を一時停止（実験的機能）</string>
     <string name="settings_pause_carplay_for_car_audio_description">ラジオやヘッドユニットの他のアプリが再生を始めると、両方が同時に鳴らないよう DiPlay が iPhone を一時停止します。プレーヤーが Android のオーディオフォーカスを取得しても DiPlay の音声が鳴り続けるファームウェア向けです。戻すには CarPlay で音楽を再生してください。 それまではステアリングのメディアボタンは車のソースを操作します。すぐに適用されます。</string>
+    <string name="settings_wheel_seek">ステアリングの次/前を長押しで早送り・巻き戻し（実験的機能）</string>
+    <string name="settings_wheel_seek_description">ステアリングの次または前のキーを押している間、CarPlay の曲を 0.5 秒ごとに 10 秒ずつ早送りまたは巻き戻しします。短く押すと従来どおり曲を切り替えます。曲を切り替えずにステアリングキーの長押しをアプリに伝えるファームウェア向けです。ライブ配信やラジオ、CarPlay の通話中、ステアリングキーが車のソースやビデオプレーヤーにあるとき、CarPlay の音声が車の Bluetooth 経由のときは動作しません。次回の接続から反映されます。</string>
     <string name="settings_custom_dashboard">CarPlay 地図付きのカスタムメーター（実験的機能）</string>
     <string name="settings_custom_dashboard_description">CarPlay の接続中、DiPlay がメーターに独自の画面を表示します。中央に CarPlay の地図、その周囲に純正メーターの左右のウィジェットの代わりに時計、外気温、走行情報、音楽を表示します。速度、警告灯、下部の行はファームウェアがその上に表示し続けます。Android のメーター用ディスプレイをエンジニアリングモードで表示するファームウェア向けです。先に GMC のカスタムメーターをオフにしてください。センター画面のメーター地図と併用すると、CarPlay にビデオデコーダーがもう 1 つ必要です。「他のアプリの上に重ねて表示」の許可が必要です。オンにすると次回の接続から、オフにするとすぐに適用されます。</string>
     <string name="settings_custom_dashboard_background">メーターの背景</string>

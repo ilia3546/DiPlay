@@ -22,6 +22,7 @@ import com.shilapi.xcertplay.airplay.CarPlayMediaButton
 import com.shilapi.xcertplay.compat.AudioFocusRequestCompat
 import com.shilapi.xcertplay.host.R
 import com.shilapi.xcertplay.hud.BydOutputSettings
+import com.shilapi.xcertplay.hud.CarPlayCalls
 import com.shilapi.xcertplay.media.CarPlayNowPlaying
 import com.shilapi.xcertplay.orchestration.CarPlayController
 import java.util.concurrent.Executors
@@ -75,19 +76,33 @@ internal object CarPlayMediaKeys {
     private var artwork: Bitmap? = null
     private val artworkCache = LinkedHashMap<Int, Bitmap?>()
     private var placeholder: Bitmap? = null
+    private var attachedAt = 0L
+    private val holdSeek = HoldSeek()
+    private var holdSeekGeneration = 0
+    private var lastHoldSeekSkip: HoldSeek.Reason? = null
+    private var holdSeekInFlight = false
+    private var holdSeekWaitLogged = false
+    private val playbackClock = HoldSeek.PlaybackClock()
+    private val holdSeekSender = Executors.newSingleThreadExecutor { task ->
+        Thread(task, "diplay-wheel-seek").apply { isDaemon = true }
+    }
+    private val holdSeekTick = Runnable(::onHoldSeekTick)
 
     @Synchronized
     fun attach(context: Context, next: CarPlayController) {
         if (controller !== next) {
             releaseLocked()
             artworkOwner = artworkQueue.newSession()
+            attachedAt = SystemClock.elapsedRealtime()
         }
         appContext = context.applicationContext
         // A new session starts with CarPlay owning the wheel even while the car's radio still plays, so the
         // wheel's play key starts the iPhone instead of the radio.
         if (controller !== next && pauseForCarAudio()) {
-            Log.i(TAG, "session start: CarPlay owns the wheel keys, iPhone playing=${next.nowPlayingSnapshot().playing} " +
-                "car source ${HeadUnitMediaFlags.read(context)}")
+            val line = "session start: CarPlay owns the wheel keys, iPhone playing=${next.nowPlayingSnapshot().playing} " +
+                "car source ${HeadUnitMediaFlags.read(context)}"
+            Log.i(TAG, line)
+            sessionLog(next, line)
             claimMediaCentreLocked()
         }
         controller = next
@@ -114,6 +129,7 @@ internal object CarPlayMediaKeys {
         expected.playbackListener = null
         expected.nowPlayingListener = null
         expected.artworkListener = null
+        stopHoldSeekLocked("session ended")
         controller = null
         GeelyWheelKeys.stop()
         MonjaroDashboardMusic.sessionEnded()
@@ -149,6 +165,7 @@ internal object CarPlayMediaKeys {
                 val update = expected.nowPlayingSnapshot()
                 val previousArtwork = artwork
                 if (albumTrackChanged(nowPlaying, update)) {
+                    stopHoldSeekLocked("track changed")
                     val previousId = nowPlaying.artworkTransferId
                     if (previousId != null) {
                         ambientColorCache.remove(previousId)
@@ -163,6 +180,7 @@ internal object CarPlayMediaKeys {
                         update.artworkTransferId?.let { ambientColorCache[it] })
                     artwork = nextArtwork(update.artworkTransferId, artworkCache, artwork)
                 }
+                playbackClock.observe(update.elapsedMillis, update.playing, SystemClock.elapsedRealtime())
                 if (nowPlaying.elapsedMillis != update.elapsedMillis) {
                     elapsedUpdatedAt = SystemClock.elapsedRealtime()
                     MonjaroDashboardMusic.positionChanged(update.elapsedMillis, elapsedUpdatedAt)
@@ -416,6 +434,8 @@ internal object CarPlayMediaKeys {
     }
 
     private fun releaseLocked() {
+        stopHoldSeekLocked("session ended")
+        playbackClock.reset()
         focusOwner = null
         controller?.let(com.shilapi.xcertplay.media.AmbientMusicController::releasePlaybackOwner)
         artworkOwner = null
@@ -482,17 +502,31 @@ internal object CarPlayMediaKeys {
     }
 
     private fun send(index: Int, source: String): Boolean {
+        val (active, state) = synchronized(this) { controller to wheelStateLocked() }
         // While the car's video player is on screen the wheel drives it: a CarPlay play/pause would
         // make the iPhone end the video session.
         if (CarPlayVideo.onMediaKey(index)) {
             Log.i(TAG, "media key $source -> car video player $index")
             WheelKeyLog.note("media key $source -> car video player $index")
+            sessionLog(active, "media key $source -> car video player $index | $state")
             return false
         }
-        val sent = synchronized(this) { controller }?.sendMediaButton(index) ?: false
+        val sent = active?.sendMediaButton(index) ?: false
         Log.i(TAG, "media key $source -> CarPlay $index sent=$sent")
         WheelKeyLog.note("media key $source -> CarPlay $index sent=$sent")
+        sessionLog(active, "media key $source -> CarPlay $index sent=$sent | $state")
         return sent
+    }
+
+    /** What decides the answer to a media key, for the session log; the iPhone's metadata only as present or not. */
+    private fun wheelStateLocked(): String =
+        "playing=${nowPlaying.playing} title=${nowPlaying.title != null} elapsed=${nowPlaying.elapsedMillis != null} " +
+            "mediaAudio=$mediaAudioActive focusHeld=$focusHeld carAudioOwnsWheel=$carAudioOwnsWheel " +
+            "sinceAttach=${if (controller == null) "none" else "${SystemClock.elapsedRealtime() - attachedAt}ms"}"
+
+    // Into the session log too: a head unit's logcat can roll over before anyone saves it.
+    private fun sessionLog(target: CarPlayController?, message: String) {
+        if (target != null) mainHandler.post { target.diagnosticLog(message) }
     }
 
     private fun notUsed(source: String) {
@@ -500,15 +534,126 @@ internal object CarPlayMediaKeys {
         WheelKeyLog.note("media key $source not used by CarPlay")
     }
 
+    /** Who answers a steering-wheel media key; [reason] says it in the session log. */
+    internal enum class WheelKeyOwner(val reason: String) {
+        CARPLAY("CarPlay"),
+        CAR_SOURCE("the car's source has the wheel keys"),
+        CAR_VIDEO_PLAYER("the car's video player is on screen"),
+        CALL("CarPlay call"),
+        CAR_BLUETOOTH_AUDIO("car Bluetooth audio"),
+    }
+
+    // One answer for a short press and for a held key. A short press during a call or with the car's Bluetooth audio
+    // was already routed by GeelyCallKeys.route before it got here, and keeps that routing.
+    private fun wheelKeyOwnerLocked(): WheelKeyOwner = when {
+        // The car's source hears the same key itself; forwarding it too would start CarPlay over it.
+        carAudioOwnsWheel -> WheelKeyOwner.CAR_SOURCE
+        CarPlayVideo.activity != null -> WheelKeyOwner.CAR_VIDEO_PLAYER
+        CarPlayCalls.current().card != null -> WheelKeyOwner.CALL
+        appContext?.let(AirPlayPersistence::loadCarBluetoothAudio) == true -> WheelKeyOwner.CAR_BLUETOOTH_AUDIO
+        else -> WheelKeyOwner.CARPLAY
+    }
+
     /** A steering-wheel media key captured outside the Android key stream (Geely/Lynk). */
     internal fun onExternalMediaKey(index: Int) {
-        // The car's source hears the same key itself; forwarding it too would start CarPlay over it.
-        if (synchronized(this) { carAudioOwnsWheel }) {
+        val (active, owner, state) = synchronized(this) { Triple(controller, wheelKeyOwnerLocked(), wheelStateLocked()) }
+        if (owner == WheelKeyOwner.CAR_SOURCE) {
             Log.i(TAG, "media key geely-wheel $index left to the car's source")
             WheelKeyLog.note("media key geely-wheel $index left to the car's source")
+            sessionLog(active, "media key geely-wheel $index left to the car's source | $state")
             return
         }
         if (send(index, "geely-wheel")) noteWheelKeyHandled()
+    }
+
+    private fun wheelSeekEnabled(context: Context): Boolean = MonjaroA3Options.load(context).wheelSeek
+
+    /** Next or previous held on the steering wheel (Geely/Lynk): seeks the iPhone's track until [onExternalHoldStopped]. */
+    internal fun onExternalHoldStarted(index: Int) {
+        mainHandler.post { synchronized(this) { startHoldSeekLocked(index) } }
+    }
+
+    internal fun onExternalHoldStopped(reason: String) {
+        mainHandler.post { synchronized(this) { stopHoldSeekLocked(reason) } }
+    }
+
+    private fun startHoldSeekLocked(index: Int) {
+        stopHoldSeekLocked("restarted")
+        val active = controller ?: return
+        val owner = wheelKeyOwnerLocked()
+        val reason = when {
+            !active.canSeekNowPlaying() -> "not declared by this connection"
+            owner != WheelKeyOwner.CARPLAY -> owner.reason
+            else -> null
+        }
+        if (reason != null) {
+            sessionLog(active, "wheel seek key=$index not started: $reason")
+            return
+        }
+        val now = SystemClock.elapsedRealtime()
+        val position = playbackClock.positionAt(now)
+        sessionLog(active, "wheel seek start key=$index position=${position ?: "none"} " +
+            "duration=${nowPlaying.durationMillis ?: "none"} playing=${nowPlaying.playing}")
+        lastHoldSeekSkip = null
+        holdSeekWaitLogged = false
+        val notStarted = holdSeek.start(index == CarPlayMediaButton.NEXT, position, nowPlaying.durationMillis, now)
+        if (notStarted != null) {
+            sessionLog(active, "wheel seek skip reason=${notStarted.name.lowercase()}")
+            return
+        }
+        advanceHoldSeekLocked(active)
+    }
+
+    private fun onHoldSeekTick() = synchronized(this) {
+        val active = controller
+        if (active == null || !holdSeek.active) return@synchronized
+        val owner = wheelKeyOwnerLocked()
+        val stop = when {
+            holdSeek.expired(SystemClock.elapsedRealtime()) -> "timeout"
+            appContext?.let(::wheelSeekEnabled) != true -> "setting off"
+            owner != WheelKeyOwner.CARPLAY -> owner.reason
+            else -> null
+        }
+        if (stop != null) stopHoldSeekLocked(stop) else advanceHoldSeekLocked(active)
+    }
+
+    // One step at most is on its way to the iPhone: a tick while it is still being written is skipped.
+    private fun advanceHoldSeekLocked(active: CarPlayController) {
+        if (holdSeekInFlight) {
+            if (!holdSeekWaitLogged) {
+                holdSeekWaitLogged = true
+                sessionLog(active, "wheel seek tick skipped: previous step still sending")
+            }
+        } else when (val step = holdSeek.next()) {
+            is HoldSeek.Step.Seek -> {
+                holdSeekInFlight = true
+                val generation = holdSeekGeneration
+                holdSeekSender.execute {
+                    val result = active.seekNowPlaying(step.targetMillis) {
+                        synchronized(this) { holdSeekGeneration == generation }
+                    }
+                    synchronized(this) { holdSeekInFlight = false }
+                    // The media centre may answer the held key with its own source; that echo must not take the wheel.
+                    if (result == CarPlayController.NowPlayingSeekResult.SENT) noteWheelKeyHandled()
+                    sessionLog(active, "wheel seek step=${step.number} delta=${step.deltaMillis} " +
+                        "target=${step.targetMillis} result=${result.name.lowercase()}")
+                }
+            }
+            is HoldSeek.Step.Skip -> if (step.reason != lastHoldSeekSkip) {
+                lastHoldSeekSkip = step.reason
+                sessionLog(active, "wheel seek skip reason=${step.reason.name.lowercase()}")
+            }
+        }
+        if (holdSeek.active) mainHandler.postDelayed(holdSeekTick, HoldSeek.INTERVAL_MILLIS)
+    }
+
+    private fun stopHoldSeekLocked(reason: String) {
+        mainHandler.removeCallbacks(holdSeekTick)
+        holdSeekGeneration++
+        if (!holdSeek.active) return
+        val steps = holdSeek.steps
+        holdSeek.stop()
+        sessionLog(controller, "wheel seek stop reason=$reason steps=$steps")
     }
 
     /** DiPlay acted on a steering-wheel key, for CarPlay's media or its call: the car may echo it for a moment. */

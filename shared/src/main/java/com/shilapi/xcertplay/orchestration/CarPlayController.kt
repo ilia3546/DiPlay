@@ -31,6 +31,7 @@ import com.shilapi.xcertplay.airplay.AirPlayKnobState
 import com.shilapi.xcertplay.airplay.AirPlayDeviceInfo
 import com.shilapi.xcertplay.airplay.AirPlayIdentity
 import com.shilapi.xcertplay.airplay.AirPlayMediaHandler
+import com.shilapi.xcertplay.airplay.AirPlayModesSummary
 import com.shilapi.xcertplay.airplay.AirPlaySession
 import com.shilapi.xcertplay.airplay.AirPlaySessionListener
 import com.shilapi.xcertplay.airplay.PairingStore
@@ -303,6 +304,8 @@ class CarPlayController(
     @Volatile private var bluetoothSocket: BluetoothSocket? = null
     @Volatile private var bluetoothStream: BluetoothRfcommDuplexStream? = null
     @Volatile private var wirelessTunnelChannel: Iap2Session? = null
+    // The runtime link whose identification the iPhone accepted with SetNowPlayingInformation.
+    @Volatile private var nowPlayingSeekChannel: Iap2Session? = null
     @Volatile private var wirelessRuntimeIdentification: Iap2IdentificationConfig? = null
     @Volatile private var wirelessAirPlayEndpoint: Iap2WirelessCarPlayEndpoint? = null
     @Volatile private var vpnService: CarPlayVpnService? = null
@@ -475,7 +478,8 @@ class CarPlayController(
 
         override fun onCommand(session: AirPlaySession, type: String, params: Map<String, Any?>) {
             debugLog(
-                "AirPlay command type=$type params=${params.keys.sorted().joinToString(",")}",
+                "AirPlay command type=$type params=${params.keys.sorted().joinToString(",")}" +
+                    if (type == "modesChanged") " ${AirPlayModesSummary.describe(params)}" else "",
             )
             if (
                 config.transport == CarPlayTransport.WIRELESS &&
@@ -739,6 +743,45 @@ class CarPlayController(
         }
     }
 
+    enum class NowPlayingSeekResult { SENT, FAILED, CLOSED, INACTIVE_SESSION, CHANNEL_UNAVAILABLE, NOT_DECLARED, CANCELLED }
+
+    // The RFCOMM bootstrap is not the runtime metadata channel after wireless handoff.
+    private fun metadataChannel(): Iap2Session? =
+        if (config.transport == CarPlayTransport.WIRELESS) wirelessTunnelChannel else csm
+
+    /** This connection's iPhone accepted SetNowPlayingInformation on the link that carries now playing. */
+    fun canSeekNowPlaying(): Boolean {
+        if (closed || activeSession == null) return false
+        val declared = nowPlayingSeekChannel
+        return declared != null && declared === metadataChannel()
+    }
+
+    /**
+     * Moves the iPhone's current item to [elapsedMillis] with iAP2 SetNowPlayingInformation. Waits for the write,
+     * so not on the main thread. [stillWanted] runs just before the write; false cancels it.
+     */
+    fun seekNowPlaying(elapsedMillis: Long, stillWanted: () -> Boolean = { true }): NowPlayingSeekResult {
+        if (closed) return NowPlayingSeekResult.CLOSED
+        if (activeSession == null) return NowPlayingSeekResult.INACTIVE_SESSION
+        val channel = metadataChannel() ?: return NowPlayingSeekResult.CHANNEL_UNAVAILABLE
+        if (channel !== nowPlayingSeekChannel) return NowPlayingSeekResult.NOT_DECLARED
+        if (!stillWanted()) return NowPlayingSeekResult.CANCELLED
+        return try {
+            channel.send(com.shilapi.xcertplay.iap2.message.Iap2ControlMessages.setNowPlayingElapsed(elapsedMillis), 250)
+            NowPlayingSeekResult.SENT
+        } catch (_: Exception) {
+            NowPlayingSeekResult.FAILED
+        }
+    }
+
+    private fun nowPlayingSeekAccepted(channel: Iap2Session, accepted: com.shilapi.xcertplay.transport.Iap2IdentificationAccepted) {
+        nowPlayingSeekChannel = channel.takeIf { accepted.nowPlayingSeek }
+        if (accepted.config.nowPlayingSeekEnabled) debugLog("iap2 SetNowPlayingInformation accepted=${accepted.nowPlayingSeek}")
+    }
+
+    /** Writes [message] to the session log of the attached UI, like the controller's own diagnostics. */
+    fun diagnosticLog(message: String) = debugLog(message)
+
     override fun close() {
         synchronized(wirelessResourceLock) {
             if (closed) return
@@ -928,8 +971,7 @@ class CarPlayController(
                 if (closed) { result = InitialAlbumRefreshResult.CLOSED; return@run }
                 if (activeSession == null) { result = InitialAlbumRefreshResult.INACTIVE_SESSION; return@run }
                 if (!stillNeeded()) return@run
-                // The RFCOMM bootstrap is not the runtime metadata channel after wireless handoff.
-                val channel = if (config.transport == CarPlayTransport.WIRELESS) wirelessTunnelChannel else csm
+                val channel = metadataChannel()
                 if (channel == null) {
                     result = InitialAlbumRefreshResult.CHANNEL_UNAVAILABLE
                     debugLog("album recovery skipped channel=unavailable")
@@ -1758,6 +1800,7 @@ class CarPlayController(
                         },
                         onIncoming = ::onRouteFrame,
                         onProgress = { message -> debugLog("iAP tunnel $message") },
+                        onIdentified = { accepted -> nowPlayingSeekAccepted(channel, accepted) },
                     )
                     if (closed || generation != wirelessGeneration.get()) return@execute
                     when (result.terminal) {
@@ -2488,6 +2531,7 @@ class CarPlayController(
                     }
                     debugLog("wired $message")
                 },
+                onIdentified = { accepted -> nowPlayingSeekAccepted(csm, accepted) },
                 startSessionAgain = ::startAgain,
             )
             onStatus(

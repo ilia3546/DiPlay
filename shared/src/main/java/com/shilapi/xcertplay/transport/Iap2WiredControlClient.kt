@@ -29,6 +29,7 @@ class Iap2WiredControlClient(
         vehicleStatusProvider: VehicleStatusProvider? = null,
         onIncoming: (Iap2Frame) -> Unit = {},
         onProgress: (String) -> Unit = {},
+        onIdentified: (Iap2IdentificationAccepted) -> Unit = {},
         beforeSubscriptions: () -> Unit = {},
         startSessionAgain: () -> StartAgain = { StartAgain.DONE },
     ): Iap2WiredControlResult {
@@ -44,8 +45,9 @@ class Iap2WiredControlClient(
         if (identified.vehicleStatusEnabled != identification.vehicleStatusEnabled) {
             onProgress("iap2 no battery reading: not declaring an electric vehicle")
         }
-        Iap2IdentificationClient(session).identify(identified, requireRemaining(deadlineNanos), onProgress)
+        val accepted = Iap2IdentificationClient(session).identify(identified, requireRemaining(deadlineNanos), onProgress)
         onProgress("iap2 identification accepted")
+        onIdentified(accepted)
         var stage = Iap2WiredControlStage.IDENTIFIED
         mfi.run(session, requireRemaining(deadlineNanos), onProgress)
         stage = Iap2WiredControlStage.AUTHENTICATED

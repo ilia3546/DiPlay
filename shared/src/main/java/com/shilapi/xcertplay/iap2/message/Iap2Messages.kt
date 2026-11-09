@@ -285,6 +285,14 @@ object Iap2ControlMessages {
             }
         }
 
+    /** SetNowPlayingInformation: moves the iPhone's current item to [elapsedMillis] (ElapsedTime, u32 ms). */
+    fun setNowPlayingElapsed(elapsedMillis: Long): Iap2Frame =
+        Iap2Messages.buildRaw(SET_NOW_PLAYING_INFORMATION) {
+            u32(0, elapsedMillis)
+        }
+
+    const val SET_NOW_PLAYING_INFORMATION = 0x5003
+
     fun subscriptions(): List<Iap2Frame> = listOf(
         startNowPlayingUpdates(),
         Iap2Messages.build(Iap2Endpoints.START_ROUTE_GUIDANCE_UPDATES) {

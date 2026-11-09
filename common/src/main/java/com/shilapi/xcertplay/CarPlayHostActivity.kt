@@ -214,6 +214,7 @@ open class CarPlayHostActivity : ComponentActivity() {
             chargingConnectors = com.shilapi.xcertplay.hud.BydOutputSettings.chargingConnectors(this),
             vehicleSpeedEnabled = locationReportingEnabled &&
                 (com.shilapi.xcertplay.hud.BydOutputSettings.wheelSpeedToIphoneActive(this) || EcarxWheelSpeed.present()),
+            nowPlayingSeekEnabled = monjaroA3.wheelSeek,
         ),
         label = "DiPlay",
         hostName = "diplay-" + DiPlayBootstrap.deviceId(airPlayIdentity).replace(":", "").lowercase(),
