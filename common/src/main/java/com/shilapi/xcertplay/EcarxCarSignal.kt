@@ -7,32 +7,39 @@ import android.os.IBinder
 import android.os.SystemClock
 import android.util.Log
 import com.shilapi.xcertplay.transport.VehicleGear
-import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Proxy
 
 /**
- * The latest speed and gear values with the time the speed came, from either ECARX source, and the
- * summary [EcarxWheelSpeed.status] gives of them.
+ * The latest speed and gear values with the time they came, from either ECARX source, and the summary
+ * [EcarxWheelSpeed.status] gives of them.
  */
 internal class EcarxSignalReadings {
     private var speed: Float? = null
     private var speedMillis = 0L
     private var gearCode: Int? = null
     private var gear: VehicleGear? = null
-    private var events = 0
+    private var eventMillis: Long? = null
+    private var error: String? = null
+    private var errorMillis = 0L
 
     @Synchronized
     fun speed(raw: Float, elapsedMillis: Long) {
         speed = raw
         speedMillis = elapsedMillis
-        events++
+        eventMillis = elapsedMillis
     }
 
     @Synchronized
-    fun gear(code: Int, gear: VehicleGear?) {
+    fun gear(code: Int, gear: VehicleGear?, elapsedMillis: Long) {
         gearCode = code
         this.gear = gear
-        events++
+        eventMillis = elapsedMillis
+    }
+
+    @Synchronized
+    fun error(text: String, elapsedMillis: Long) {
+        error = text
+        errorMillis = elapsedMillis
     }
 
     /** The speed in m/s, or null when none came in the last [FRESH_MILLIS] or it is implausible. */
@@ -46,12 +53,13 @@ internal class EcarxSignalReadings {
     @Synchronized
     fun gear(): VehicleGear? = gear
 
-    /** The speed's age and value, the gear and the events since the previous call. */
     @Synchronized
     fun describe(nowMillis: Long): String {
         val age = speed?.let { "${nowMillis - speedMillis} speed=$it" } ?: "none"
         val gearText = gear?.letter?.toString() ?: gearCode?.let { "raw $it" } ?: "none"
-        return "speedAgeMs=$age gear=$gearText events=$events".also { events = 0 }
+        val event = eventMillis?.let { nowMillis - it } ?: "none"
+        val lastError = error?.let { " lastError=$it ${(nowMillis - errorMillis) / 1000}s ago" }.orEmpty()
+        return "speedAgeMs=$age gear=$gearText lastEventAgoMs=$event$lastError"
     }
 
     @Synchronized
@@ -59,82 +67,138 @@ internal class EcarxSignalReadings {
         speed = null
         gearCode = null
         gear = null
-        events = 0
+        eventMillis = null
+        error = null
     }
 
     companion object {
         /** `car_signal` sends the speed about twice a second while the car stands, and only faster on the move. */
         const val FRESH_MILLIS = 1_500L
 
-        /** `GearLvrIndcn`, the selector lever position. */
+        /** `GearLvrIndcn`, the selector lever position; 4 is manual mode, 5-7 are reserved or undefined. */
         fun leverGear(code: Int): VehicleGear? = when (code) {
             0 -> VehicleGear.PARK
             1 -> VehicleGear.REVERSE
             2 -> VehicleGear.NEUTRAL
-            3 -> VehicleGear.DRIVE
+            3, 4 -> VehicleGear.DRIVE
             else -> null
         }
     }
 }
 
 /**
- * Speed and gear events from the `car_signal` manager of `ecarx.car`, reached by reflection, into [readings].
- * Firmware that refuses AdaptAPI to apps without an ECARX signature still serves `car_signal` to an ordinary
- * app. `VehSpdLgtA` is in m/s and has no sign, so reverse comes from the gear; it arrives about twice a second
- * while the car stands and 12-25 times a second on the move. `GearLvrIndcn` arrives at subscription and on
- * each change.
+ * Where the `car_signal` connection stands, and when to open it again. The `ecarx.car` wrapper unbinds itself
+ * when its service goes away or its bind retries run out, and never connects that car again, so each loss
+ * means a new car after [RETRY_MILLIS]. A [generation] tells a new car's service callbacks from an old one's.
+ */
+internal class EcarxSignalLink {
+    private enum class State { CLOSED, CONNECTING, CONNECTED, SUBSCRIBED, LOST }
+
+    private var state = State.CLOSED
+    private var lostReason = ""
+    private var lostMillis = 0L
+    @Volatile var generation = 0
+        private set
+
+    @Synchronized
+    fun shouldOpen(nowMillis: Long): Boolean =
+        state == State.CLOSED || state == State.LOST && nowMillis - lostMillis >= RETRY_MILLIS
+
+    /** The generation of the car about to open. */
+    @Synchronized
+    fun opening(): Int {
+        state = State.CONNECTING
+        return ++generation
+    }
+
+    @Synchronized
+    fun connected(generation: Int) {
+        if (generation == this.generation && state == State.CONNECTING) state = State.CONNECTED
+    }
+
+    @Synchronized
+    fun shouldSubscribe(): Boolean = state == State.CONNECTED
+
+    @Synchronized
+    fun subscribed() {
+        if (state == State.CONNECTED) state = State.SUBSCRIBED
+    }
+
+    @Synchronized
+    fun lost(generation: Int, reason: String, nowMillis: Long) {
+        if (generation != this.generation || state == State.LOST) return
+        state = State.LOST
+        lostReason = reason
+        lostMillis = nowMillis
+    }
+
+    @Synchronized
+    fun describe(): String = when (state) {
+        State.CLOSED, State.CONNECTING -> if (generation > 1) "reconnecting" else "connecting"
+        State.CONNECTED -> "connected"
+        State.SUBSCRIBED -> "subscribed"
+        State.LOST -> "$lostReason, reconnecting"
+    }
+
+    companion object {
+        const val RETRY_MILLIS = 5_000L
+    }
+}
+
+/**
+ * Speed and gear events from the `car_signal` manager of `ecarx.car` into [readings]. Firmware that refuses
+ * AdaptAPI to apps without an ECARX signature still serves `car_signal` to an ordinary app. `VehSpdLgtA` is in
+ * m/s and has no sign, so reverse comes from the gear; it arrives about twice a second while the car stands
+ * and 12-25 times a second on the move. `GearLvrIndcn` arrives at subscription and on each change.
  *
- * [open], [subscribe] and [close] run on the polling thread; the service connection and the events come on others.
+ * [poll] and [close] run on the polling thread; the service connection and the events come on others.
  */
 internal class EcarxCarSignal(private val app: Context, private val readings: EcarxSignalReadings) {
-    @Volatile private var car: Any? = null
-    @Volatile private var connected = false
-    @Volatile private var speedId: Int? = null
-    @Volatile private var gearId: Int? = null
+    private val link = EcarxSignalLink()
+    private var car: Any? = null
     private var manager: Any? = null
     private var callback: Any? = null
+    @Volatile private var speedId: Int? = null
+    @Volatile private var gearId: Int? = null
     private var failureLogged = false
-    @Volatile private var state = "connecting"
-    @Volatile private var lastError: String? = null
 
-    /** connecting, subscribed or error with the exception's class, then the last `onErrorEvent` if any. */
-    fun status(): String = state + lastError?.let { " lastError=$it" }.orEmpty()
+    /** connecting, connected, subscribed, or what was lost and that it reconnects. */
+    fun status(): String = link.describe()
 
-    fun open() {
+    /** Opens a new car after a loss and subscribes once its service is connected. */
+    fun poll(nowMillis: Long) {
+        if (link.shouldOpen(nowMillis)) {
+            drop()
+            open(nowMillis)
+        }
+        if (link.shouldSubscribe()) subscribe(nowMillis)
+    }
+
+    fun close() {
+        drop()
+    }
+
+    private fun open(nowMillis: Long) {
+        val generation = link.opening()
         val listener = object : ServiceConnection {
-            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                connected = true
-            }
+            override fun onServiceConnected(name: ComponentName?, service: IBinder?) = link.connected(generation)
 
-            override fun onServiceDisconnected(name: ComponentName?) {
-                connected = false
-                state = "connecting"
-            }
+            override fun onServiceDisconnected(name: ComponentName?) =
+                link.lost(generation, "disconnected", SystemClock.elapsedRealtime())
         }
         try {
-            val type = Class.forName(CAR)
-            val created = type.getMethod("createCar", Context::class.java, ServiceConnection::class.java)
-                .invoke(null, app, listener)
+            val created = EcarxCar.create(app, listener)
             car = created
-            type.getMethod("connect").invoke(created)
+            EcarxCar.connect(created)
         } catch (error: Throwable) {
-            failed("ecarx.car unavailable", error)
+            failed(generation, "ecarx.car unavailable", error, nowMillis)
         }
     }
 
-    /** Subscribes once the service is connected, and again after it reconnects; retries a failed subscription. */
-    fun subscribe() {
+    private fun subscribe(nowMillis: Long) {
         val car = car ?: return
-        if (!connected) {
-            manager = null
-            callback = null
-            return
-        }
-        if (callback != null) return
         try {
-            val manager = requireNotNull(car.javaClass.getMethod("getCarManager", String::class.java).invoke(car, "car_signal")) {
-                "no car_signal"
-            }
+            val manager = EcarxCar.manager(car, "car_signal")
             val filterType = Class.forName(FILTER)
             val filter = filterType.getConstructor().newInstance()
             val speed = manager.javaClass.getField("SignalId_VehSpdLgtA").getInt(null)
@@ -148,27 +212,28 @@ internal class EcarxCarSignal(private val app: Context, private val readings: Ec
             val callback = Proxy.newProxyInstance(app.classLoader, arrayOf(callbackType)) { proxy, method, args ->
                 when (method.name) {
                     "onChangeEvent" -> args?.firstOrNull()?.let(::changed)
-                    "onErrorEvent" -> lastError = "onErrorEvent ${args?.contentToString()}"
+                    "onErrorEvent" -> readings.error("onErrorEvent ${args?.contentToString()}", SystemClock.elapsedRealtime())
                     "hashCode" -> return@newProxyInstance System.identityHashCode(proxy)
                     "equals" -> return@newProxyInstance proxy === args?.firstOrNull()
                     "toString" -> return@newProxyInstance "DiPlay car_signal speed callback"
                 }
                 null
             }
-            manager.javaClass.getMethod("registerCallback", callbackType, filterType).invoke(manager, callback, filter)
+            // The manager keeps the callback and its signals before the remote call can throw, and then
+            // skips signals it already holds, so after a failure only a new car registers them again.
             this.manager = manager
             this.callback = callback
-            state = "subscribed"
+            manager.javaClass.getMethod("registerCallback", callbackType, filterType).invoke(manager, callback, filter)
+            link.subscribed()
             failureLogged = false
             Log.i(TAG, "car_signal speed and gear subscribed")
         } catch (error: Throwable) {
-            failed("car_signal subscription failed", error)
+            failed(link.generation, "car_signal subscription failed", error, nowMillis)
+            drop()
         }
     }
 
-    fun close() {
-        val car = car ?: return
-        this.car = null
+    private fun drop() {
         val manager = manager
         val callback = callback
         if (manager != null && callback != null) {
@@ -176,7 +241,8 @@ internal class EcarxCarSignal(private val app: Context, private val readings: Ec
         }
         this.manager = null
         this.callback = null
-        runCatching { car.javaClass.getMethod("disconnect").invoke(car) }
+        car?.let(EcarxCar::disconnect)
+        car = null
     }
 
     private fun changed(value: Any) {
@@ -184,26 +250,23 @@ internal class EcarxCarSignal(private val app: Context, private val readings: Ec
         runCatching {
             val id = value.javaClass.getMethod("getPropertyId").invoke(value) as? Int
             val raw = value.javaClass.getMethod("getValue").invoke(value) as? Number ?: return
+            val now = SystemClock.elapsedRealtime()
             when (id) {
-                speedId -> readings.speed(raw.toFloat(), SystemClock.elapsedRealtime())
-                gearId -> raw.toInt().let { readings.gear(it, EcarxSignalReadings.leverGear(it)) }
+                speedId -> readings.speed(raw.toFloat(), now)
+                gearId -> raw.toInt().let { readings.gear(it, EcarxSignalReadings.leverGear(it), now) }
             }
         }
     }
 
-    private fun failed(what: String, error: Throwable) {
-        state = "error ${describe(error)}"
+    private fun failed(generation: Int, what: String, error: Throwable, nowMillis: Long) {
+        link.lost(generation, "error ${EcarxCar.describe(error)}", nowMillis)
         if (!failureLogged) Log.w(TAG, what, error)
         failureLogged = true
     }
 
     private companion object {
         const val TAG = "DiPlay-EcarxSpeed"
-        const val CAR = "ecarx.car.ECarXCar"
         const val FILTER = "ecarx.car.hardware.signal.SignalFilter"
         const val CALLBACK = "ecarx.car.hardware.signal.CarSignalManager\$CarSignalEventCallback"
-
-        fun describe(error: Throwable): String =
-            ((error as? InvocationTargetException)?.targetException ?: error).javaClass.simpleName
     }
 }

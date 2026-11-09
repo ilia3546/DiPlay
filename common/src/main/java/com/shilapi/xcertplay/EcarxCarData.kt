@@ -7,7 +7,6 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
-import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
@@ -50,7 +49,6 @@ internal class ChangedValues {
  */
 internal object EcarxCarData {
     private const val TAG = "DiPlay-EcarxCar"
-    private const val CAR = "ecarx.car.ECarXCar"
     const val POLL_MILLIS = 30_000L
     private val main = Handler(Looper.getMainLooper())
     private var connection: Connection? = null
@@ -95,13 +93,11 @@ internal object EcarxCarData {
                 }
             }
             try {
-                val type = Class.forName(CAR)
-                val created = type.getMethod("createCar", Context::class.java, ServiceConnection::class.java)
-                    .invoke(null, app, listener)
+                val created = EcarxCar.create(app, listener)
                 car = created
-                type.getMethod("connect").invoke(created)
+                EcarxCar.connect(created)
             } catch (error: Throwable) {
-                Log.i(TAG, "ecarx.car unavailable (${describe(error)})")
+                Log.i(TAG, "ecarx.car unavailable (${EcarxCar.describe(error)})")
                 report(null)
             }
         }
@@ -112,14 +108,14 @@ internal object EcarxCarData {
             worker.shutdownNow()
             val open = car ?: return
             car = null
-            runCatching { open.javaClass.getMethod("disconnect").invoke(open) }
+            EcarxCar.disconnect(open)
         }
 
         private fun poll() {
             if (closed) return
             val car = car ?: return
             report(read("outside temperature") {
-                val signal = manager(car, "car_signal")
+                val signal = EcarxCar.manager(car, "car_signal")
                 outsideTemperature(signal.javaClass.getMethod("getAmbTRawAmbTVal").invoke(signal),
                     signal.javaClass.getMethod("getAmbTRawTimeout").invoke(signal))
             })
@@ -127,14 +123,14 @@ internal object EcarxCarData {
         }
 
         private fun logTrip(car: Any) {
-            val fields = tripFields ?: findTripFields(manager(car, "car_publicattribute")).also { tripFields = it }
+            val fields = tripFields ?: findTripFields(EcarxCar.manager(car, "car_publicattribute")).also { tripFields = it }
             val values = fields.associate { field ->
                 field.name to try {
                     val value = field.getter.invoke(field.manager)
                     "${raw(value?.let { it.javaClass.getMethod("getData").invoke(it) })} " +
                         "status=${raw(value?.let { it.javaClass.getMethod("getStatus").invoke(it) })}"
                 } catch (error: Throwable) {
-                    "error ${describe(error)}"
+                    "error ${EcarxCar.describe(error)}"
                 }
             }
             val changes = synchronized(EcarxCarData) {
@@ -160,13 +156,10 @@ internal object EcarxCarData {
                         .map { TripField("$managerName.${it.name.removePrefix("getPA_")}", manager, it) }
                 }
 
-        private fun manager(car: Any, name: String): Any =
-            requireNotNull(car.javaClass.getMethod("getCarManager", String::class.java).invoke(car, name)) { "no $name" }
-
         private fun <T> read(what: String, block: () -> T?): T? = try {
             block().also { failing.remove(what) }
         } catch (error: Throwable) {
-            if (failing.add(what)) Log.w(TAG, "$what not read (${describe(error)})")
+            if (failing.add(what)) Log.w(TAG, "$what not read (${EcarxCar.describe(error)})")
             null
         }
 
@@ -181,10 +174,5 @@ internal object EcarxCarData {
         is LongArray -> value.contentToString()
         is Array<*> -> value.contentToString()
         else -> value.toString()
-    }
-
-    private fun describe(error: Throwable): String {
-        val cause = (error as? InvocationTargetException)?.targetException ?: error
-        return cause.javaClass.simpleName
     }
 }

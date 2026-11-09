@@ -36,8 +36,8 @@ class EcarxWheelSpeedTest {
         assertEquals(VehicleGear.REVERSE, EcarxSignalReadings.leverGear(1))
         assertEquals(VehicleGear.NEUTRAL, EcarxSignalReadings.leverGear(2))
         assertEquals(VehicleGear.DRIVE, EcarxSignalReadings.leverGear(3))
-        assertNull(EcarxSignalReadings.leverGear(4))
-        assertNull(EcarxSignalReadings.leverGear(-1))
+        assertEquals(VehicleGear.DRIVE, EcarxSignalReadings.leverGear(4)) // manual mode
+        for (code in listOf(5, 6, 7, -1)) assertNull(EcarxSignalReadings.leverGear(code))
     }
 
     @Test fun aCarSignalSpeedIsReadForOneAndAHalfSeconds() {
@@ -51,23 +51,55 @@ class EcarxWheelSpeedTest {
         assertNull(readings.metersPerSecond(3_000))
     }
 
-    @Test fun theStatusSaysHowOldTheSpeedIsAndCountsEventsSinceTheLastStatus() {
+    @Test fun theStatusSaysHowOldTheSpeedTheLastEventAndTheLastErrorAre() {
         val readings = EcarxSignalReadings()
-        assertEquals("speedAgeMs=none gear=none events=0", readings.describe(1_000))
-        readings.gear(1, EcarxSignalReadings.leverGear(1))
-        readings.speed(0.5f, 1_000)
+        assertEquals("speedAgeMs=none gear=none lastEventAgoMs=none", readings.describe(1_000))
         readings.speed(0.74f, 1_200)
-        assertEquals("speedAgeMs=300 speed=0.74 gear=R events=3", readings.describe(1_500))
-        assertEquals("speedAgeMs=800 speed=0.74 gear=R events=0", readings.describe(2_000))
-        readings.gear(7, EcarxSignalReadings.leverGear(7))
-        assertEquals("speedAgeMs=800 speed=0.74 gear=raw 7 events=1", readings.describe(2_000))
+        readings.gear(1, EcarxSignalReadings.leverGear(1), 1_400)
+        assertEquals("speedAgeMs=300 speed=0.74 gear=R lastEventAgoMs=100", readings.describe(1_500))
+        readings.gear(7, EcarxSignalReadings.leverGear(7), 2_000)
+        readings.error("onErrorEvent [291504647, 0]", 2_000)
+        assertEquals("speedAgeMs=61800 speed=0.74 gear=raw 7 lastEventAgoMs=61000 lastError=onErrorEvent [291504647, 0] 61s ago",
+            readings.describe(63_000))
     }
 
-    @Test fun adaptApiComesFirstAndCarSignalWhereAdaptApiIsMissing() {
-        assertEquals(Source.ADAPT_API, EcarxWheelSpeed.firstSource(adaptApi = true, carSignal = true))
-        assertEquals(Source.ADAPT_API, EcarxWheelSpeed.firstSource(adaptApi = true, carSignal = false))
-        assertEquals(Source.CAR_SIGNAL, EcarxWheelSpeed.firstSource(adaptApi = false, carSignal = true))
-        assertEquals(Source.NONE, EcarxWheelSpeed.firstSource(adaptApi = false, carSignal = false))
+    @Test fun aLostCarSignalConnectionOpensANewCarAfterAPause() {
+        val link = EcarxSignalLink()
+        assertEquals("connecting", link.describe())
+        assertTrue(link.shouldOpen(0))
+        val first = link.opening()
+        assertFalse(link.shouldOpen(0))
+        assertFalse(link.shouldSubscribe())
+        link.connected(first)
+        assertEquals("connected", link.describe())
+        assertTrue(link.shouldSubscribe())
+        link.subscribed()
+        assertEquals("subscribed", link.describe())
+        assertFalse(link.shouldSubscribe())
+
+        link.lost(first, "disconnected", 10_000)
+        assertEquals("disconnected, reconnecting", link.describe())
+        assertFalse(link.shouldOpen(14_999))
+        assertTrue(link.shouldOpen(15_000))
+        val second = link.opening()
+        assertEquals("reconnecting", link.describe())
+
+        link.lost(first, "disconnected", 15_100) // the old car, late
+        link.connected(first)
+        assertEquals("reconnecting", link.describe())
+        link.connected(second)
+        assertTrue(link.shouldSubscribe())
+    }
+
+    @Test fun aFailedSubscriptionWaitsForANewCar() {
+        val link = EcarxSignalLink()
+        val first = link.opening()
+        link.connected(first)
+        link.lost(first, "error CarNotConnectedException", 1_000)
+        assertFalse(link.shouldSubscribe())
+        assertEquals("error CarNotConnectedException, reconnecting", link.describe())
+        assertFalse(link.shouldOpen(5_999))
+        assertTrue(link.shouldOpen(6_000))
     }
 
     @Test fun aSignatureRefusalSwitchesToCarSignalAndOtherFailuresRetryAdaptApi() {
@@ -88,7 +120,7 @@ class EcarxWheelSpeedTest {
         val readings = EcarxWheelSpeed.readings
         readings.clear()
         EcarxWheelSpeed.drain()
-        readings.gear(1, EcarxSignalReadings.leverGear(1))
+        readings.gear(1, EcarxSignalReadings.leverGear(1), 10_000)
         readings.speed(0.74f, 10_000)
 
         val (gearChanged, sample) = EcarxWheelSpeed.readSignal(10_250)

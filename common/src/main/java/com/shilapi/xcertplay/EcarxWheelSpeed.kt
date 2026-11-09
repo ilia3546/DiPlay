@@ -8,7 +8,6 @@ import com.shilapi.xcertplay.transport.VehicleGear
 import com.shilapi.xcertplay.transport.VehicleSpeedReading
 import com.shilapi.xcertplay.transport.VehicleSpeedSample
 import com.shilapi.xcertplay.transport.VehicleSpeedSource
-import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -23,13 +22,12 @@ import java.util.concurrent.TimeUnit
  * the Monjaro tweak app MConfig+ shows raw x 3.72 as the cluster's km/h, and clusters read about 3 %
  * over the true speed.
  *
- * Firmware that lets only ECARX-signed apps use AdaptAPI throws a SecurityException from `Car.create`. There,
- * and where AdaptAPI is missing, the speed and gear come from `ecarx.car` through [EcarxCarSignal] instead.
+ * Firmware that lets only ECARX-signed apps use AdaptAPI throws a SecurityException from `Car.create`. There
+ * the speed and gear come from `ecarx.car` through [EcarxCarSignal] instead.
  */
 internal object EcarxWheelSpeed : VehicleSpeedSource {
     private const val TAG = "DiPlay-EcarxSpeed"
     private const val CAR = "com.ecarx.xui.adaptapi.car.Car"
-    private const val ECARX_CAR = "ecarx.car.ECarXCar"
     private const val ICAR = "com.ecarx.xui.adaptapi.car.ICar"
     private const val SENSOR = "com.ecarx.xui.adaptapi.car.sensor.ISensor"
     private const val SENSOR_TYPE_CAR_SPEED = 1048832
@@ -84,17 +82,9 @@ internal object EcarxWheelSpeed : VehicleSpeedSource {
     }
 
     /** Whether the ECARX car SDK is on this head unit. */
-    fun present(): Boolean = adaptApiPresent() || carSignalPresent()
+    fun present(): Boolean = runCatching { Class.forName(CAR); Class.forName(SENSOR) }.isSuccess
 
-    private fun adaptApiPresent(): Boolean = runCatching { Class.forName(CAR); Class.forName(SENSOR) }.isSuccess
-
-    private fun carSignalPresent(): Boolean = runCatching { Class.forName(ECARX_CAR) }.isSuccess
-
-    internal fun firstSource(adaptApi: Boolean, carSignal: Boolean): Source = when {
-        adaptApi -> Source.ADAPT_API
-        carSignal -> Source.CAR_SIGNAL
-        else -> Source.NONE
-    }
+    private fun firstSource(): Source = if (present()) Source.ADAPT_API else Source.NONE
 
     /** The source after AdaptAPI failed with [error]: still AdaptAPI unless the firmware refused this app. */
     internal fun sourceAfter(error: Throwable, carSignal: Boolean): Source = when {
@@ -189,12 +179,12 @@ internal object EcarxWheelSpeed : VehicleSpeedSource {
     internal fun metersPerSecond(raw: Float): Double? =
         raw.toDouble().takeIf { it.isFinite() && it in 0.0..MAX_METERS_PER_SECOND }
 
-    /** Where the speed comes from, how that source is doing, and what it gave since the previous call. */
+    /** Where the speed comes from, how that source is doing, and how old its last values are. */
     override fun status(): String {
-        val source = source ?: firstSource(adaptApiPresent(), carSignalPresent())
+        val source = source ?: firstSource()
         val state = when (source) {
             Source.ADAPT_API -> adaptApiState
-            Source.CAR_SIGNAL -> (polling?.signal?.status() ?: "connecting") + if (adaptApiDenied) " adaptapi=denied" else ""
+            Source.CAR_SIGNAL -> "${polling?.signal?.status() ?: "connecting"} adaptapi=denied"
             Source.NONE -> if (adaptApiDenied) "denied" else "unavailable"
         }
         return "ecarx=${source.label} $state ${readings.describe(SystemClock.elapsedRealtime())}"
@@ -202,7 +192,7 @@ internal object EcarxWheelSpeed : VehicleSpeedSource {
 
     private fun poll(run: Polling) {
         if (run.closed) return
-        val source = source ?: firstSource(adaptApiPresent(), carSignalPresent()).also { source = it }
+        val source = source ?: firstSource().also { source = it }
         when (source) {
             Source.ADAPT_API -> pollAdaptApi()
             Source.CAR_SIGNAL -> pollCarSignal(run)
@@ -215,7 +205,7 @@ internal object EcarxWheelSpeed : VehicleSpeedSource {
         if (reads++ % GEAR_EVERY_READS == 0) {
             val event = runCatching { call(sensor, "getSensorEvent", SENSOR_TYPE_GEAR) as Int }.getOrNull()
             val next = event?.let(::gear)
-            event?.let { readings.gear(it, next) }
+            event?.let { readings.gear(it, next, SystemClock.elapsedRealtime()) }
             val changed = synchronized(this) { (gear != next).also { gear = next } }
             if (changed) Log.i(TAG, "gear $next (event $event)")
         }
@@ -230,12 +220,10 @@ internal object EcarxWheelSpeed : VehicleSpeedSource {
     }
 
     private fun pollCarSignal(run: Polling) {
-        val signal = run.signal ?: EcarxCarSignal(context ?: return, readings).also {
-            run.signal = it
-            it.open()
-        }
-        signal.subscribe()
-        val (gearChanged, speed) = readSignal(SystemClock.elapsedRealtime())
+        val signal = run.signal ?: EcarxCarSignal(context ?: return, readings).also { run.signal = it }
+        val now = SystemClock.elapsedRealtime()
+        signal.poll(now)
+        val (gearChanged, speed) = readSignal(now)
         if (gearChanged) Log.i(TAG, "gear ${readings.gear()} (car_signal)")
         if (speed != null) record(speed)
     }
@@ -278,9 +266,8 @@ internal object EcarxWheelSpeed : VehicleSpeedSource {
         sensor = it
         adaptApiState = "reading"
     }.onFailure {
-        val cause = (it as? InvocationTargetException)?.targetException ?: it
-        adaptApiState = "error ${cause.javaClass.simpleName}"
-        val next = sourceAfter(it, carSignalPresent())
+        adaptApiState = "error ${EcarxCar.describe(it)}"
+        val next = sourceAfter(it, EcarxCar.present())
         if (next != Source.ADAPT_API) {
             adaptApiDenied = true
             source = next
