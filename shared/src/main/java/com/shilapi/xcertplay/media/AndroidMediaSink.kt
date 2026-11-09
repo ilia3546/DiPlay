@@ -1806,7 +1806,9 @@ private class AudioRenderer(
         { RtpReorderQueue.rtpSequence(it.rtp) }, AudioPacket::sample)
     /** Music with sustained decoder backpressure must not keep playing minutes-old packets. */
     private val mediaLagGuard = if (format.audioType == "media") MediaPacketLagGuard(format.rtpClockRate) else null
+    // The newest RTP time that arrived; a reordered, late or duplicate packet does not move it back.
     @Volatile private var newestRtpSample = 0
+    private var newestRtpSampleKnown = false
     private var lagRecoveryReports = 0
     @Volatile private var running = true
     @Volatile private var started = false
@@ -1886,10 +1888,15 @@ private class AudioRenderer(
             packetsReceived.incrementAndGet()
             val previous = lastArrivalNs.getAndSet(now)
             if (previous != 0L) maxArrivalGapMs.accumulateAndGet((now - previous) / 1_000_000L, ::maxOf)
-            newestRtpSample = sample
+            val ahead = sample - newestRtpSample
+            // A jump further back than reordering explains is a new run of the stream.
+            if (!newestRtpSampleKnown || ahead > 0 || ahead < -NEWEST_RTP_RESTART_FRAMES) {
+                newestRtpSample = sample
+                newestRtpSampleKnown = true
+            }
             // Hold short Wi-Fi bursts intact. If compressed audio remains >1.5s behind for
             // another 1.5s, skip only stale undecoded packets to catch up to the live song.
-            val removed = mediaLagGuard?.recover(queue, sample, AudioPacket::sample, now) ?: 0
+            val removed = mediaLagGuard?.recover(queue, newestRtpSample, AudioPacket::sample, now) ?: 0
             if (removed > 0) {
                 packetsDropped.addAndGet(removed)
                 packetsDroppedTotal.addAndGet(removed)
@@ -2538,7 +2545,8 @@ private class AudioRenderer(
             ?: 0L
         val compressedPcmFrames = compressedRtpFrames * format.sampleRate /
             format.rtpClockRate.coerceAtLeast(1)
-        val dropped = packetsDroppedTotal.get() + inputDropped
+        // A late packet dropped by the reorder queue leaves a gap too, which must not read as a fast clock.
+        val dropped = packetsDroppedTotal.get() + packetsLateDroppedTotal.get() + inputDropped
         if (dropped != droppedAtLastTrim) {
             droppedAtLastTrim = dropped
             trim.measureAgain()
@@ -2742,6 +2750,8 @@ private class AudioRenderer(
         const val BUFFER_TAIL_WAIT_NS = 500_000_000L
         // Holds a burst after a Wi-Fi gap (~4 s of AAC) instead of dropping it.
         const val MAX_QUEUED_PACKETS = 192
+        // RtpReorderQueue.MAX_REORDER_PACKETS packets of 1024-frame AAC.
+        const val NEWEST_RTP_RESTART_FRAMES = RtpReorderQueue.MAX_REORDER_PACKETS * 1024
         const val PREBUFFER_WRITE_CHUNK_BYTES = 2 * 1024
         const val STATS_TAG = "DiPlay-AudioStats"
         const val STATS_WINDOW_NS = 5_000_000_000L
