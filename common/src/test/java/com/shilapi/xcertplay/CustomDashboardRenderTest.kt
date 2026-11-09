@@ -13,6 +13,7 @@ import android.net.Uri
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import com.shilapi.xcertplay.hud.CarPlayCallCard
 import com.shilapi.xcertplay.hud.CarPlayCallOutcome
 import com.shilapi.xcertplay.hud.ClusterTurnGuidance
@@ -205,9 +206,71 @@ class CustomDashboardRenderTest {
                 arrivalEpochSeconds = evening / 1000 + 18 * 60, remainingSeconds = 1_080, remainingMeters = 9_400),
                 is24Hour = true, zone = moscow)
         }
-        assertEquals("the maneuver tile", Color.rgb(0x2f, 0x7b, 0xff), frame.getPixel(MonjaroDashboardLayout.defaultMap.maneuverCard.left + 30, MonjaroDashboardLayout.defaultMap.maneuverCard.top + 40))
+        assertEquals("the maneuver tile", Color.rgb(0x2f, 0x7b, 0xff), frame.getPixel(MonjaroDashboardLayout.defaultMap.maneuverCard.left + 16, MonjaroDashboardLayout.defaultMap.maneuverCard.top + 30))
         assertEquals("the map below the cards", Color.rgb(0x12, 0x18, 0x21), frame.getPixel(960, 500))
     }
+
+    @Test fun theDistanceFitsBesideTheArrivalOnTheSmallestMap() {
+        for (meters in listOf(10, 530, 1_250, 12_400)) {
+            var card: DashboardManeuverCard? = null
+            render(if (meters == 530) "map-route-small" else null) {
+                showBackground(DashboardBackground.OCEAN, 0) { null }
+                map.resize(MonjaroDashboardLayout.MapGeometry(MonjaroDashboardLayout.mapWidths.first(), 304))
+                map.showRoute(DashboardRoute(ClusterTurnGuidance.fromApple(2, 0, meters, "Расторопово"),
+                    arrivalEpochSeconds = evening / 1000 + 18 * 60, remainingSeconds = 1_080, remainingMeters = 9_400),
+                    is24Hour = true, zone = moscow)
+                card = map.descendants<DashboardManeuverCard>().single()
+            }
+            val distance = card!!.descendants<TextView>().first()
+            assertEquals("${distance.text} is cut", 0, distance.layout.getEllipsisCount(0))
+        }
+    }
+
+    @Test fun aLongerDistanceIsLaidOutAgainRatherThanCut() {
+        for (arrival in listOf(true, false)) for (roads in listOf(listOf("", ""), listOf("Садовое кольцо", ""),
+            listOf("", "Садовое кольцо"), listOf("Садовое кольцо", "Садовое кольцо"))) {
+            val view = MonjaroDashboardView(context)
+            view.map.arrivalShown = arrival
+            fun route(meters: Int, road: String, minutes: Long) = DashboardRoute(
+                ClusterTurnGuidance.fromApple(2, 0, meters, road),
+                arrivalEpochSeconds = evening / 1000 + minutes * 60, remainingSeconds = minutes * 60, remainingMeters = 9_400)
+            // A window lays its views out again only when one of them asks for it, as here.
+            fun frame() {
+                if (view.isLayoutRequested || view.width == 0) {
+                    view.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
+                    view.layout(0, 0, view.measuredWidth, view.measuredHeight)
+                }
+            }
+            view.map.showRoute(route(50, roads[0], 5), is24Hour = true, zone = moscow)
+            frame()
+            view.map.showRoute(route(2_600, roads[1], 115), is24Hour = true, zone = moscow)
+            frame()
+            val texts = view.map.descendants<TextView>().filter { it.isShown && it.text.isNotEmpty() && it.text.length < 9 }
+            for (text in texts) assertEquals("${text.text} is cut, arrival=$arrival roads=$roads", 0,
+                text.layout?.getEllipsisCount(0) ?: 0)
+        }
+    }
+
+    @Test fun withoutTheArrivalTheManeuverGrowsToSixtyPercentOfTheMap() {
+        var card: DashboardManeuverCard? = null
+        render("map-route-alone") {
+            showBackground(DashboardBackground.OCEAN, 0) { null }
+            map.arrivalShown = false
+            map.showRoute(DashboardRoute(ClusterTurnGuidance.fromApple(2, 0, 530, "Улица Сергея Эйзенштейна"),
+                arrivalEpochSeconds = null, remainingSeconds = null, remainingMeters = null),
+                is24Hour = true, zone = moscow)
+            card = map.descendants<DashboardManeuverCard>().single()
+        }
+        val map = MonjaroDashboardLayout.defaultMap
+        assertTrue(card!!.width > map.maneuverCard.width)
+        assertTrue(card!!.width <= map.width * 60 / 100)
+    }
+
+    private inline fun <reified T : View> View.descendants(): List<T> = tree().filterIsInstance<T>()
+
+    private fun View.tree(): List<View> =
+        listOf(this) + if (this is ViewGroup) (0 until childCount).flatMap { getChildAt(it).tree() } else emptyList()
 
     @Test fun theParkedMapIsDimmedTowardTheCentre() {
         val frame = render("map-parked", attached = true) {

@@ -40,12 +40,15 @@ internal object MonjaroDashboardLayout {
     data class MapGeometry(val width: Int, val height: Int) {
         val map = Box(left = (WIDTH - width) / 2, top = MAP_CENTRE_Y - height / 2, width = width, height = height)
 
-        /** [Box.width] is the widest the card grows. */
+        /** [Box.width] is the widest the card grows beside the arrival card. */
         val maneuverCard = Box(
             left = map.left + ROUTE_CARD_INSET,
             top = map.top + ROUTE_CARD_INSET,
             width = width - 2 * ROUTE_CARD_INSET - ROUTE_CARD_GAP - ARRIVAL_WIDTH,
         )
+
+        /** The widest the maneuver card grows while the arrival card is hidden. */
+        val maneuverCardAloneWidth = maxOf(maneuverCard.width, width * MANEUVER_ALONE_PERCENT / 100)
         val arrivalCard = Box(
             left = map.left + width - ROUTE_CARD_INSET - ARRIVAL_WIDTH,
             top = map.top + ROUTE_CARD_INSET + 6,
@@ -73,17 +76,18 @@ internal object MonjaroDashboardLayout {
     private const val ROUTE_CARD_INSET = 15
     private const val ROUTE_CARD_GAP = 12
     private const val ARRIVAL_WIDTH = 230
+    private const val MANEUVER_ALONE_PERCENT = 60
 
-    const val MANEUVER_PADDING_START = 12
-    const val MANEUVER_PADDING_END = 24
-    const val MANEUVER_PADDING_VERTICAL = 12
+    const val MANEUVER_PADDING_START = 10
+    const val MANEUVER_PADDING_END = 12
+    const val MANEUVER_PADDING_VERTICAL = 10
     const val MANEUVER_RADIUS = 20f
-    const val MANEUVER_GAP = 16
-    const val MANEUVER_ICON_SIZE = 58
-    const val MANEUVER_ICON_RADIUS = 14f
-    const val MANEUVER_GLYPH_SIZE = 34
-    const val MANEUVER_DISTANCE_TEXT = 32f
-    const val MANEUVER_ROAD_TEXT = 19f
+    const val MANEUVER_GAP = 10
+    const val MANEUVER_ICON_SIZE = 50
+    const val MANEUVER_ICON_RADIUS = 12f
+    const val MANEUVER_GLYPH_SIZE = 30
+    const val MANEUVER_DISTANCE_TEXT = 26f
+    const val MANEUVER_ROAD_TEXT = 16f
     const val MANEUVER_ROAD_GAP = 2
     const val MANEUVER_SHADOW_DY = 10f
     const val MANEUVER_SHADOW_BLUR = 30f

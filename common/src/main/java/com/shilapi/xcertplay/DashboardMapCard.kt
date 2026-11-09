@@ -31,6 +31,7 @@ internal class DashboardMapCard(context: Context) : FrameLayout(context) {
         color = L.MAP_BORDER_COLOR
     }
     private val innerRadius = L.MAP_RADIUS - L.MAP_BORDER
+    private var geometry = L.defaultMap
 
     init {
         setWillNotDraw(false)
@@ -63,7 +64,8 @@ internal class DashboardMapCard(context: Context) : FrameLayout(context) {
             width = geometry.width
             height = geometry.height
         }
-        maneuver.maxWidth = geometry.maneuverCard.width
+        this.geometry = geometry
+        fitManeuver()
         maneuver.layoutParams = (maneuver.layoutParams as LayoutParams).apply {
             leftMargin = geometry.maneuverCard.left - geometry.map.left
             topMargin = geometry.maneuverCard.top - geometry.map.top
@@ -81,9 +83,15 @@ internal class DashboardMapCard(context: Context) : FrameLayout(context) {
     fun showRoute(route: DashboardRoute?, is24Hour: Boolean, zone: TimeZone = TimeZone.getDefault()) {
         maneuver.visibility = if (route != null && maneuverShown) VISIBLE else GONE
         arrival.visibility = if (route != null && arrivalShown) VISIBLE else GONE
+        fitManeuver()
         if (route == null) return
         maneuver.show(route.turn)
         arrival.show(route, is24Hour, zone)
+    }
+
+    private fun fitManeuver() {
+        maneuver.maxWidth = if (arrival.visibility == VISIBLE) geometry.maneuverCard.width
+        else geometry.maneuverCardAloneWidth
     }
 
     override fun draw(canvas: Canvas) {
