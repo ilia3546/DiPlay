@@ -29,7 +29,6 @@ import java.io.Closeable
 import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArraySet
-import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -1803,7 +1802,8 @@ private class AudioRenderer(
     private var mappedChannel: AudioChannel? = null
     private val navigationPlaybackToken = NavigationPlayback.open()
     private var actualLegacyStreamType: Int? = null
-    private val queue = LinkedBlockingQueue<AudioPacket>(MAX_QUEUED_PACKETS)
+    private val queue = RtpReorderQueue<AudioPacket>(MAX_QUEUED_PACKETS,
+        { RtpReorderQueue.rtpSequence(it.rtp) }, AudioPacket::sample)
     /** Music with sustained decoder backpressure must not keep playing minutes-old packets. */
     private val mediaLagGuard = if (format.audioType == "media") MediaPacketLagGuard(format.rtpClockRate) else null
     @Volatile private var newestRtpSample = 0
@@ -1832,6 +1832,10 @@ private class AudioRenderer(
     private val packetsReceived = AtomicInteger()
     private val packetsDropped = AtomicInteger()
     private val packetsDroppedTotal = AtomicInteger()
+    private val packetsReordered = AtomicInteger()
+    private val packetsReorderedTotal = AtomicInteger()
+    private val packetsLateDropped = AtomicInteger()
+    private val packetsLateDroppedTotal = AtomicInteger()
     private val lastArrivalNs = AtomicLong()
     private val maxArrivalGapMs = AtomicLong()
     private val frameBytes = if (format.channels >= 2) 4 else 2
@@ -1870,6 +1874,7 @@ private class AudioRenderer(
     private val thread = Thread(::run, "carplay-audio").apply { isDaemon = true }
 
     fun start() {
+        queue.restartSequence()
         if (started) return
         started = true
         thread.start()
@@ -1895,17 +1900,27 @@ private class AudioRenderer(
                 }
             }
         }
-        if (!started || !queue.offer(AudioPacket(rtp, sample, now))) {
-            if (started) {
+        if (!started) return
+        when (queue.insert(AudioPacket(rtp, sample, now))) {
+            RtpReorderQueue.Placement.APPENDED -> Unit
+            RtpReorderQueue.Placement.REORDERED -> {
+                packetsReordered.incrementAndGet()
+                packetsReorderedTotal.incrementAndGet()
+            }
+            RtpReorderQueue.Placement.LATE -> {
+                packetsLateDropped.incrementAndGet()
+                packetsLateDroppedTotal.incrementAndGet()
+            }
+            RtpReorderQueue.Placement.FULL -> {
                 packetsDropped.incrementAndGet()
                 packetsDroppedTotal.incrementAndGet()
-            }
-            if (started && !droppedPacketsLogged) {
-                droppedPacketsLogged = true
-                Log.w(TAG, "audio queue full; dropping newest packets to bound latency")
-                if (queueFullReportCount < MAX_QUEUE_FULL_REPORTS) {
-                    queueFullReportCount++
-                    report("Audio: queue full audioType=${format.audioType} count=$queueFullReportCount")
+                if (!droppedPacketsLogged) {
+                    droppedPacketsLogged = true
+                    Log.w(TAG, "audio queue full; dropping newest packets to bound latency")
+                    if (queueFullReportCount < MAX_QUEUE_FULL_REPORTS) {
+                        queueFullReportCount++
+                        report("Audio: queue full audioType=${format.audioType} count=$queueFullReportCount")
+                    }
                 }
             }
         }
@@ -2613,7 +2628,8 @@ private class AudioRenderer(
             "sampleRate=${currentTrack?.sampleRate ?: format.sampleRate} " +
             "trackBufferFrames=${currentTrack?.bufferSizeInFrames ?: -1} " +
             "rx=${packetsReceived.getAndSet(0)} " +
-            "dropped=${packetsDropped.getAndSet(0)} underruns=+${underruns - statsLastUnderruns} queue=${queue.size} " +
+            "dropped=${packetsDropped.getAndSet(0)} reordered=${packetsReordered.getAndSet(0)} " +
+            "lateDropped=${packetsLateDropped.getAndSet(0)} underruns=+${underruns - statsLastUnderruns} queue=${queue.size} " +
             "playing=$playbackStarted maxGapMs=${maxArrivalGapMs.getAndSet(0)} " +
             "sinceRxMs=${if (lastRx == 0L) -1 else (now - lastRx) / 1_000_000L} maxWriteMs=$maxWriteMs " +
             "writtenFrames=$writtenFramesThisWindow totalWrittenFrames=$totalWrittenFrames " +
@@ -2630,7 +2646,8 @@ private class AudioRenderer(
             val decoderLine = "Audio: decoder stats audioType=${format.audioType} codec=${format.codec} " +
                 "inputQueuedTotal=$inputQueued inputDroppedTotal=$inputDropped " +
                 "shortOpusPacketsTotal=$shortOpusPackets decoderUnavailablePacketsTotal=$decoderUnavailablePackets " +
-                "outputBuffersTotal=$outputBuffers ended=$force"
+                "outputBuffersTotal=$outputBuffers reorderedTotal=${packetsReorderedTotal.get()} " +
+                "lateDroppedTotal=${packetsLateDroppedTotal.get()} ended=$force"
             Log.i(STATS_TAG, decoderLine)
             runCatching { report(decoderLine) }
         }
