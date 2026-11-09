@@ -75,6 +75,7 @@ class HudRenderTest {
             Triple("call-route-compact", turn to ringing, HudSettings(HudSettings.Variant.COMPACT, HudSettings.DEFAULT_Y, 100, true, true)),
             Triple("call-route-bold", turn to talkingMuted, HudSettings(HudSettings.Variant.BOLD, HudSettings.DEFAULT_Y, 100, true, true)),
             Triple("call-bold", null to talkingMuted, HudSettings(HudSettings.Variant.BOLD, HudSettings.DEFAULT_Y, 100, true, true)),
+            Triple("call-route-small", turn to talkingMuted, HudSettings(HudSettings.Variant.BALANCED, 260, 50, true, true)),
         )
         for ((name, shown, settings) in examples) render(name, shown.first, shown.second, settings)
     }

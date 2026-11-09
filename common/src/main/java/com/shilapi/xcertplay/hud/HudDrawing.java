@@ -5,6 +5,9 @@ public final class HudDrawing {
     private static final int CYAN=0xff54d5ff,WHITE=0xfff4fbff,MUTED=0xffc8e2ec,INACTIVE=0xff7a97a3,CALL_GREEN=0xff30d158,CALL_MUTED=0xffff9f0a;
     static final int OTHER_LANE_COLOR=0xffaec6d0;
     static final double OTHER_LANE_OPACITY=1,OTHER_LANE_STROKE=2.2;
+    // The firmware speed is fixed in window pixels, digits around x 400..430 and y 331..371, with no regard to the
+    // height and scale settings, so the call is placed in window pixels too, right of a three-digit speed.
+    static final double CALL_LEFT=510,CALL_RIGHT=780,CALL_Y=351;
     private static final HudPath LANE_UNDERLINE=new HudPath("M8 26.5 H16");
     private static final HudPath PHONE=new HudPath("M6.6 10.8 A15.1 15.1 0 0 0 13.2 17.4 L15.4 15.2 A1 1 0 0 1 16.4 14.95 C17.5 15.32 18.7 15.52 20 15.52 A1 1 0 0 1 21 16.52 V20 A1 1 0 0 1 20 21 A17 17 0 0 1 3 4 A1 1 0 0 1 4 3 H7.5 A1 1 0 0 1 8.5 4 C8.5 5.25 8.7 6.45 9.07 7.57 A1 1 0 0 1 8.82 8.57 Z");
     private HudDrawing() {}
@@ -18,22 +21,17 @@ public final class HudDrawing {
             case BOLD:icon=66;numberFont=68;unitFont=29;roadFont=32;stroke=7.5f;lane=32;trip=25;break;
             default:icon=56;numberFont=58;unitFont=25;roadFont=28;stroke=6;lane=28;trip=22;break;
         }
+        double k=icon/56.0;
+        if(call!=null)call(canvas,call,CALL_LEFT,CALL_RIGHT,CALL_Y,28*k,(float)(21*k),(float)(16*k),k);
+        if(frame==null)return;
         canvas=new ScaledCanvas(canvas,settings.scalePercent,settings.centerY);
-        double left=64,right=736,y=settings.centerY,k=icon/56.0,x0=left+icon+20*k;
-        if(frame==null){
-            if(call!=null)call(canvas,call,left,right,y,icon,roadFont*1.25f,roadFont*.8f,k,true);
-            return;
-        }
+        double left=64,right=736,y=settings.centerY,x0=left+icon+20*k;
         ManeuverIcon.draw(canvas,frame.kind,left+icon/2,y,icon,stroke,CYAN,frame.exitNumber);
         float baseline=(float)(y+.355*numberFont);double x=x0;
         canvas.text(frame.number,(float)x,baseline,numberFont,WHITE,true);x+=canvas.measure(frame.number,numberFont,true)+5*k;
         canvas.text(frame.unit,(float)x,baseline,unitFont,MUTED,false);x+=canvas.measure(frame.unit,unitFont,false)+20*k;
         canvas.text(fit(canvas,frame.instructionLabel,roadFont,false,(float)(right-x)),(float)x,baseline,roadFont,WHITE,false);
         double rowY=y+icon/2+12*k,tripX=x0;
-        if(call!=null){
-            call(canvas,call,x0,right,rowY+lane/2,lane*1.2,trip*1.15f,trip*.85f,k,false);
-            return;
-        }
         HudLane[] lanes=settings.showLanes ? frame.lanes.toArray(new HudLane[0]) : new HudLane[0];
         if(lanes.length>0){
             double pitch=lane*1.5,gap=pitch-lane,bx=x0+gap/2;
@@ -66,12 +64,11 @@ public final class HudDrawing {
         if(width>available)return;
         for(int i=0;i<spans.length;i++){canvas.text(spans[i],x,baseline,size,colors[i],false);x+=canvas.measure(spans[i],size,false);}
     }
-    private static void call(HudCanvas canvas,HudCall call,double left,double right,double y,double size,float textFont,float mutedFont,double k,boolean centred){
-        double gap=14*k,mutedGap=12*k;
+    private static void call(HudCanvas canvas,HudCall call,double left,double right,double y,double size,float textFont,float mutedFont,double k){
+        double gap=10*k,mutedGap=10*k;
         double muted=call.mutedLabel.isEmpty() ? 0 : mutedGap+canvas.measure(call.mutedLabel,mutedFont,true);
         String text=fit(canvas,call.text,textFont,true,(float)(right-left-size-gap-muted));
-        double width=size+gap+canvas.measure(text,textFont,true)+muted;
-        double x=centred ? Math.max(left,(left+right-width)/2) : left;
+        double x=left;
         canvas.dot(12,12,12,x,y-size/2,size/24,CALL_GREEN);
         double glyph=size*.56;
         canvas.fill(PHONE,x+(size-glyph)/2,y-glyph/2,glyph/24,WHITE);
