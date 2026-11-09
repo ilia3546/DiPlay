@@ -83,10 +83,12 @@ internal object CarPlayMediaKeys {
             artworkOwner = artworkQueue.newSession()
         }
         appContext = context.applicationContext
-        if (controller !== next) {
-            carAudioOwnsWheel = pauseForCarAudio() && !next.nowPlayingSnapshot().playing &&
-                HeadUnitMediaFlags.read(context).let { it.radio || it.bluetooth || it.usb }
-            if (!carAudioOwnsWheel && next.nowPlayingSnapshot().playing) claimMediaCentreLocked()
+        // A new session starts with CarPlay owning the wheel even while the car's radio still plays, so the
+        // wheel's play key starts the iPhone instead of the radio.
+        if (controller !== next && pauseForCarAudio()) {
+            Log.i(TAG, "session start: CarPlay owns the wheel keys, iPhone playing=${next.nowPlayingSnapshot().playing} " +
+                "car source ${HeadUnitMediaFlags.read(context)}")
+            claimMediaCentreLocked()
         }
         controller = next
         GeelyWheelKeys.start(context)
