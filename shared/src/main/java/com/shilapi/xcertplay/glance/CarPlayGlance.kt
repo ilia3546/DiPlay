@@ -2,8 +2,11 @@ package com.shilapi.xcertplay.glance
 
 import com.shilapi.xcertplay.hud.BydHudRouteState
 import com.shilapi.xcertplay.hud.ClusterSongState
+import com.shilapi.xcertplay.hud.BydHudRouteChange
 import com.shilapi.xcertplay.iap2.message.Iap2LaneGuidance
+import com.shilapi.xcertplay.iap2.message.LaneGuidanceEvent
 import com.shilapi.xcertplay.iap2.message.LaneGuidanceLane
+import com.shilapi.xcertplay.iap2.message.RouteLaneGuidance
 import com.shilapi.xcertplay.iap2.wire.Iap2Frame
 import java.util.concurrent.CopyOnWriteArraySet
 
@@ -34,17 +37,21 @@ object CarPlayGlance {
         val lanes: LaneStrip? = null,
     )
 
-    /** The last lane strip from 0x5204, with the index of the maneuver that was next when it arrived. */
-    data class LaneStrip(val maneuverIndex: Int, val lanes: List<LaneGuidanceLane>)
+    /** The 0x5204 lane event that 0x5201 says is showing now, under its lane guidance index. */
+    data class LaneStrip(val laneGuidanceIndex: Int, val lanes: List<LaneGuidanceLane>)
 
     private const val LANE_GUIDANCE_UPDATE = 0x5204
     private const val TAG = "DiPlay-Lane"
+    private const val ROUTE_REROUTING = 5
 
     private val route = BydHudRouteState()
     private val song = ClusterSongState()
     private var connected = false
     private var session = 0L
-    private var lanes: LaneStrip? = null
+    private val laneEvents = LinkedHashMap<Int, List<LaneGuidanceLane>>()
+    private var laneGuidanceIndex: Int? = null
+    private var laneGuidanceShowing = false
+    private var loggedRouteLanes: String? = null
     private var last = Snapshot()
 
     /** Called with each new snapshot, on the thread that changed it. */
@@ -73,11 +80,14 @@ object CarPlayGlance {
     fun observeConnection(post: (Runnable) -> Unit, observer: (Boolean) -> Unit): () -> Unit =
         observe { post(Runnable { observer(isConnected) }) }
 
-    /** Lane guidance from 0x5204, on the iAP2 thread; empty when the lane strip goes away. */
-    @Volatile var laneListener: ((List<LaneGuidanceLane>) -> Unit)? = null
+    /**
+     * Each lane event from 0x5204 as it arrives, on the iAP2 thread. The iPhone sends events ahead of the
+     * junctions they belong to and [Snapshot.lanes] has the one showing now; an empty list drops an event.
+     */
+    @Volatile var laneListener: ((LaneGuidanceEvent) -> Unit)? = null
 
-    /** The last strip written to the log: Apple Maps repeats it while the overlap lasts. */
-    private var loggedLanes: List<LaneGuidanceLane>? = null
+    /** The last event written to the log: Apple Maps repeats it while the overlap lasts. */
+    private var loggedLanes: LaneGuidanceEvent? = null
 
     /** Refresh time-dependent guidance even when no new metadata frame has arrived. */
     fun snapshot(): Snapshot {
@@ -88,25 +98,30 @@ object CarPlayGlance {
 
     fun onFrame(frame: Iap2Frame) {
         if (frame.messageId == LANE_GUIDANCE_UPDATE) {
-            // Lane guidance is a side channel: log it, hand it to whoever draws lanes, and leave
-            // the route/now-playing state alone.
-            val strip = runCatching { Iap2LaneGuidance.parse(frame.payload) }.getOrDefault(emptyList())
-            val (changed, index) = synchronized(this) {
-                val index = route.currentApple()?.index
-                lanes = if (strip.isEmpty() || index == null) null else LaneStrip(index, strip)
-                publishLocked() to index
+            val event = Iap2LaneGuidance.parseEvent(frame.payload)
+            val (changed, shown) = synchronized(this) {
+                event.index?.let { storeLaneEventLocked(it, event.lanes) }
+                publishLocked() to laneGuidanceIndex?.takeIf { laneGuidanceShowing }
             }
-            if (strip != loggedLanes) {
-                loggedLanes = strip
-                android.util.Log.i(TAG, "0x5204 " + describeLanes(strip, frame.payload, index))
+            if (event != loggedLanes) {
+                loggedLanes = event
+                android.util.Log.i(TAG, "0x5204 " + describeLanes(event, frame.payload, shown))
             }
-            laneListener?.invoke(strip)
+            laneListener?.invoke(event)
             changed?.let(::notify)
             return
         }
         val changed = synchronized(this) {
             when (frame.messageId) {
-                BydHudRouteState.ROUTE_GUIDANCE_UPDATE, BydHudRouteState.ROUTE_GUIDANCE_MANEUVER_UPDATE ->
+                BydHudRouteState.ROUTE_GUIDANCE_UPDATE -> {
+                    val change = runCatching { route.accept(frame.messageId, frame.payload) }.getOrNull()
+                    if (change == BydHudRouteChange.CLEAR) {
+                        clearLanesLocked()
+                    } else {
+                        Iap2LaneGuidance.routeLanes(frame.payload)?.let(::acceptRouteLanesLocked)
+                    }
+                }
+                BydHudRouteState.ROUTE_GUIDANCE_MANEUVER_UPDATE ->
                     runCatching { route.accept(frame.messageId, frame.payload) }
                 ClusterSongState.NOW_PLAYING_UPDATE -> runCatching { song.accept(frame) }
                 else -> return
@@ -143,23 +158,53 @@ object CarPlayGlance {
     private fun clearSessionLocked() {
         route.clear()
         song.clear()
-        lanes = null
+        clearLanesLocked()
+    }
+
+    private fun clearLanesLocked() {
+        laneEvents.clear()
+        laneGuidanceIndex = null
+        laneGuidanceShowing = false
+        loggedRouteLanes = null
+    }
+
+    /** Keeps the event [laneGuidanceIndex] names when the store is full: dropping it would blank the lanes on show. */
+    private fun storeLaneEventLocked(index: Int, lanes: List<LaneGuidanceLane>) {
+        laneEvents.remove(index)
+        if (lanes.isEmpty()) return
+        laneEvents[index] = lanes
+        while (laneEvents.size > Iap2LaneGuidance.STORAGE_CAPACITY) {
+            val evicted = laneEvents.keys.firstOrNull { it != laneGuidanceIndex && it != index } ?: break
+            laneEvents.remove(evicted)
+        }
+    }
+
+    private fun acceptRouteLanesLocked(update: RouteLaneGuidance) {
+        if (update.state == ROUTE_REROUTING) clearLanesLocked()
+        update.laneGuidanceIndex?.let { laneGuidanceIndex = it }
+        update.laneGuidanceShowing?.let { laneGuidanceShowing = it }
+        if (update.laneGuidanceTotalCount == 0) laneEvents.clear()
+        if (update.laneGuidanceIndex != null || update.laneGuidanceShowing != null || update.laneGuidanceTotalCount != null) {
+            val line = "0x5201 laneIndex=${laneGuidanceIndex ?: "?"} total=${update.laneGuidanceTotalCount ?: "-"} " +
+                "showing=$laneGuidanceShowing stored=${laneEvents.keys}"
+            if (line != loggedRouteLanes) {
+                loggedRouteLanes = line
+                android.util.Log.i(TAG, line)
+            }
+        }
     }
 
     /**
-     * One line per lane strip for the diagnostic report: the parsed fields, and the raw payload once,
-     * so a report from a car we cannot test still shows what the phone actually sent. The strip's lane
-     * guidance index next to the [activeIndex] of the next maneuver shows whether lanes come ahead of their maneuver.
+     * One line per lane event for the diagnostic report: the parsed fields, and the raw payload once,
+     * so a report from a car we cannot test still shows what the phone actually sent.
      */
-    private fun describeLanes(lanes: List<LaneGuidanceLane>, payload: ByteArray, activeIndex: Int?): String {
-        if (lanes.isEmpty()) return "lane strip cleared"
-        val strip = lanes.joinToString("; ") {
-            "i=${it.index} st=${it.status} a=${it.angle} h=${it.highlightAngle}"
+    private fun describeLanes(event: LaneGuidanceEvent, payload: ByteArray, shownIndex: Int?): String {
+        if (event.lanes.isEmpty()) return "event ${event.index ?: "?"} cleared"
+        val strip = event.lanes.joinToString("; ") {
+            "i=${it.index} st=${it.status} a=${it.angles} h=${it.highlightAngle}"
         }
-        val index = Iap2LaneGuidance.laneGuidanceIndex(payload)
-        return "lanes=${lanes.size} index=${index ?: "?"} active=${activeIndex ?: "?"} [$strip] raw=" + payload.joinToString("") {
-            "%02x".format(it.toInt() and 0xff)
-        }
+        val raw = payload.joinToString("") { "%02x".format(it.toInt() and 0xff) }
+        return "lanes=${event.lanes.size} index=${event.index ?: "?"} shown=${shownIndex ?: "-"} [$strip] raw=$raw"
     }
 
     private fun notify(changed: Snapshot) {
@@ -169,7 +214,8 @@ object CarPlayGlance {
 
     private fun publishLocked(): Snapshot? {
         val maneuver = route.currentApple()
-        if (lanes?.maneuverIndex != maneuver?.index) lanes = null
+        val shownLanes = laneGuidanceIndex?.takeIf { maneuver != null && laneGuidanceShowing }
+            ?.let { index -> laneEvents[index]?.let { LaneStrip(index, it) } }
         val current = song.current()
         val next = Snapshot(
             connected = connected,
@@ -184,7 +230,7 @@ object CarPlayGlance {
             remainingMeters = maneuver?.remainingMeters,
             song = current?.text,
             playing = current?.playing ?: false,
-            lanes = lanes,
+            lanes = shownLanes,
         )
         if (next == last) return null
         last = next

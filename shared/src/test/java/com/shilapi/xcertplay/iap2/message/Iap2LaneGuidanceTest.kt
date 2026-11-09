@@ -35,9 +35,9 @@ class Iap2LaneGuidanceTest {
     @Test
     fun anglesAreSignedDegrees() {
         val lanes = Iap2LaneGuidance.parse(sample)
-        assertEquals(-90, lanes[0].angle)
-        assertEquals(0, lanes[1].angle)
-        assertEquals(0, lanes[2].angle)
+        assertEquals(listOf(-90), lanes[0].angles)
+        assertEquals(listOf(0), lanes[1].angles)
+        assertEquals(listOf(0), lanes[2].angles)
     }
 
     @Test
@@ -53,10 +53,69 @@ class Iap2LaneGuidanceTest {
 
     @Test
     fun theLaneGuidanceIndexIsReadAsSent() {
-        assertEquals(0L, Iap2LaneGuidance.laneGuidanceIndex(sample))
-        assertEquals(0x1234L, Iap2LaneGuidance.laneGuidanceIndex(hex("00 06 00 01 12 34")))
-        assertEquals(null, Iap2LaneGuidance.laneGuidanceIndex(hex("00 06 00 00 00 2a")))
-        assertEquals(null, Iap2LaneGuidance.laneGuidanceIndex(byteArrayOf(0, 1, 2)))
+        assertEquals(0, Iap2LaneGuidance.parseEvent(sample).index)
+        assertEquals(0x1234, Iap2LaneGuidance.parseEvent(hex("00 06 00 01 12 34")).index)
+        assertEquals(null, Iap2LaneGuidance.parseEvent(hex("00 06 00 00 00 2a")).index)
+        assertEquals(LaneGuidanceEvent(null, emptyList()), Iap2LaneGuidance.parseEvent(byteArrayOf(0, 1, 2)))
+    }
+
+    @Test
+    fun aLaneKeepsEveryAngleItAllows() {
+        // Left and straight in one LaneAngles field, then a right turn in a repeated field.
+        val lanes = Iap2LaneGuidance.parse(hex(
+            "00 06 00 01 00 01" +
+                " 00 23 00 02 00 06 00 00 00 00 00 05 00 01 02 00 08 00 02 ff a6 00 00 00 06 00 02 00 5a" +
+                " 00 06 00 03 03 e8",
+        ))
+        assertEquals(1, lanes.size)
+        assertEquals(listOf(-90, 0, 90), lanes[0].angles)
+        assertEquals("1000 means no highlight", null, lanes[0].highlightAngle)
+    }
+
+    @Test
+    fun oneLaneInformationFieldMayCarrySeveralLanes() {
+        val lanes = Iap2LaneGuidance.parse(hex(
+            "00 06 00 01 00 00" +
+                " 00 2c 00 02" +
+                " 00 06 00 00 00 01 00 05 00 01 00 00 06 00 02 00 00" +
+                " 00 06 00 00 00 00 00 05 00 01 02 00 06 00 02 00 5a 00 06 00 03 00 00",
+        ))
+        assertEquals(listOf(0, 1), lanes.map { it.index })
+        assertEquals(listOf(90), lanes[0].angles)
+        assertEquals(0, lanes[0].highlightAngle)
+        assertEquals(true, lanes[0].recommended)
+        assertEquals(listOf(0), lanes[1].angles)
+    }
+
+    @Test
+    fun fieldsBeforeTheFirstIndexAreALaneOfTheirOwn() {
+        val lanes = Iap2LaneGuidance.parse(hex(
+            "00 06 00 01 00 00" +
+                " 00 20 00 02 00 05 00 01 02 00 06 00 02 ff a6" +
+                " 00 06 00 00 00 01 00 05 00 01 00 00 06 00 02 00 00",
+        ))
+        assertEquals(2, lanes.size)
+        assertEquals(LaneGuidanceLane(0, 2, listOf(-90), null), lanes[0])
+        assertEquals(LaneGuidanceLane(1, 0, listOf(0), null), lanes[1])
+    }
+
+    @Test
+    fun aLaneWithoutAnglesKeepsAnEmptyList() {
+        val lanes = Iap2LaneGuidance.parse(hex("00 06 00 01 00 00 00 0f 00 02 00 06 00 00 00 00 00 05 00 01 02"))
+        assertEquals(emptyList<Int>(), lanes.single().angles)
+    }
+
+    @Test
+    fun routeGuidanceNamesTheShownLaneEvent() {
+        assertEquals(
+            RouteLaneGuidance(state = 1, laneGuidanceIndex = 1, laneGuidanceTotalCount = 3, laneGuidanceShowing = true),
+            Iap2LaneGuidance.routeLanes(hex("00 05 00 01 01 00 06 00 10 00 01 00 06 00 11 00 03 00 05 00 12 01")),
+        )
+        assertEquals(
+            RouteLaneGuidance(state = null, laneGuidanceIndex = null, laneGuidanceTotalCount = null, laneGuidanceShowing = false),
+            Iap2LaneGuidance.routeLanes(hex("00 05 00 12 00")),
+        )
+        assertEquals(null, Iap2LaneGuidance.routeLanes(byteArrayOf(0, 9, 0)))
     }
 
     @Test

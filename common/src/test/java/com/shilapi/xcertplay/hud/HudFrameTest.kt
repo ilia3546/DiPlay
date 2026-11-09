@@ -130,17 +130,33 @@ class HudFrameTest {
 
     @Test fun aLaneJoinsItsAngleAndHighlightAndHighlightsOnlyWhenRecommended() {
         assertEquals(HudLane(listOf(HudLaneDirection.STRAIGHT, HudLaneDirection.RIGHT), HudLaneDirection.RIGHT, true),
-            HudFrame.lane(LaneGuidanceLane(0, 2, 0, 90)))
+            HudFrame.lane(LaneGuidanceLane(0, 2, listOf(0), 90)))
         assertEquals(HudLane(listOf(HudLaneDirection.STRAIGHT, HudLaneDirection.RIGHT), null, false),
-            HudFrame.lane(LaneGuidanceLane(0, 0, 0, 90)))
+            HudFrame.lane(LaneGuidanceLane(0, 0, listOf(0), 90)))
         assertEquals(HudLane(listOf(HudLaneDirection.LEFT), HudLaneDirection.LEFT, true),
-            HudFrame.lane(LaneGuidanceLane(0, 2, -90, null)))
+            HudFrame.lane(LaneGuidanceLane(0, 2, listOf(-90), null)))
         assertEquals("no duplicate", HudLane(listOf(HudLaneDirection.LEFT), HudLaneDirection.LEFT, true),
-            HudFrame.lane(LaneGuidanceLane(0, 2, -90, -95)))
+            HudFrame.lane(LaneGuidanceLane(0, 2, listOf(-90), -95)))
         assertEquals("unknown angle has no arrow", HudLane(emptyList(), null, false),
-            HudFrame.lane(LaneGuidanceLane(0, 0, 300, null)))
+            HudFrame.lane(LaneGuidanceLane(0, 0, listOf(300), null)))
         assertEquals(HudLane(listOf(HudLaneDirection.STRAIGHT), HudLaneDirection.STRAIGHT, true),
-            HudFrame.lane(LaneGuidanceLane(0, 2, 0, 400)))
+            HudFrame.lane(LaneGuidanceLane(0, 2, listOf(0), 400)))
+    }
+
+    @Test fun aLaneDrawsEveryAllowedDirection() {
+        assertEquals(HudLane(listOf(HudLaneDirection.LEFT, HudLaneDirection.STRAIGHT), HudLaneDirection.STRAIGHT, true),
+            HudFrame.lane(LaneGuidanceLane(0, 2, listOf(-90, 0), 0)))
+        assertEquals("a recommended lane with several branches and no highlight picks none",
+            HudLane(listOf(HudLaneDirection.LEFT, HudLaneDirection.STRAIGHT), null, true),
+            HudFrame.lane(LaneGuidanceLane(0, 2, listOf(-90, 0), null)))
+        // Apple Maps sent angles [90] with highlight 0 for "straight or right, straight recommended".
+        assertEquals(HudLane(listOf(HudLaneDirection.RIGHT, HudLaneDirection.STRAIGHT), HudLaneDirection.STRAIGHT, true),
+            HudFrame.lane(LaneGuidanceLane(0, 2, listOf(90), 0)))
+        assertEquals("no angles: the highlight, else straight",
+            HudLane(listOf(HudLaneDirection.STRAIGHT), HudLaneDirection.STRAIGHT, true),
+            HudFrame.lane(LaneGuidanceLane(0, 2, emptyList(), 0)))
+        assertEquals(HudLane(listOf(HudLaneDirection.STRAIGHT), null, false),
+            HudFrame.lane(LaneGuidanceLane(0, 0, emptyList(), null)))
     }
 
     @Test fun theLanesCapturedOnTheCarDrawTheThirdAsRecommendedToTheRight() {
@@ -159,11 +175,9 @@ class HudFrameTest {
         ), frame.lanes)
     }
 
-    @Test fun lanesOfAnotherManeuverAreNotShown() {
-        val lanes = listOf(LaneGuidanceLane(0, 2, 0, null))
-        assertEquals(1, HudFrame.from(route.copy(lanes = CarPlayGlance.LaneStrip(4, lanes)), ru)!!.lanes.size)
-        assertEquals(emptyList<HudLane>(), HudFrame.from(route.copy(lanes = CarPlayGlance.LaneStrip(3, lanes)), ru)!!.lanes)
-        assertEquals(emptyList<HudLane>(),
-            HudFrame.from(route.copy(maneuverIndex = null, lanes = CarPlayGlance.LaneStrip(4, lanes)), ru)!!.lanes)
+    @Test fun theShownStripIsDrawnWhateverItsLaneGuidanceIndex() {
+        val lanes = listOf(LaneGuidanceLane(0, 2, listOf(0), null))
+        assertEquals(1, HudFrame.from(route.copy(lanes = CarPlayGlance.LaneStrip(1, lanes)), ru)!!.lanes.size)
+        assertEquals(emptyList<HudLane>(), HudFrame.from(route.copy(lanes = null), ru)!!.lanes)
     }
 }

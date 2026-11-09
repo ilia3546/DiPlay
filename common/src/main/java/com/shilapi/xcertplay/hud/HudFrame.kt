@@ -40,7 +40,6 @@ data class HudFrame(
         fun from(glance: CarPlayGlance.Snapshot, units: HudUnits): HudFrame? {
             val type = glance.maneuverType ?: return null
             val (number, unit) = distance(glance.distanceMeters.coerceAtLeast(0).toLong(), units)
-            val strip = glance.lanes?.takeIf { glance.maneuverIndex != null && it.maneuverIndex == glance.maneuverIndex }
             val trip = glance.remainingMeters?.let { distance(it, units) }
             return HudFrame(
                 kind = sign(type),
@@ -48,7 +47,7 @@ data class HudFrame(
                 number = number,
                 unit = unit,
                 instructionLabel = glance.road,
-                lanes = strip?.lanes.orEmpty().map(::lane),
+                lanes = glance.lanes?.lanes.orEmpty().map(::lane),
                 tripMinutes = glance.remainingSeconds?.let { if (it < 60) "<1" else (it / 60).toString() }.orEmpty(),
                 minutesUnit = units.minutes,
                 tripNumber = trip?.first.orEmpty(),
@@ -83,12 +82,14 @@ data class HudFrame(
             else -> HudManeuver.UNKNOWN
         }
 
+        /** A lane without angles points to its highlight, or straight without one. */
         fun lane(lane: LaneGuidanceLane): HudLane {
-            val angle = direction(lane.angle)
+            val angles = lane.angles.ifEmpty { listOf(lane.highlightAngle ?: 0) }
             val highlight = lane.highlightAngle?.let(::direction)
+            val directions = (angles.mapNotNull(::direction) + listOfNotNull(highlight)).distinct()
             return HudLane(
-                directions = listOfNotNull(angle, highlight).distinct(),
-                highlighted = if (lane.recommended) highlight ?: angle else null,
+                directions = directions,
+                highlighted = if (lane.recommended) highlight ?: directions.singleOrNull() else null,
                 preferred = lane.recommended,
             )
         }

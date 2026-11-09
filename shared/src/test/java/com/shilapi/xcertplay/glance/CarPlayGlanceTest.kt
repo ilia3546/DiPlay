@@ -176,7 +176,7 @@ class CarPlayGlanceTest {
         CarPlayGlance.setConnected(true)
         val before = CarPlayGlance.snapshot()
         val strips = mutableListOf<List<LaneGuidanceLane>>()
-        CarPlayGlance.laneListener = { strips += it }
+        CarPlayGlance.laneListener = { strips += it.lanes }
 
         CarPlayGlance.onFrame(frame(0x5204) {
             group(2) { u16(0, 0); u8(1, 0); i16(2, -90) }
@@ -187,7 +187,7 @@ class CarPlayGlanceTest {
 
         assertEquals(2, strips.size)
         assertEquals(listOf(0, 1), strips[0].map { it.index })
-        assertEquals(-90, strips[0][0].angle)
+        assertEquals(listOf(-90), strips[0][0].angles)
         assertEquals(true, strips[0][1].recommended)
         assertEquals(90, strips[0][1].highlightAngle)
         assertTrue(strips[1].isEmpty())
@@ -199,10 +199,22 @@ class CarPlayGlanceTest {
         CarPlayGlance.onFrame(frame(0x5201) { u8(1, 1); u32(0x0a, 300); u16List(0x0d, listOf(index)) })
     }
 
-    private fun threeLanes() = CarPlayGlance.onFrame(frame(0x5204) {
+    private fun threeLanes(event: Int = 0) = CarPlayGlance.onFrame(frame(0x5204) {
+        u16(1, event)
         group(2) { u16(0, 0); u8(1, 0); i16(2, -90) }
         group(2) { u16(0, 1); u8(1, 0); i16(2, 0) }
         group(2) { u16(0, 2); u8(1, 2); i16(2, 0); i16(3, 90) }
+    })
+
+    private fun oneLane(event: Int) = CarPlayGlance.onFrame(frame(0x5204) {
+        u16(1, event)
+        group(2) { u16(0, 0); u8(1, 2); i16(2, 0) }
+    })
+
+    private fun showLanes(index: Int, showing: Boolean, total: Int? = null) = CarPlayGlance.onFrame(frame(0x5201) {
+        u16(0x10, index)
+        optionalU16(0x11, total)
+        u8(0x12, if (showing) 1 else 0)
     })
 
     @Test
@@ -245,40 +257,74 @@ class CarPlayGlanceTest {
     }
 
     @Test
-    fun theLaneStripBelongsToTheManeuverItArrivedOnAndReplaysToLateObservers() {
+    fun lanesSentAheadStayHiddenUntilRouteGuidanceShowsTheirEvent() {
+        // Apple Maps sends every lane event of the route at its start.
         CarPlayGlance.setConnected(true)
         routeTo(3)
-        threeLanes()
+        threeLanes(event = 0)
+        oneLane(event = 1)
+        assertNull("not showing yet", CarPlayGlance.snapshot().lanes)
+
+        showLanes(index = 1, showing = false, total = 2)
+        assertNull("index without showing", CarPlayGlance.snapshot().lanes)
+
+        showLanes(index = 1, showing = true)
         val strip = CarPlayGlance.snapshot().lanes!!
-        assertEquals(3, strip.maneuverIndex)
-        assertEquals(listOf(0, 1, 2), strip.lanes.map { it.index })
+        assertEquals(1, strip.laneGuidanceIndex)
+        assertEquals(1, strip.lanes.size)
+
+        routeTo(4)
+        assertEquals("a new maneuver keeps the event 0x5201 names", strip, CarPlayGlance.snapshot().lanes)
+
+        showLanes(index = 0, showing = true)
+        assertEquals(listOf(0, 1, 2), CarPlayGlance.snapshot().lanes!!.lanes.map { it.index })
 
         val snapshots = mutableListOf<CarPlayGlance.Snapshot>()
         CarPlayGlance.observe { snapshots += it }()
-        assertEquals(strip, snapshots.single().lanes)
+        assertEquals(CarPlayGlance.snapshot().lanes, snapshots.single().lanes)
     }
 
     @Test
-    fun anEmptyStripANewManeuverAndTheSessionEndClearTheLanes() {
+    fun anEmptyEventARerouteArrivalAndTheSessionEndClearTheLanes() {
         CarPlayGlance.setConnected(true)
         routeTo(3)
         threeLanes()
-        CarPlayGlance.onFrame(frame(0x5204) { })
-        assertNull("an empty strip", CarPlayGlance.snapshot().lanes)
+        showLanes(index = 0, showing = true)
+        CarPlayGlance.onFrame(frame(0x5204) { u16(1, 0) })
+        assertNull("an empty event", CarPlayGlance.snapshot().lanes)
 
         threeLanes()
-        routeTo(4)
-        assertNull("the next maneuver", CarPlayGlance.snapshot().lanes)
+        assertEquals(3, CarPlayGlance.snapshot().lanes!!.lanes.size)
+        CarPlayGlance.onFrame(frame(0x5201) { u8(1, 5) })
+        routeTo(3)
+        showLanes(index = 0, showing = true)
+        assertNull("rerouting drops the events of the old route", CarPlayGlance.snapshot().lanes)
 
         threeLanes()
+        showLanes(index = 0, showing = true)
+        showLanes(index = 0, showing = true, total = 0)
+        assertNull("no lane events left", CarPlayGlance.snapshot().lanes)
+
+        threeLanes()
+        showLanes(index = 0, showing = true)
+        CarPlayGlance.onFrame(frame(0x5201) { u8(1, 2); u16(0x10, 0); u8(0x12, 1) })
+        routeTo(3)
+        assertNull("arrival ignores the lane fields it carries", CarPlayGlance.snapshot().lanes)
+        showLanes(index = 0, showing = true)
+        assertNull("arrival drops the events", CarPlayGlance.snapshot().lanes)
+
+        threeLanes()
+        showLanes(index = 0, showing = true)
         CarPlayGlance.setConnected(false)
         assertNull("the session end", CarPlayGlance.snapshot().lanes)
         CarPlayGlance.setConnected(true)
-        assertNull(CarPlayGlance.snapshot().lanes)
+        routeTo(3)
+        threeLanes()
+        assertNull("showing does not outlive the session", CarPlayGlance.snapshot().lanes)
     }
 
     @Test
-    fun theLaneLogShowsTheStripsIndexNextToTheNextManeuvers() {
+    fun theLaneLogShowsEachEventAndTheShownIndex() {
         CarPlayGlance.setConnected(true)
         routeTo(3)
         CarPlayGlance.onFrame(frame(0x5204) { })
@@ -287,15 +333,45 @@ class CarPlayGlanceTest {
             u16(1, 4)
             group(2) { u16(0, 0); u8(1, 2); i16(2, 0) }
         })
-        val line = ShadowLog.getLogsForTag("DiPlay-Lane").single().msg
-        assertTrue(line, line.startsWith("0x5204 lanes=1 index=4 active=3 "))
+        showLanes(index = 4, showing = true, total = 5)
+        showLanes(index = 4, showing = true, total = 5)
+        val lines = ShadowLog.getLogsForTag("DiPlay-Lane").map { it.msg }
+        assertEquals(lines.toString(), 2, lines.size)
+        assertTrue(lines[0], lines[0].startsWith("0x5204 lanes=1 index=4 shown=- "))
+        assertEquals("0x5201 laneIndex=4 total=5 showing=true stored=[4]", lines[1])
     }
 
     @Test
-    fun aStripWithoutAManeuverIsNotKept() {
+    fun anEventWithoutAnIndexIsNeverShown() {
+        CarPlayGlance.setConnected(true)
+        routeTo(3)
+        showLanes(index = 0, showing = true)
+        CarPlayGlance.onFrame(frame(0x5204) { group(2) { u16(0, 0); u8(1, 2); i16(2, 0) } })
+        assertNull(CarPlayGlance.snapshot().lanes)
+    }
+
+    @Test
+    fun aFullStoreKeepsTheShownEvent() {
+        CarPlayGlance.setConnected(true)
+        routeTo(3)
+        threeLanes(event = 0)
+        showLanes(index = 0, showing = true)
+        for (event in 1..20) oneLane(event)
+        assertEquals(0, CarPlayGlance.snapshot().lanes!!.laneGuidanceIndex)
+        showLanes(index = 20, showing = true)
+        assertEquals(20, CarPlayGlance.snapshot().lanes!!.laneGuidanceIndex)
+        showLanes(index = 1, showing = true)
+        assertNull("the oldest events made room", CarPlayGlance.snapshot().lanes)
+    }
+
+    @Test
+    fun aShownStripWithoutAManeuverIsNotPublished() {
         CarPlayGlance.setConnected(true)
         threeLanes()
+        showLanes(index = 0, showing = true)
         assertNull(CarPlayGlance.snapshot().lanes)
+        routeTo(3)
+        assertEquals(3, CarPlayGlance.snapshot().lanes!!.lanes.size)
     }
 
     @Test
@@ -304,6 +380,7 @@ class CarPlayGlanceTest {
             CarPlayGlance.setConnected(true)
             routeTo(3)
             threeLanes()
+            showLanes(index = 0, showing = true)
             advance(30_000_000_000L)
             assertNull(CarPlayGlance.snapshot().lanes)
         }

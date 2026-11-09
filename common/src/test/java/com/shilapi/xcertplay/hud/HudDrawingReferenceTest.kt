@@ -216,7 +216,7 @@ class HudDrawingReferenceTest {
     ), HudUnits("м", "км", "мин", ','))!!
 
     @Test fun theLineKeepsItsBaselinesSpacingAndTextRoles() {
-        val frame = frame(300, listOf(LaneGuidanceLane(0, 2, 0, 90)), remainingMeters = 4200, remainingSeconds = 720)
+        val frame = frame(300, listOf(LaneGuidanceLane(0, 2, listOf(0), 90)), remainingMeters = 4200, remainingSeconds = 720)
         val r = Recording()
         HudDrawing.draw(r, frame, HudSettings(HudSettings.Variant.BALANCED, 215, 100, true, true))
         val text = r.ops.filter { it.type == "text" }
@@ -249,7 +249,7 @@ class HudDrawingReferenceTest {
     }
 
     @Test fun aTripThatDoesNotFitIsLeftOutAndChangesNothingElse() {
-        val eight = (0 until 8).map { LaneGuidanceLane(it, 0, 0, null) }
+        val eight = (0 until 8).map { LaneGuidanceLane(it, 0, listOf(0), null) }
         val extreme = frame(300, eight, remainingMeters = 100_000_000_000, remainingSeconds = Long.MAX_VALUE)
         val overflow = Recording()
         HudDrawing.draw(overflow, extreme, HudSettings(HudSettings.Variant.BOLD, 360, 100, true, true))

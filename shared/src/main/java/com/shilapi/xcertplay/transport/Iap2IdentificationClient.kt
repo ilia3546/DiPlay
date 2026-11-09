@@ -2,6 +2,7 @@ package com.shilapi.xcertplay.transport
 
 import com.shilapi.xcertplay.iap2.body.Iap2BodyReader
 import com.shilapi.xcertplay.iap2.catalog.Iap2Endpoints
+import com.shilapi.xcertplay.iap2.message.Iap2LaneGuidance
 import com.shilapi.xcertplay.iap2.message.Iap2Messages
 import com.shilapi.xcertplay.iap2.session.Iap2Session
 import com.shilapi.xcertplay.iap2.wire.Iap2Frame
@@ -397,7 +398,7 @@ class Iap2IdentificationClient(private val session: Iap2Session) {
                     // The iPhone only sends 0x5204 lane guidance when the accessory says it can
                     // store it; without these two it stays silent and no lane data arrives at all.
                     u16(7, 64) // MaxLaneGuidanceDescriptionLength
-                    u16(8, 8) // MaxLaneGuidanceStorageCapacity
+                    u16(8, Iap2LaneGuidance.STORAGE_CAPACITY) // MaxLaneGuidanceStorageCapacity
                 }
             }
         }

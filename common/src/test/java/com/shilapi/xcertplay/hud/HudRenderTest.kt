@@ -35,15 +35,15 @@ class HudRenderTest {
                 road = "Ленинградский проспект", remainingSeconds = 1500, remainingMeters = 18_400), full),
             Triple("lanes-highlighted", route.copy(maneuverType = 2, distanceMeters = 600, road = "МКАД",
                 remainingSeconds = 300, remainingMeters = 3100, lanes = lanes(
-                    LaneGuidanceLane(0, 0, -90, null), LaneGuidanceLane(1, 0, 0, null),
-                    LaneGuidanceLane(2, 2, 0, 90), LaneGuidanceLane(3, 2, 90, null),
+                    LaneGuidanceLane(0, 0, listOf(-90), null), LaneGuidanceLane(1, 0, listOf(0), null),
+                    LaneGuidanceLane(2, 2, listOf(0), 90), LaneGuidanceLane(3, 2, listOf(90), null),
                 )), full),
             Triple("long-label", route.copy(maneuverType = 49, distanceMeters = 800,
                 road = "Третье транспортное кольцо, съезд на Большую Дорогомиловскую улицу", remainingSeconds = 2400,
                 remainingMeters = 27_000), full),
             Triple("trip-does-not-fit", route.copy(maneuverType = 1, distanceMeters = 12_500, road = "Дмитровское шоссе",
                 remainingSeconds = 7500, remainingMeters = 148_000,
-                lanes = lanes(*Array(8) { LaneGuidanceLane(it, if (it < 2) 2 else 0, if (it < 2) -90 else 0, null) })),
+                lanes = lanes(*Array(8) { LaneGuidanceLane(it, if (it < 2) 2 else 0, listOf(if (it < 2) -90 else 0), null) })),
                 HudSettings(HudSettings.Variant.BOLD, HudSettings.DEFAULT_Y, 100, true, true)),
             Triple("neutral-sign", route.copy(maneuverType = 8, distanceMeters = 500, road = "Тверская улица"), full),
             Triple("ferry", route.copy(maneuverType = 15, distanceMeters = 2500, road = "Паромная переправа",
@@ -58,8 +58,8 @@ class HudRenderTest {
         val words = HudCallWords.of(RuntimeEnvironment.getApplication())
         val turn = HudFrame.from(route.copy(maneuverType = 2, distanceMeters = 350, road = "Садовое кольцо",
             remainingSeconds = 720, remainingMeters = 4200, lanes = lanes(
-                LaneGuidanceLane(0, 0, -90, null), LaneGuidanceLane(1, 0, 0, null),
-                LaneGuidanceLane(2, 2, 0, 90), LaneGuidanceLane(3, 2, 90, null),
+                LaneGuidanceLane(0, 0, listOf(-90), null), LaneGuidanceLane(1, 0, listOf(0), null),
+                LaneGuidanceLane(2, 2, listOf(0), 90), LaneGuidanceLane(3, 2, listOf(90), null),
             )), HudUnits.of(RuntimeEnvironment.getApplication()))!!
         val ringing = HudCall("Анна Петрова", "")
         val talkingMuted = HudCall("00:05", words.muted)
