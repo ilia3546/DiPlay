@@ -39,7 +39,6 @@ android {
 
     buildTypes {
         debug {
-            applicationIdSuffix = ".hudtest"
             versionNameSuffix = "-hud-test"
         }
         release {

@@ -50,7 +50,7 @@ sdk.dir=C:/Users/YOUR_NAME/AppData/Local/Android/Sdk
 ./gradlew :mobile:assembleDebug
 ```
 
-一般原始碼 APK 不包含配件認證身分，除非自行提供執行時認證素材；因此它可用於介面驗證，但獨立 CarPlay 連線需要下節素材。Debug 套件名稱為 `com.shihab.diplay.hudtest`，正式版為 `com.shihab.diplay`。
+一般原始碼 APK 不包含配件認證身分，除非自行提供執行時認證素材；因此它可用於介面驗證，但獨立 CarPlay 連線需要下節素材。Debug 與正式版的套件名稱都是 `com.shihab.diplay`。
 
 ## Android Studio 執行
 
