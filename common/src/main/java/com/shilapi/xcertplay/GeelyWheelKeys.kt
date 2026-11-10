@@ -41,12 +41,19 @@ internal object GeelyWheelKeys {
     private const val INPUT_CLASS = "com.geely.inputservice.InputService"
 
     private const val RETRY_MILLIS = 3_000L
+    // The input service reports a hold after 1.2 s, when firmware clusters run their own hold action
+    // (a doors and seat belts view); the dashboard toggles only on a longer hold, about 3 s in all.
+    private const val DASHBOARD_TOGGLE_HOLD_MILLIS = 1_800L
 
     private val handler = Handler(Looper.getMainLooper())
     private var appContext: Context? = null
     private var bound = false
     private var manager: IInputManager? = null
     private var listener: IInputListener? = null
+    private var forwarded = IntArray(0)
+    private var dashboardToggle = false
+    private var toggleKeyHeld = false
+    private var toggleHold = 0L
 
     /** Binds while a CarPlay session is active; safe to call repeatedly. */
     @Synchronized
@@ -63,6 +70,7 @@ internal object GeelyWheelKeys {
         if (input == null || registered == null || context == null) return
         // The release of a key held now may not come back after the listener is registered again.
         CarPlayMediaKeys.onExternalHoldStopped("key registration refreshed")
+        cancelDashboardToggle()
         runCatching { input.unregisterListener(registered, context.packageName) }
         register(input, registered, context)
     }
@@ -76,6 +84,8 @@ internal object GeelyWheelKeys {
         }
         listener = null
         manager = null
+        dashboardToggle = false
+        cancelDashboardToggle()
         handler.removeCallbacksAndMessages(null)
         val context = appContext
         if (bound && context != null) runCatching { context.unbindService(connection) }
@@ -97,13 +107,16 @@ internal object GeelyWheelKeys {
             val registered = object : IInputListener.Stub() {
                 override fun onKeyCodeEvent(keyCode: Int, event: Int, softKeyFunction: Int) {}
                 override fun onShortClick(keyCode: Int, softKeyFunction: Int) {
-                    forward(keyCode)
+                    if (synchronized(this@GeelyWheelKeys) { keyCode in forwarded }) forward(keyCode)
                 }
                 override fun onHoldingPressStarted(keyCode: Int, softKeyFunction: Int) {
-                    hold(keyCode)
+                    hold(keyCode, this)
                 }
                 override fun onHoldingPressStopped(keyCode: Int, softKeyFunction: Int) {
                     if (seekIndex(keyCode) != null) CarPlayMediaKeys.onExternalHoldStopped("released")
+                    if (keyCode == GeelyWheelKeyCodes.KEY_PLAY_PAUSE) {
+                        cancelDashboardToggle()
+                    }
                 }
                 override fun onLongPressTriggered(keyCode: Int, softKeyFunction: Int) {
                     Log.i(TAG, "long press key=$keyCode func=$softKeyFunction")
@@ -117,6 +130,7 @@ internal object GeelyWheelKeys {
             synchronized(this@GeelyWheelKeys) {
                 manager = input
                 listener = registered
+                cancelDashboardToggle()
             }
             register(input, registered, context)
         }
@@ -127,6 +141,7 @@ internal object GeelyWheelKeys {
             synchronized(this@GeelyWheelKeys) {
                 manager = null
                 listener = null
+                cancelDashboardToggle()
                 retry = appContext != null
             }
             if (retry) {
@@ -150,7 +165,13 @@ internal object GeelyWheelKeys {
             // double-fire. Keep only the microphone key (long press -> Siri) then, and the call keys.
             val bluetoothAudio = AirPlayPersistence.loadCarBluetoothAudio(context)
             val calls = MonjaroDashboardCall.enabled(context)
-            val codes = GeelyWheelKeyCodes.registeredCodes(bluetoothAudio, calls)
+            val options = MonjaroA3Options.load(context)
+            val toggle = options.customDashboard && options.dashboardWheelToggle
+            val codes = GeelyWheelKeyCodes.registeredCodes(bluetoothAudio, calls, dashboardToggle = toggle)
+            synchronized(this) {
+                forwarded = GeelyWheelKeyCodes.forwardedCodes(bluetoothAudio, calls)
+                dashboardToggle = toggle
+            }
             if (bluetoothAudio) {
                 Log.i(TAG, "car Bluetooth audio on: media keys pass to the head unit, " +
                     if (calls) "previous and next are wired for CarPlay calls only" else "only the Siri key is wired")
@@ -192,8 +213,34 @@ internal object GeelyWheelKeys {
     }
 
     // The firmware sends no short click after a hold, so a hold and [forward] never both act on one press.
-    private fun hold(keyCode: Int) {
+    private fun hold(keyCode: Int, source: IInputListener) {
         seekIndex(keyCode)?.let(CarPlayMediaKeys::onExternalHoldStarted)
+        if (keyCode == GeelyWheelKeyCodes.KEY_PLAY_PAUSE) holdDashboardToggle(source)
+    }
+
+    private fun holdDashboardToggle(source: IInputListener) {
+        val hold = synchronized(this) {
+            // A late callback of a listener already dropped by [stop] must not arm the toggle.
+            if (!dashboardToggle || toggleKeyHeld || listener !== source) return
+            toggleKeyHeld = true
+            ++toggleHold
+        }
+        handler.postDelayed({ toggleAfterLongHold(hold) }, DASHBOARD_TOGGLE_HOLD_MILLIS)
+    }
+
+    private fun toggleAfterLongHold(hold: Long) {
+        synchronized(this) {
+            if (!dashboardToggle || !toggleKeyHeld || hold != toggleHold) return
+        }
+        Log.i(TAG, "play/pause key held long: toggling the custom dashboard")
+        MonjaroCustomDashboard.toggleHidden()
+    }
+
+    /** Ends the current hold; its pending toggle sees a newer [toggleHold] and does nothing. */
+    @Synchronized
+    private fun cancelDashboardToggle() {
+        toggleKeyHeld = false
+        toggleHold++
     }
 
     internal fun sendToCall(controller: CarPlayController?, index: Int, action: GeelyCallKeys.Action) {

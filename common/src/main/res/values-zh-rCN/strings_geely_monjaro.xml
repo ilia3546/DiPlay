@@ -52,6 +52,8 @@
     <string name="settings_custom_dashboard_maneuver_description">CarPlay 导航时，在地图左上角显示下一个转向、距离和道路。立即生效。</string>
     <string name="settings_custom_dashboard_arrival">地图上显示到达信息</string>
     <string name="settings_custom_dashboard_arrival_description">CarPlay 导航时，在地图右上角显示到达时间以及剩余分钟和公里。立即生效。</string>
+    <string name="settings_custom_dashboard_wheel_toggle">长按方向盘播放/暂停键 3 秒切换回原车仪表（实验性）</string>
+    <string name="settings_custom_dashboard_wheel_toggle_description">长按方向盘播放/暂停键约 3 秒，会隐藏自定义仪表盘，把仪表交还给原车，直到再次长按同样时长或下次连接。短按仍会播放或暂停，较短的长按仍由车辆处理。适用于会把该按键长按告知应用的固件。立即生效。</string>
     <string name="settings_custom_dashboard_trip_qnx">从 QNX 读取行程数据…</string>
     <string name="settings_custom_dashboard_trip_qnx_on">行程数据：从 QNX 读取</string>
     <string name="settings_custom_dashboard_trip_qnx_off">行程数据：已关闭，未设置 QNX 密码</string>

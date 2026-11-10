@@ -226,6 +226,94 @@ class CustomDashboardStateTest {
         assertEquals(listOf("exit", "hide", "unwatch"), events.takeLast(3))
     }
 
+    @Test fun hidingLeavesTheModeAndShowingAgainEntersAfterANewFirstFrame() {
+        startAndDraw()
+        events.clear()
+        assertTrue(state.toggleHidden())
+        assertTrue(state.hidden)
+        assertFalse(state.engineeringModeWanted)
+        assertEquals(listOf("exit"), events)
+        confirmExit()
+        assertEquals(listOf("exit", "hide", "unwatch"), events)
+        assertTrue("the session keeps the dashboard and its stream", state.sessionEnabled && state.sessionStream)
+        assertTrue(state.toggleHidden())
+        assertFalse(state.hidden)
+        assertFalse(state.engineeringModeWanted)
+        drawFirstFrame()
+        assertEquals(listOf("exit", "hide", "unwatch", "watch", "show", "enter"), events)
+        assertTrue(state.engineeringModeWanted)
+    }
+
+    @Test fun showingAgainBeforeTheExitIsConfirmedKeepsTheWindowAndEntersAgain() {
+        startAndDraw()
+        events.clear()
+        state.toggleHidden()
+        val left = pendingLeft!!
+        state.toggleHidden()
+        assertEquals(listOf("exit", "enter"), events)
+        left()
+        assertEquals(listOf("exit", "enter"), events)
+        assertTrue(current!!())
+    }
+
+    @Test fun theFirstExitsLateConfirmationDoesNotEndTheLatestExit() {
+        startAndDraw()
+        state.toggleHidden()
+        val firstLeft = pendingLeft!!
+        state.toggleHidden()
+        state.toggleHidden()
+        events.clear()
+        firstLeft()
+        assertEquals(emptyList<String>(), events)
+        confirmExit()
+        assertEquals(listOf("hide", "unwatch"), events)
+    }
+
+    @Test fun aReconnectWithinTheGraceStaysHidden() {
+        startAndDraw()
+        state.toggleHidden()
+        confirmExit()
+        state.connectedChanged(false)
+        advance(CustomDashboardState.SESSION_END_GRACE_MILLIS - 1)
+        events.clear()
+        state.sessionStarting()
+        state.connectedChanged(true)
+        assertTrue(state.hidden)
+        assertEquals(listOf("session"), events)
+    }
+
+    @Test fun turningTheToggleOffShowsAHiddenDashboardAgain() {
+        startAndDraw()
+        state.toggleHidden()
+        confirmExit()
+        events.clear()
+        state.showAgain()
+        assertFalse(state.hidden)
+        drawFirstFrame()
+        assertEquals(listOf("watch", "show", "enter"), events)
+    }
+
+    @Test fun eachNewSessionStartsShown() {
+        startAndDraw()
+        state.toggleHidden()
+        confirmExit()
+        state.connectedChanged(false)
+        advance(CustomDashboardState.SESSION_END_GRACE_MILLIS)
+        events.clear()
+        startAndDraw()
+        assertFalse(state.hidden)
+        assertEquals(listOf("session", "watch", "show", "enter"), events)
+    }
+
+    @Test fun theToggleChangesNothingWithoutADashboardSession() {
+        assertFalse("no session yet", state.toggleHidden())
+        flag = false
+        connect()
+        assertFalse("the session has no dashboard", state.toggleHidden())
+        assertFalse(state.hidden)
+        assertEquals(emptyList<String>(), events)
+    }
+
     @Test fun turningTheOptionOffLeavesAtOnceAndTurningItOnWaitsForTheNextSession() {
         flag = false
         connect()

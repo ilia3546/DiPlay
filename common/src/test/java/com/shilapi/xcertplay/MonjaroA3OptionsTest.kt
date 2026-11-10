@@ -27,6 +27,7 @@ class MonjaroA3OptionsTest {
         AirPlayPersistence.saveDashboardCalls(context, true)
         AirPlayPersistence.saveWheelSeek(context, true)
         AirPlayPersistence.saveCustomDashboard(context, true)
+        AirPlayPersistence.saveDashboardWheelToggle(context, true)
         AirPlayPersistence.saveDashboardBackground(context, DashboardBackground.NEON)
         AirPlayPersistence.saveDashboardDimmingPercent(context, 40)
         AirPlayPersistence.saveDashboardIconBackdrop(context, true)
@@ -54,8 +55,8 @@ class MonjaroA3OptionsTest {
         ShadowBuild.setModel("KX11-A3-L1")
         assertEquals(MonjaroA3Options(rootHotspotDetails = true, disconnectPhoneBluetooth = true, hotspotAudioFirewall = true,
             microphoneInput = MicrophoneInput.ALL_CABIN_MICROPHONES, dashboardMusic = true, dashboardCalls = true, wheelSeek = true, customDashboard = true,
-            dashboardBackground = DashboardBackground.NEON, dashboardDimmingPercent = 40, dashboardIconBackdrop = true,
-            hudManeuvers = true,
+            dashboardWheelToggle = true, dashboardBackground = DashboardBackground.NEON, dashboardDimmingPercent = 40,
+            dashboardIconBackdrop = true, hudManeuvers = true,
             hudDensity = HudSettings.Variant.BOLD, hudHeight = 260, hudScalePercent = 80, hudLanes = false, hudTrip = false),
             MonjaroA3Options.load(context))
     }

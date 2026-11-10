@@ -145,6 +145,7 @@ object AirPlayPersistence {
     private const val KEY_PAUSE_CARPLAY_FOR_CAR_AUDIO = "monjaro_pause_carplay_for_car_audio"
     private const val KEY_WHEEL_SEEK = "monjaro_wheel_seek"
     private const val KEY_CUSTOM_DASHBOARD = "monjaro_custom_dashboard"
+    private const val KEY_DASHBOARD_WHEEL_TOGGLE = "monjaro_dashboard_wheel_toggle"
     private const val KEY_DASHBOARD_BACKGROUND = "monjaro_dashboard_background"
     private const val KEY_DASHBOARD_DIMMING = "monjaro_dashboard_dimming_percent"
     private const val KEY_DASHBOARD_MAP_WIDTH = "monjaro_dashboard_map_width"
@@ -652,6 +653,14 @@ object AirPlayPersistence {
     fun saveWheelSeek(context: Context, enabled: Boolean) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putBoolean(KEY_WHEEL_SEEK, enabled).apply()
+    }
+
+    fun loadDashboardWheelToggle(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_DASHBOARD_WHEEL_TOGGLE, false)
+
+    fun saveDashboardWheelToggle(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putBoolean(KEY_DASHBOARD_WHEEL_TOGGLE, enabled).apply()
     }
 
     fun saveMicrophoneInput(context: Context, input: MicrophoneInput) {

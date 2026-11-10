@@ -52,6 +52,8 @@
     <string name="settings_custom_dashboard_maneuver_description">Поки CarPlay веде маршрутом, у лівому верхньому куті мапи показуються наступний поворот, відстань до нього та вулиця. Застосовується одразу.</string>
     <string name="settings_custom_dashboard_arrival">Прибуття на мапі</string>
     <string name="settings_custom_dashboard_arrival_description">Поки CarPlay веде маршрутом, у правому верхньому куті мапи показуються час прибуття та залишок хвилин і кілометрів. Застосовується одразу.</string>
+    <string name="settings_custom_dashboard_wheel_toggle">Утримання кнопки паузи на кермі 3 секунди повертає штатну панель приладів (експериментально)</string>
+    <string name="settings_custom_dashboard_wheel_toggle_description">Утримання кнопки відтворення/паузи на кермі близько 3 секунд ховає власну панель і повертає екран штатній до наступного такого утримання або наступного підключення. Коротке натискання, як і раніше, ставить на паузу та відновлює відтворення, а коротше утримання лишається автомобілю. Для прошивок, які повідомляють застосункам про утримання цієї кнопки. Застосовується одразу.</string>
     <string name="settings_custom_dashboard_trip_qnx">Дані поїздки з QNX…</string>
     <string name="settings_custom_dashboard_trip_qnx_on">Дані поїздки: читаються з QNX</string>
     <string name="settings_custom_dashboard_trip_qnx_off">Дані поїздки: вимкнено, немає пароля QNX</string>

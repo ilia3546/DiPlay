@@ -2221,6 +2221,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 getString(R.string.settings_custom_dashboard_description), customDashboard) {
                 AirPlayPersistence.saveCustomDashboard(this, it)
                 MonjaroCustomDashboard.settingChanged()
+                GeelyWheelKeys.refreshRegistration()
                 if (it) {
                     if (!CenterMapOverlay.permitted(this)) openOverlayPermission()
                     markReconnectNeeded()
@@ -2327,6 +2328,13 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     AirPlayPersistence.loadDashboardArrival(this)) {
                     AirPlayPersistence.saveDashboardArrival(this, it)
                     MonjaroCustomDashboard.settingChanged()
+                }
+                toggle(card, getString(R.string.settings_custom_dashboard_wheel_toggle),
+                    getString(R.string.settings_custom_dashboard_wheel_toggle_description),
+                    AirPlayPersistence.loadDashboardWheelToggle(this)) {
+                    AirPlayPersistence.saveDashboardWheelToggle(this, it)
+                    GeelyWheelKeys.refreshRegistration()
+                    if (!it) MonjaroCustomDashboard.wheelToggleTurnedOff()
                 }
             }
             val hudManeuvers = AirPlayPersistence.loadHudManeuvers(this)

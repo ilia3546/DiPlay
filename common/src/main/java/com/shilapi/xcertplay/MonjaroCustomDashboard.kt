@@ -40,7 +40,9 @@ internal interface DashboardWindow {
  * permission or the display, and [terminate] leave the mode at once, while a session end waits
  * [SESSION_END_GRACE_MILLIS] so that a reconnect does not leave and enter the mode again. The window stays until
  * the exit is confirmed, so that the cluster never shows engineering mode without it, unless it cannot stay: the
- * display or the permission is gone, or the process ends. Main thread only.
+ * display or the permission is gone, or the process ends. [toggleHidden] leaves the mode and brings it back
+ * within the running session; a reconnect within the grace keeps it hidden, and the next session starts shown.
+ * Main thread only.
  */
 internal class CustomDashboardState(
     private val enabled: () -> Boolean,
@@ -63,12 +65,18 @@ internal class CustomDashboardState(
     /** Whether the session's cluster stream was sized for the dashboard; turning the option off keeps it so. */
     var sessionStream = false
         private set
+
+    /** Whether [toggleHidden] gave the running session's cluster back to the firmware dashboard. */
+    var hidden = false
+        private set
     private var terminating = false
     private var watching = false
     private var generation = 0L
     private var shownGeneration: Long? = null
     private var drawnGeneration: Long? = null
     private var leavingGeneration: Long? = null
+    private var exits = 0L
+    private var leavingExit: Long? = null
     @Volatile private var enterableGeneration: Long? = null
 
     /**
@@ -78,6 +86,7 @@ internal class CustomDashboardState(
     val engineeringModeWanted: Boolean get() = enterableGeneration != null
     private val sessionEnd = Runnable {
         sessionActive = false
+        hidden = false
         update()
     }
 
@@ -104,6 +113,24 @@ internal class CustomDashboardState(
     fun settingChanged() {
         if (!sessionEnabled || enabled()) return
         sessionEnabled = false
+        hidden = false
+        update()
+    }
+
+    /** Hides the running session's dashboard, or shows it again; false, changing nothing, while it has none. */
+    fun toggleHidden(): Boolean {
+        if (terminating || !sessionEnabled || !sessionActive) return false
+        hidden = !hidden
+        log("custom dashboard ${if (hidden) "hidden" else "shown again"} for this session")
+        update()
+        return true
+    }
+
+    /** Shows the running session's dashboard again if [toggleHidden] hid it. */
+    fun showAgain() {
+        if (!hidden) return
+        hidden = false
+        log("custom dashboard shown again: the toggle was turned off")
         update()
     }
 
@@ -114,7 +141,7 @@ internal class CustomDashboardState(
     }
 
     private fun update() {
-        val wanted = !terminating && sessionEnabled && sessionActive
+        val wanted = !terminating && sessionEnabled && sessionActive && !hidden
         val keep = !terminating && (wanted || shownGeneration != null)
         if (keep != watching) {
             watching = keep
@@ -125,8 +152,10 @@ internal class CustomDashboardState(
             enterableGeneration = null
             val shown = shownGeneration ?: return
             if (leavingGeneration != shown) {
+                val token = ++exits
                 leavingGeneration = shown
-                exit { left(shown) }
+                leavingExit = token
+                exit { left(shown, token) }
             }
             if (!available) {
                 hideWindow()
@@ -136,6 +165,7 @@ internal class CustomDashboardState(
             return
         }
         leavingGeneration = null
+        leavingExit = null
         if (shownGeneration == null) {
             val next = ++generation
             shownGeneration = next
@@ -157,8 +187,8 @@ internal class CustomDashboardState(
         update()
     }
 
-    private fun left(shown: Long) {
-        if (leavingGeneration != shown) return
+    private fun left(shown: Long, token: Long) {
+        if (leavingGeneration != shown || leavingExit != token) return
         hideWindow()
         update()
     }
@@ -168,6 +198,7 @@ internal class CustomDashboardState(
         shownGeneration = null
         drawnGeneration = null
         leavingGeneration = null
+        leavingExit = null
     }
 
     companion object {
@@ -218,6 +249,19 @@ internal object MonjaroCustomDashboard {
 
     /** Main thread: whether the running session's cluster stream was sized for the dashboard. */
     val sessionStream: Boolean get() = state?.sessionStream ?: false
+
+    /** From any thread: [CustomDashboardState.toggleHidden] for the running session. */
+    fun toggleHidden() {
+        main.post {
+            val toggled = state?.toggleHidden()
+            if (toggled != true) Log.i(TAG, "custom dashboard toggle ignored: no session shows it")
+        }
+    }
+
+    /** The steering-wheel toggle was turned off: nothing may hide the dashboard any longer. */
+    fun wheelToggleTurnedOff() {
+        main.post { state?.showAgain() }
+    }
 
     fun settingChanged() {
         main.post {
