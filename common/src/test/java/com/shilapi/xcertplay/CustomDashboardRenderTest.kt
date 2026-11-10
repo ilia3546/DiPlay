@@ -9,6 +9,7 @@ import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Shader
+import android.graphics.SurfaceTexture
 import android.net.Uri
 import android.os.Looper
 import android.view.View
@@ -23,6 +24,7 @@ import java.util.TimeZone
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -48,10 +50,10 @@ class CustomDashboardRenderTest {
         DashboardPhoto.file(context).delete()
     }
 
-    @Test fun everyPresetRendersAroundTheMapSkeleton() {
+    @Test fun everyPresetRendersWithoutTheMapUntilItHasAPicture() {
         for (preset in DashboardBackground.presets) {
             val frame = render("preset-${preset.name.lowercase()}") { showBackground(preset, 0) { null } }
-            assertEquals("${preset.name} map skeleton", SKELETON, frame.getPixel(960, 390))
+            assertNotEquals("${preset.name} map card", MAP_EMPTY, frame.getPixel(960, 390))
             frame.recycle()
         }
     }
@@ -395,8 +397,8 @@ class CustomDashboardRenderTest {
         call.show(shown, evening)
     }
 
-    @Test fun theRouteCardsOverTheEmptyMap() {
-        val frame = render("map-route") {
+    @Test fun theRouteCardsOverTheMap() {
+        val frame = render("map-route", playing = true) {
             showBackground(DashboardBackground.OCEAN, 0) { null }
             showTemperature(6.4f)
             map.showRoute(DashboardRoute(ClusterTurnGuidance.fromApple(2, 0, 350, "Садовое кольцо"),
@@ -404,13 +406,13 @@ class CustomDashboardRenderTest {
                 is24Hour = true, zone = moscow)
         }
         assertEquals("the maneuver tile", Color.rgb(0x2f, 0x7b, 0xff), frame.getPixel(MonjaroDashboardLayout.defaultMap.maneuverCard.left + 16, MonjaroDashboardLayout.defaultMap.maneuverCard.top + 30))
-        assertEquals("the map below the cards", SKELETON, frame.getPixel(960, 500))
+        assertEquals("the map below the cards", MAP_PICTURE, frame.getPixel(960, 500))
     }
 
     @Test fun theDistanceFitsBesideTheArrivalOnTheSmallestMap() {
         for (meters in listOf(10, 530, 1_250, 12_400)) {
             var card: DashboardManeuverCard? = null
-            render(if (meters == 530) "map-route-small" else null) {
+            render(if (meters == 530) "map-route-small" else null, playing = true) {
                 showBackground(DashboardBackground.OCEAN, 0) { null }
                 map.resize(MonjaroDashboardLayout.MapGeometry(MonjaroDashboardLayout.mapWidths.first(), 304))
                 map.showRoute(DashboardRoute(ClusterTurnGuidance.fromApple(2, 0, meters, "Расторопово"),
@@ -451,7 +453,7 @@ class CustomDashboardRenderTest {
 
     @Test fun withoutTheArrivalTheManeuverGrowsToSixtyPercentOfTheMap() {
         var card: DashboardManeuverCard? = null
-        render("map-route-alone") {
+        render("map-route-alone", playing = true) {
             showBackground(DashboardBackground.OCEAN, 0) { null }
             map.arrivalShown = false
             map.showRoute(DashboardRoute(ClusterTurnGuidance.fromApple(2, 0, 530, "Улица Сергея Эйзенштейна"),
@@ -470,7 +472,7 @@ class CustomDashboardRenderTest {
         listOf(this) + if (this is ViewGroup) (0 until childCount).flatMap { getChildAt(it).tree() } else emptyList()
 
     @Test fun theParkedMapIsDimmedTowardTheCentre() {
-        val frame = render("map-parked", attached = true) {
+        val frame = render("map-parked", playing = true) {
             showBackground(DashboardBackground.OCEAN, 0) { null }
             showTemperature(6.4f)
             map.video.showParked(true)
@@ -482,11 +484,11 @@ class CustomDashboardRenderTest {
         val centre = Color.red(frame.getPixel(centreX, centreY)) + Color.blue(frame.getPixel(centreX, centreY))
         val edge = Color.red(frame.getPixel(edgeX, edgeY)) + Color.blue(frame.getPixel(edgeX, edgeY))
         assertTrue(centre < edge)
-        assertTrue(edge < 0x12 + 0x21)
+        assertTrue(edge < Color.red(MAP_PICTURE) + Color.blue(MAP_PICTURE))
     }
 
     @Test fun unknownValuesAreOneDash() {
-        render("unknown-dash") {
+        render("unknown-dash", playing = true) {
             showBackground(DashboardBackground.OCEAN, 0) { null }
             showTemperature(null)
             trip.show(DashboardTrip())
@@ -495,37 +497,134 @@ class CustomDashboardRenderTest {
         }
     }
 
-    @Test fun theSkeletonIsAGridWithAPassingShine() {
-        val box = MonjaroDashboardLayout.defaultMap.map
-        val height = box.height ?: 0
-        val still = render("map-skeleton") { showBackground(DashboardBackground.OCEAN, 0) { null } }
-        assertEquals(SKELETON, still.getPixel(box.left + 35, box.top + 35))
-        val line = still.getPixel(box.left + 70, box.top + 35)
-        assertTrue("a vertical grid line", Color.red(line) > 0x10 && Color.red(line) < 0x20)
-        assertTrue("a horizontal grid line", Color.red(still.getPixel(box.left + 35, box.top + 69)) > 0x10)
-        val shining = render("map-skeleton-shine") {
-            showBackground(DashboardBackground.OCEAN, 0) { null }
-            map.descendants<DashboardMapSkeleton>().single().shinePosition = 0.5f
+    @Test fun withoutAPictureTheMapAndTheIconBackdropAreNotDrawn() {
+        val bare = render(null, attached = true) { map.visibility = View.GONE }
+        val stopped = render("map-hidden", attached = true) {
+            showIconBackdrop(true)
+            idle()
         }
-        val centre = shining.getPixel(box.left + box.width / 2 + 5, box.top + height / 2 + 5)
-        assertTrue("the shine crosses the middle", Color.red(centre) > 0x10 + 8)
-        assertEquals("but not the sides", SKELETON, shining.getPixel(box.left + 5, box.top + height / 2 + 5))
+        assertTrue("no stream", stopped.sameAs(bare))
+        val flat = render(null, attached = true) {
+            showIconBackdrop(true)
+            map.video.readFrame = { paintFlat(it) }
+            map.video.onSurfaceTextureUpdated(SurfaceTexture(0))
+            idleFor(MonjaroDashboardLayout.MAP_BLANK_CHECK_MILLIS * 3)
+            assertTrue(map.video.live)
+            assertFalse(map.video.hasPicture)
+        }
+        assertTrue("frames of one flat colour", flat.sameAs(bare))
     }
 
-    @Test fun theSkeletonShinesOnlyWhileShownInAWindow() {
-        val view = MonjaroDashboardView(context)
-        val skeleton = view.map.descendants<DashboardMapSkeleton>().single()
-        val sweep = DashboardMapSkeleton::class.java.getDeclaredField("sweeping").apply { isAccessible = true }
-        fun sweeping() = (sweep.get(skeleton) as ValueAnimator).isStarted
-        assertFalse(sweeping())
-        Robolectric.buildActivity(Activity::class.java).setup().visible().get().setContentView(view)
-        assertTrue(sweeping())
-        skeleton.visibility = View.GONE
-        assertFalse(sweeping())
-        skeleton.visibility = View.VISIBLE
-        assertTrue(sweeping())
+    @Test fun withAPictureTheMapAndTheIconBackdropShow() {
+        lateinit var reveal: View
+        lateinit var backdrop: View
+        val shown = render("map-playing", playing = true) {
+            showIconBackdrop(true)
+            idle()
+            reveal = map.parent as View
+            backdrop = descendants<DashboardIconBackdrop>().single()
+        }
+        for (view in listOf(reveal, backdrop)) {
+            assertEquals(1f, view.alpha)
+            assertEquals(1f, view.scaleX)
+        }
+        val box = MonjaroDashboardLayout.defaultMap.map
+        assertEquals(MAP_PICTURE, shown.getPixel(box.left + box.width / 2, box.top + (box.height ?: 0) / 2))
+        val without = render(null, playing = true) {}
+        val pad = MonjaroDashboardLayout.iconBackdrop.let { it.left + it.width / 2 to it.top + (it.height ?: 0) / 2 }
+        assertNotEquals("the backdrop", without.getPixel(pad.first, pad.second), shown.getPixel(pad.first, pad.second))
+    }
+
+    @Test fun theMapAppearsAndHidesFromWhereItIs() {
+        val view = attached()
+        view.showIconBackdrop(true)
+        val reveal = view.map.parent as View
+        val backdrop = view.descendants<DashboardIconBackdrop>().single()
+        assertEquals(0f, reveal.alpha)
+        assertEquals(MonjaroDashboardLayout.MAP_REVEAL_SCALE, reveal.scaleX)
+        assertEquals(0f, backdrop.alpha)
+        assertEquals(MonjaroDashboardLayout.ICON_BACKDROP_REVEAL_SCALE, backdrop.scaleX)
+        view.map.video.readFrame = { paintMap(it) }
+        view.map.video.onSurfaceTextureUpdated(SurfaceTexture(0))
+        idle()
+        assertTrue(view.map.video.hasPicture)
+        for (shown in listOf(reveal, backdrop)) {
+            assertEquals(1f, shown.alpha)
+            assertEquals(1f, shown.scaleX)
+            assertEquals(1f, shown.scaleY)
+        }
+        view.revealAt(MonjaroDashboardLayout.MAP_REVEAL_FADE_MILLIS / 2)
+        assertTrue(reveal.alpha in 0.05f..0.95f)
+        assertTrue(reveal.scaleX in MonjaroDashboardLayout.MAP_REVEAL_SCALE + 0.005f..0.995f)
+        assertEquals(reveal.scaleX, reveal.scaleY)
+        assertEquals(reveal.alpha, backdrop.alpha)
+        assertTrue(backdrop.scaleX in MonjaroDashboardLayout.ICON_BACKDROP_REVEAL_SCALE + 0.005f..0.995f)
+        view.map.video.keepFrame()
+        view.showTime(evening, is24Hour = true, zone = moscow)
+        snapshot(view, "map-reveal-middle")
+        val (alpha, scale) = reveal.alpha to reveal.scaleX
+        val backdropScale = backdrop.scaleX
+        view.map.video.streamStopped()
+        assertEquals("the hiding starts where the showing was", alpha, reveal.alpha)
+        assertEquals(scale, reveal.scaleX)
+        assertEquals(backdropScale, backdrop.scaleX)
+        view.revealAt(50)
+        assertTrue(reveal.alpha < alpha && reveal.alpha > 0f)
+        assertTrue(reveal.scaleX < scale && reveal.scaleX > MonjaroDashboardLayout.MAP_REVEAL_SCALE)
+        assertTrue(backdrop.scaleX < backdropScale)
+        idle()
+        assertEquals(0f, reveal.alpha)
+        assertEquals(MonjaroDashboardLayout.MAP_REVEAL_SCALE, reveal.scaleX)
+        assertEquals(0f, backdrop.alpha)
+        assertEquals(MonjaroDashboardLayout.ICON_BACKDROP_REVEAL_SCALE, backdrop.scaleX)
+    }
+
+    /**
+     * Robolectric runs an animation to its end within one idle, so a moment of the appearance is set directly. A seek
+     * of an animation that has no frame yet would also become the start of the next one, as a running one's does not.
+     */
+    private fun MonjaroDashboardView.revealAt(millis: Long) {
+        for (name in listOf("mapFade", "mapGrow")) {
+            val animator = MonjaroDashboardView::class.java.getDeclaredField(name).apply { isAccessible = true }
+                .get(this) as ValueAnimator
+            animator.currentPlayTime = millis
+            ValueAnimator::class.java.getDeclaredField("mSeekFraction").apply { isAccessible = true }.setFloat(animator, -1f)
+        }
+    }
+
+    @Test fun aFlatFrameHidesThePlayingMapAndAPictureBringsItBack() {
+        val view = attached()
+        val reveal = view.map.parent as View
+        view.map.video.readFrame = { paintMap(it) }
+        view.map.video.onSurfaceTextureUpdated(SurfaceTexture(0))
+        assertTrue(view.map.video.live)
+        assertFalse("not before the first probe", view.map.video.hasPicture)
+        idle()
+        assertTrue(view.map.video.hasPicture)
+        assertEquals(1f, reveal.alpha)
+        view.map.video.readFrame = { paintFlat(it) }
+        idleFor(MonjaroDashboardLayout.MAP_BLANK_CHECK_MILLIS)
+        assertTrue(view.map.video.live)
+        assertFalse(view.map.video.hasPicture)
+        assertEquals(0f, reveal.alpha)
+        view.map.video.readFrame = { paintMap(it) }
+        idleFor(MonjaroDashboardLayout.MAP_BLANK_CHECK_MILLIS)
+        assertTrue(view.map.video.hasPicture)
+        assertEquals(1f, reveal.alpha)
+    }
+
+    @Test fun enteringAWindowShowsTheMapAtOnce() {
+        val view = attached()
+        val reveal = view.map.parent as View
+        view.map.video.readFrame = { paintMap(it) }
+        view.map.video.onSurfaceTextureUpdated(SurfaceTexture(0))
+        idle()
+        view.revealAt(MonjaroDashboardLayout.MAP_REVEAL_FADE_MILLIS / 2)
+        assertTrue(reveal.alpha < 1f)
         (view.parent as ViewGroup).removeView(view)
-        assertFalse(sweeping())
+        Robolectric.buildActivity(Activity::class.java).setup().visible().get().setContentView(view)
+        assertEquals(1f, reveal.alpha)
+        assertEquals(1f, reveal.scaleX)
     }
 
     @Test fun theIconBackdropShowsTheWallpaperAndMapUnderItBlurred() {
@@ -535,12 +634,11 @@ class CustomDashboardRenderTest {
         val y = box.top + (box.height ?: 0) / 2
         for (width in listOf(600, 456)) {
             // The backdrop copies what is under it in a task of its own, outside drawing.
-            val frame = render("icon-backdrop-neon-$width", attached = true) {
+            val frame = render("icon-backdrop-neon-$width", playing = true) {
                 showBackground(DashboardBackground.NEON, 0) { null }
                 showMap(MonjaroDashboardLayout.MapGeometry(width, 304))
-                map.descendants<DashboardMapSkeleton>().single().shinePosition = 0f
                 showIconBackdrop(true)
-                shadowOf(Looper.getMainLooper()).idle()
+                idle()
             }
             val off = render(null) {
                 showBackground(DashboardBackground.NEON, 0) { null }
@@ -560,9 +658,12 @@ class CustomDashboardRenderTest {
         }
     }
 
-    @Test fun theIconBackdropFadesInWithTheMapButDoesNotGrow() {
-        val view = MonjaroDashboardView(context)
+    @Test fun theIconBackdropFadesInWithTheMapAtTheStartUpButDoesNotGrow() {
+        val view = attached()
         view.showIconBackdrop(true)
+        view.map.video.readFrame = { paintMap(it) }
+        view.map.video.onSurfaceTextureUpdated(SurfaceTexture(0))
+        idle()
         val frame = DashboardBoot.at(3_600)
         view.showBoot(frame)
         val backdrop = view.descendants<DashboardIconBackdrop>().single()
@@ -578,7 +679,6 @@ class CustomDashboardRenderTest {
         val booted = render("boot-finished", attached = true) {
             showBackground(DashboardBackground.NEON, 0) { null }
             showTemperature(6.4f)
-            map.descendants<DashboardMapSkeleton>().single().shinePosition = 0f
         }
         val plain = render(null) {
             showBackground(DashboardBackground.NEON, 0) { null }
@@ -608,17 +708,52 @@ class CustomDashboardRenderTest {
         }
     }
 
-    /** [attached] puts the view in an activity's window first and plays its start-up, so that its animations run. */
-    private fun render(name: String?, attached: Boolean = false, setUp: MonjaroDashboardView.() -> Unit): Bitmap {
+    /** A dashboard in an activity's window after its start-up, so that its animations and the map's probe run. */
+    private fun attached(): MonjaroDashboardView {
         val view = MonjaroDashboardView(context)
-        if (attached) {
-            Robolectric.buildActivity(Activity::class.java).setup().visible().get().setContentView(view)
-            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(DashboardBoot.DURATION_MILLIS + 100))
-        }
+        Robolectric.buildActivity(Activity::class.java).setup().visible().get().setContentView(view)
+        idleFor(DashboardBoot.DURATION_MILLIS + 100)
+        return view
+    }
+
+    private fun idle() = shadowOf(Looper.getMainLooper()).idle()
+
+    private fun idleFor(millis: Long) = shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(millis))
+
+    /** A map picture of [MAP_PICTURE] with a road near its left edge. */
+    private fun paintMap(frame: Bitmap) {
+        frame.eraseColor(MAP_PICTURE)
+        Canvas(frame).drawRect(frame.width * 0.1f, 0f, frame.width * 0.25f, frame.height.toFloat(),
+            Paint().apply { color = Color.rgb(0x4a, 0x9b, 0xff) })
+    }
+
+    private fun paintFlat(frame: Bitmap) = frame.eraseColor(Color.rgb(0x1a, 0x1a, 0x1a))
+
+    /**
+     * [attached] puts the view in an activity's window first and plays its start-up, so that its animations run;
+     * [playing] also plays a map with a picture there.
+     */
+    private fun render(
+        name: String?,
+        attached: Boolean = false,
+        playing: Boolean = false,
+        setUp: MonjaroDashboardView.() -> Unit,
+    ): Bitmap {
+        val view = if (attached || playing) attached() else MonjaroDashboardView(context)
         view.apply {
             showTime(evening, is24Hour = true, zone = moscow)
+            if (playing) {
+                map.video.readFrame = { paintMap(it) }
+                map.video.onSurfaceTextureUpdated(SurfaceTexture(0))
+                idle()
+                map.video.keepFrame()
+            }
             setUp()
         }
+        return snapshot(view, name)
+    }
+
+    private fun snapshot(view: MonjaroDashboardView, name: String?): Bitmap {
         view.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
             View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
         assertEquals(1920 to 720, view.measuredWidth to view.measuredHeight)
@@ -633,7 +768,8 @@ class CustomDashboardRenderTest {
     }
 
     private companion object {
-        val SKELETON = Color.rgb(0x10, 0x15, 0x1d)
+        val MAP_EMPTY = Color.rgb(0x12, 0x18, 0x21)
+        val MAP_PICTURE = Color.rgb(0x24, 0x34, 0x44)
 
         /** The top of the firmware's fuel, temperature and gear readouts at the bottom of design v2. */
         const val FIRMWARE_BOTTOM_ROW_TOP = 636

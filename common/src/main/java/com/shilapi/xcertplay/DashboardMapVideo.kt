@@ -25,10 +25,11 @@ import kotlin.math.hypot
 import kotlin.math.max
 
 /**
- * The CarPlay map inside the dashboard's map card: the cluster stream's texture cropped to the card, the skeleton
- * while it has no live picture or the picture is one flat colour, and the parked look, a blurred copy of the
- * picture dimmed toward the centre, where the firmware draws the car over it. In a software canvas, where the
- * texture draws nothing, it draws the frame that [keepFrame] kept last, cropped and rounded as on screen.
+ * The CarPlay map inside the dashboard's map card: the cluster stream's texture cropped to the card, and the parked
+ * look, a blurred copy of the picture dimmed toward the centre, where the firmware draws the car over it. It tells
+ * its owner whether the stream plays a picture, which the frames of one flat colour that the iPhone streams with
+ * its map app closed are not. In a software canvas, where the texture draws nothing, it draws the frame that
+ * [keepFrame] kept last, cropped and rounded as on screen.
  */
 internal class DashboardMapVideo(context: Context) : FrameLayout(context), TextureView.SurfaceTextureListener {
     private val texture = TextureView(context)
@@ -36,7 +37,6 @@ internal class DashboardMapVideo(context: Context) : FrameLayout(context), Textu
         scaleType = ImageView.ScaleType.FIT_XY
         alpha = 0f
     }
-    private val skeleton = DashboardMapSkeleton(context)
     private val dim = View(context).apply {
         background = CentreDim()
         alpha = 0f
@@ -46,13 +46,19 @@ internal class DashboardMapVideo(context: Context) : FrameLayout(context), Textu
     /** Whether the texture shows a frame of the running stream. */
     var live = false
         private set
-    var liveChanged: (() -> Unit)? = null
+
+    /** Whether the stream plays a picture: it is [live] and its last probe was not one flat colour. */
+    var hasPicture = false
+        private set
+
+    /** Called when [live] or [hasPicture] changes. */
+    var pictureChanged: (() -> Unit)? = null
+    internal var readFrame: (Bitmap) -> Unit = { texture.getBitmap(it) }
     private var still: Bitmap? = null
     private val stillPaint = Paint(Paint.FILTER_BITMAP_FLAG)
     private val stillBox = RectF()
     private val rounded = Path()
     private var parked = false
-    private var skeletonShown = true
     private val probe by lazy {
         Bitmap.createBitmap(L.MAP_BLANK_PROBE_WIDTH, L.MAP_BLANK_PROBE_HEIGHT, Bitmap.Config.ARGB_8888)
     }
@@ -60,9 +66,9 @@ internal class DashboardMapVideo(context: Context) : FrameLayout(context), Textu
     private val watchBlank = object : Runnable {
         override fun run() {
             if (!live) return
-            texture.getBitmap(probe)
+            readFrame(probe)
             probe.getPixels(probePixels, 0, probe.width, 0, 0, probe.width, probe.height)
-            showSkeleton(looksBlank(probePixels, L.MAP_BLANK_SPREAD))
+            show(live = true, picture = !looksBlank(probePixels, L.MAP_BLANK_SPREAD))
             postDelayed(this, L.MAP_BLANK_CHECK_MILLIS)
         }
     }
@@ -77,22 +83,15 @@ internal class DashboardMapVideo(context: Context) : FrameLayout(context), Textu
         texture.surfaceTextureListener = this
         addView(texture, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         addView(blur, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
-        addView(skeleton, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         addView(dim, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
     }
 
-    /** The texture keeps the last frame of a stopped stream, so it stays covered until the next frame. */
+    /** The texture keeps the last frame of a stopped stream, so it has no picture until the next probe of a frame. */
     fun streamStopped() {
-        val was = live
-        live = false
         removeCallbacks(capture)
         removeCallbacks(watchBlank)
-        skeletonShown = true
-        skeleton.animate().cancel()
-        skeleton.alpha = 1f
-        skeleton.visibility = VISIBLE
         blur.setImageDrawable(null)
-        if (was) liveChanged?.invoke()
+        show(live = false, picture = false)
     }
 
     /** Keeps the live picture for software drawing; it waits for the GPU, so it must not run while drawing. */
@@ -106,7 +105,7 @@ internal class DashboardMapVideo(context: Context) : FrameLayout(context), Textu
                 still?.recycle()
                 still = it
             }
-        texture.getBitmap(bitmap)
+        readFrame(bitmap)
     }
 
     override fun onSizeChanged(width: Int, height: Int, oldWidth: Int, oldHeight: Int) {
@@ -166,11 +165,10 @@ internal class DashboardMapVideo(context: Context) : FrameLayout(context), Textu
 
     override fun onSurfaceTextureUpdated(texture: SurfaceTexture) {
         if (live) return
-        live = true
         // This runs while the texture draws, where getBitmap would wait for the GPU.
         removeCallbacks(watchBlank)
         post(watchBlank)
-        liveChanged?.invoke()
+        show(live = true, picture = false)
         if (parked) {
             removeCallbacks(capture)
             capture.run()
@@ -188,17 +186,11 @@ internal class DashboardMapVideo(context: Context) : FrameLayout(context), Textu
         super.onDetachedFromWindow()
     }
 
-    private fun showSkeleton(shown: Boolean) {
-        if (shown == skeletonShown) return
-        skeletonShown = shown
-        skeleton.animate().cancel()
-        if (shown) {
-            skeleton.visibility = VISIBLE
-            skeleton.animate().alpha(1f).setDuration(L.SKELETON_RETURN_MILLIS)
-        } else {
-            skeleton.animate().alpha(0f).setDuration(L.SKELETON_FADE_MILLIS)
-                .withEndAction { skeleton.visibility = GONE }
-        }
+    private fun show(live: Boolean, picture: Boolean) {
+        if (live == this.live && picture == hasPicture) return
+        this.live = live
+        hasPicture = picture
+        pictureChanged?.invoke()
     }
 
     private fun crop(width: Int, height: Int) {

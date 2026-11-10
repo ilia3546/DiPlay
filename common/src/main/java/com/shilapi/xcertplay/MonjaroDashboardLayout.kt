@@ -67,17 +67,10 @@ internal object MonjaroDashboardLayout {
     const val MAP_SHADOW_DY = 18f
     const val MAP_SHADOW_BLUR = 50f
 
-    /** The map until its first live frame: a grid of lines every [SKELETON_GRID_STEP] px and a passing shine. */
-    const val SKELETON_GRID_STEP = 70
-    const val SKELETON_SHINE_MILLIS = 1_800L
-    const val SKELETON_SHINE_DEGREES = 100f
-    const val SKELETON_FADE_MILLIS = 250L
-    const val SKELETON_RETURN_MILLIS = 100L
-
     /**
      * With its map app closed or restarting, the iPhone keeps streaming frames of one flat colour; a probe of
      * [MAP_BLANK_PROBE_WIDTH]x[MAP_BLANK_PROBE_HEIGHT] px every [MAP_BLANK_CHECK_MILLIS] ms whose channels spread
-     * by at most [MAP_BLANK_SPREAD] brings the skeleton back.
+     * by at most [MAP_BLANK_SPREAD] hides the map.
      */
     const val MAP_BLANK_PROBE_WIDTH = 16
     const val MAP_BLANK_PROBE_HEIGHT = 8
@@ -121,6 +114,15 @@ internal object MonjaroDashboardLayout {
     const val BOOT_CARPLAY_LETTER_SPACING = 0.3f
     const val BOOT_SIDE_SHIFT = 50f
     const val BOOT_MAP_SCALE = 0.9f
+
+    /**
+     * The map card and the icon backdrop show only while the map has a picture. They fade in or out in
+     * [MAP_REVEAL_FADE_MILLIS] ms and grow from or shrink to these scales in [MAP_REVEAL_GROW_MILLIS] ms.
+     */
+    const val MAP_REVEAL_SCALE = 0.94f
+    const val ICON_BACKDROP_REVEAL_SCALE = 0.85f
+    const val MAP_REVEAL_FADE_MILLIS = 450L
+    const val MAP_REVEAL_GROW_MILLIS = 600L
 
     /**
      * Where the iPhone keeps the car marker and route, in percent of the map: below the maneuver and arrival cards,
@@ -250,9 +252,6 @@ internal object MonjaroDashboardLayout {
     const val LABEL = 0xFFB9C3D0.toInt()
     const val SECONDARY = 0xFFC9D2DE.toInt()
     const val MAP_EMPTY = 0xFF121821.toInt()
-    const val MAP_SKELETON = 0xFF10151D.toInt()
-    const val MAP_SKELETON_GRID = 0x09FFFFFF
-    const val MAP_SKELETON_SHINE = 0x0FFFFFFF
     const val ICON_BACKDROP_TINT = 0x8C0A0E14.toInt()
     const val ICON_BACKDROP_BORDER = 0x1FFFFFFF
     const val ICON_BACKDROP_SHADOW = 0x59000000

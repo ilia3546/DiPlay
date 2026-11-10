@@ -15,6 +15,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
+import android.view.animation.PathInterpolator
 import android.widget.FrameLayout
 import android.widget.TextView
 import com.shilapi.xcertplay.MonjaroDashboardLayout as L
@@ -28,7 +29,8 @@ import kotlin.math.max
  * right, because the firmware's speed and warning lights sit at fixed places between the blocks. Each time it
  * enters a window it plays [DashboardBoot]; the blocks it moves together are full-size groups, as in the design,
  * so that their shadows fade with them. The icon backdrop stays out of the map's group, because the firmware's
- * icon over it does not grow with the map.
+ * icon over it does not grow with the map. The map card, with its route cards, and the icon backdrop show only
+ * while the map has a picture: they appear and disappear as in design v6, inside the start-up's fade and growth.
  */
 internal class MonjaroDashboardView(context: Context) : FrameLayout(context) {
     private val wallpaper = object : View(context) {
@@ -41,6 +43,10 @@ internal class MonjaroDashboardView(context: Context) : FrameLayout(context) {
     private val temperature = dashboardText(context, L.TEMPERATURE_TEXT, 600).apply { gravity = Gravity.END }
     private val leftGroup = group(context)
     private val mapGroup = group(context).apply {
+        pivotX = L.WIDTH / 2f
+        pivotY = L.MAP_CENTRE_Y.toFloat()
+    }
+    private val mapReveal = group(context).apply {
         pivotX = L.WIDTH / 2f
         pivotY = L.MAP_CENTRE_Y.toFloat()
     }
@@ -58,6 +64,20 @@ internal class MonjaroDashboardView(context: Context) : FrameLayout(context) {
             override fun onAnimationEnd(animation: Animator) = showBoot(DashboardBoot.finished)
         })
     }
+    private var bootMapAlpha = 1f
+    private var mapShown = false
+    private var mapOpacity = 0f
+    private var mapGrowth = 0f
+    private val mapFade = ValueAnimator().apply {
+        duration = L.MAP_REVEAL_FADE_MILLIS
+        interpolator = PathInterpolator(0.25f, 0.1f, 0.25f, 1f)
+        addUpdateListener { showMapOpacity(it.animatedValue as Float) }
+    }
+    private val mapGrow = ValueAnimator().apply {
+        duration = L.MAP_REVEAL_GROW_MILLIS
+        interpolator = PathInterpolator(0.2f, 0.8f, 0.2f, 1f)
+        addUpdateListener { showMapGrowth(it.animatedValue as Float) }
+    }
 
     init {
         layoutDirection = View.LAYOUT_DIRECTION_LTR
@@ -68,11 +88,16 @@ internal class MonjaroDashboardView(context: Context) : FrameLayout(context) {
         place(clock, L.clock, before = leftGroup)
         place(temperature, L.temperature, before = leftGroup)
         leftGroup.place(trip, L.trip)
-        mapGroup.place(map, mapBox(L.defaultMap))
+        mapGroup.addView(mapReveal, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        mapReveal.place(map, mapBox(L.defaultMap))
         place(iconBackdrop, L.iconBackdrop, before = rightGroup)
         rightGroup.place(media, L.media)
         rightGroup.place(call, L.call)
-        map.video.liveChanged = iconBackdrop::changed
+        map.video.pictureChanged = {
+            iconBackdrop.changed()
+            revealMap(map.video.hasPicture)
+        }
+        showMapAtOnce(false)
         showBackground(DashboardBackground.OCEAN, 0) { null }
         showTemperature(null)
         trip.show(DashboardTrip())
@@ -81,12 +106,15 @@ internal class MonjaroDashboardView(context: Context) : FrameLayout(context) {
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+        showMapAtOnce(map.video.hasPicture)
         showBoot(DashboardBoot.at(0))
         boot.start()
     }
 
     override fun onDetachedFromWindow() {
         boot.cancel()
+        mapFade.cancel()
+        mapGrow.cancel()
         super.onDetachedFromWindow()
     }
 
@@ -97,11 +125,49 @@ internal class MonjaroDashboardView(context: Context) : FrameLayout(context) {
         mapGroup.alpha = frame.mapAlpha
         mapGroup.scaleX = frame.mapScale
         mapGroup.scaleY = frame.mapScale
-        iconBackdrop.fade(frame.mapAlpha)
+        bootMapAlpha = frame.mapAlpha
+        iconBackdrop.fade(bootMapAlpha * mapOpacity)
         leftGroup.alpha = frame.leftAlpha
         leftGroup.translationX = frame.leftShift
         rightGroup.alpha = frame.rightAlpha
         rightGroup.translationX = frame.rightShift
+    }
+
+    private fun revealMap(shown: Boolean) {
+        if (shown == mapShown) return
+        mapShown = shown
+        val target = if (shown) 1f else 0f
+        mapFade.cancel()
+        mapFade.setFloatValues(mapOpacity, target)
+        mapFade.start()
+        mapGrow.cancel()
+        mapGrow.setFloatValues(mapGrowth, target)
+        mapGrow.start()
+    }
+
+    private fun showMapAtOnce(shown: Boolean) {
+        mapShown = shown
+        mapFade.cancel()
+        mapGrow.cancel()
+        val target = if (shown) 1f else 0f
+        showMapOpacity(target)
+        showMapGrowth(target)
+    }
+
+    private fun showMapOpacity(opacity: Float) {
+        mapOpacity = opacity
+        mapReveal.alpha = opacity
+        iconBackdrop.fade(bootMapAlpha * opacity)
+    }
+
+    private fun showMapGrowth(growth: Float) {
+        mapGrowth = growth
+        val scale = L.MAP_REVEAL_SCALE + (1 - L.MAP_REVEAL_SCALE) * growth
+        mapReveal.scaleX = scale
+        mapReveal.scaleY = scale
+        val backdropScale = L.ICON_BACKDROP_REVEAL_SCALE + (1 - L.ICON_BACKDROP_REVEAL_SCALE) * growth
+        iconBackdrop.scaleX = backdropScale
+        iconBackdrop.scaleY = backdropScale
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {

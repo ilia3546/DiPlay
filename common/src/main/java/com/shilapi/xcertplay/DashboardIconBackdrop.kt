@@ -20,7 +20,7 @@ import kotlin.math.roundToInt
  * The frosted backdrop of design v4 under the firmware's driver assistance icon: a blurred, slightly more saturated
  * copy of the wallpaper and the map card under it, tinted and bordered. It copies them outside drawing, when the
  * owner says that they changed and, while the map plays under it, every [L.ICON_BACKDROP_REFRESH_MILLIS]. The
- * icon does not move, so the backdrop only fades in at the start-up.
+ * owner fades it with the map; the icon does not move, so it grows in only when the map appears, not at the start-up.
  */
 internal class DashboardIconBackdrop(
     context: Context,
@@ -66,7 +66,8 @@ internal class DashboardIconBackdrop(
     }
 
     /**
-     * The start-up's opacity, the map's; while the wallpaper fades in under it, the copy follows the wallpaper.
+     * The map's opacity, of the start-up and of its appearance; while the wallpaper fades in under it, the copy
+     * follows the wallpaper. At 0 it stops copying the playing map.
      */
     fun fade(alpha: Float) {
         this.alpha = alpha
