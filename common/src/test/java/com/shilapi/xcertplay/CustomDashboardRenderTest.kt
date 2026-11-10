@@ -426,13 +426,15 @@ class CustomDashboardRenderTest {
     }
 
     @Test fun aLongerDistanceIsLaidOutAgainRatherThanCut() {
-        for (arrival in listOf(true, false)) for (roads in listOf(listOf("", ""), listOf("Садовое кольцо", ""),
-            listOf("", "Садовое кольцо"), listOf("Садовое кольцо", "Садовое кольцо"))) {
+        val roadPairs = listOf(listOf("", ""), listOf("Садовое кольцо", ""), listOf("", "Садовое кольцо"),
+            listOf("Садовое кольцо", "Садовое кольцо"), listOf("Съезд 1", "Съезд 1"), listOf("", "Съезд 1"))
+        val distancePairs = listOf(50 to 2_600, 1_100 to 1_200, 50 to 630)
+        for (arrival in listOf(true, false)) for (roads in roadPairs) for ((before, after) in distancePairs) {
             val view = MonjaroDashboardView(context)
             view.map.arrivalShown = arrival
-            fun route(meters: Int, road: String, minutes: Long) = DashboardRoute(
+            fun route(meters: Int, road: String) = DashboardRoute(
                 ClusterTurnGuidance.fromApple(2, 0, meters, road),
-                arrivalEpochSeconds = evening / 1000 + minutes * 60, remainingSeconds = minutes * 60, remainingMeters = 9_400)
+                arrivalEpochSeconds = evening / 1000 + 300, remainingSeconds = 300, remainingMeters = 9_400)
             // A window lays its views out again only when one of them asks for it, as here.
             fun frame() {
                 if (view.isLayoutRequested || view.width == 0) {
@@ -441,13 +443,19 @@ class CustomDashboardRenderTest {
                     view.layout(0, 0, view.measuredWidth, view.measuredHeight)
                 }
             }
-            view.map.showRoute(route(50, roads[0], 5), is24Hour = true, zone = moscow)
+            view.map.showRoute(route(before, roads[0]), is24Hour = true, zone = moscow)
             frame()
-            view.map.showRoute(route(2_600, roads[1], 115), is24Hour = true, zone = moscow)
+            view.map.showRoute(route(after, roads[1]), is24Hour = true, zone = moscow)
             frame()
-            val texts = view.map.descendants<TextView>().filter { it.isShown && it.text.isNotEmpty() && it.text.length < 9 }
-            for (text in texts) assertEquals("${text.text} is cut, arrival=$arrival roads=$roads", 0,
-                text.layout?.getEllipsisCount(0) ?: 0)
+            val card = view.map.descendants<DashboardManeuverCard>().single()
+            val (distance, road) = card.descendants<TextView>()
+            val texts = if (road.visibility == View.VISIBLE && card.width < card.maxWidth) listOf(distance, road)
+            else listOf(distance)
+            for (text in texts) {
+                val room = text.width - text.compoundPaddingLeft - text.compoundPaddingRight
+                assertTrue("${text.text} is cut to $room px, arrival=$arrival roads=$roads $before→$after m",
+                    text.paint.measureText(text.text.toString()) <= room + 0.5f)
+            }
         }
     }
 

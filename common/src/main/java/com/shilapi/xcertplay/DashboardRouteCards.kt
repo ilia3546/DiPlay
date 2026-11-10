@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
-import android.util.Log
 import android.view.Gravity
 import android.widget.FrameLayout
 import android.widget.ImageView
@@ -60,7 +59,7 @@ internal class DashboardManeuverCard(context: Context) : LinearLayout(context) {
         addView(tile, LayoutParams(L.MANEUVER_ICON_SIZE, L.MANEUVER_ICON_SIZE))
         val text = LinearLayout(context).apply {
             orientation = VERTICAL
-            addView(distance)
+            addView(distance, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
             addView(road, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
                 topMargin = L.MANEUVER_ROAD_GAP
             })
@@ -95,25 +94,9 @@ internal class DashboardManeuverCard(context: Context) : LinearLayout(context) {
         super.onMeasure(MeasureSpec.makeMeasureSpec(maxWidth, MeasureSpec.AT_MOST), heightMeasureSpec)
     }
 
-    private var reportedCut: CharSequence? = null
-
-    override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
-        super.onLayout(changed, l, t, r, b)
-        val cut = (distance.layout?.getEllipsisCount(0) ?: 0) > 0
-        if (!cut || distance.text == reportedCut) return
-        reportedCut = distance.text
-        Log.i(TAG, "maneuver distance cut: textWidth=${distance.paint.measureText(distance.text.toString()).toInt()} " +
-            "distanceWidth=${distance.width} roadWidth=${road.width} roadShown=${road.visibility == VISIBLE} " +
-            "card=$width maxWidth=$maxWidth textSize=${distance.textSize}")
-    }
-
     override fun draw(canvas: Canvas) {
         shadow.draw(canvas, width, height)
         super.draw(canvas)
-    }
-
-    private companion object {
-        const val TAG = "DiPlay-CustomDashboard"
     }
 }
 
