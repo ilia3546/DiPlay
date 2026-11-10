@@ -96,6 +96,8 @@
     <string name="dashboard_call_calling">جارٍ الاتصال…</string>
     <string name="dashboard_call_declined">تم رفض المكالمة</string>
     <string name="dashboard_call_ended">انتهت المكالمة · %1$s</string>
+    <string name="dashboard_media_paused">متوقف مؤقتًا</string>
+    <string name="dashboard_media_sound_off">الصوت مكتوم</string>
     <string name="hud_unit_meters">م</string>
     <string name="hud_unit_kilometres">كم</string>
     <string name="hud_unit_minutes">د</string>

@@ -180,6 +180,19 @@ internal object MonjaroDashboardLayout {
     const val PROGRESS_WIDTH = 260
     const val PROGRESS_HEIGHT = 4
     const val PROGRESS_GAP = 22
+    const val MEDIA_BADGE_ROW_GAP = 16
+    const val MEDIA_BADGE_HEIGHT = 30
+    const val MEDIA_BADGE_PADDING = 12
+    const val MEDIA_BADGE_RADIUS = 9f
+    const val MEDIA_BADGE_GLYPH_GAP = 7
+    const val MEDIA_BADGE_TEXT = 16f
+    const val MEDIA_BADGE_GAP = 8f
+    const val MEDIA_BADGE_MAX_WIDTH = 200f
+    const val MEDIA_BADGE_HIDDEN_SCALE = 0.8f
+    const val MEDIA_BADGE_RESIZE_MILLIS = 450L
+    const val MEDIA_BADGE_FADE_MILLIS = 300L
+    const val MEDIA_PAUSED_GLYPH_SIZE = 14
+    const val MEDIA_SOUND_OFF_GLYPH_SIZE = 17
 
     /** The call block of design v3 takes the media block's column; its ended card starts [CALL_ENDED_TOP] lower. */
     val call = Box(left = 1370, top = 192, width = 400)
@@ -248,6 +261,10 @@ internal object MonjaroDashboardLayout {
     const val MEDIA_EMPTY_TILE = 0x0FFFFFFF
     const val MEDIA_EMPTY_BORDER = 0x1FFFFFFF
     const val MEDIA_EMPTY_TITLE = 0xFFD7DDE6.toInt()
+    const val MEDIA_PAUSED = 0xFFE6EBF2.toInt()
+    const val MEDIA_PAUSED_BACKGROUND = 0x21FFFFFF
+    const val MEDIA_SOUND_OFF = 0xFFFF9F0A.toInt()
+    const val MEDIA_SOUND_OFF_BACKGROUND = 0x26FF9F0A
     const val ROUTE_CARD = 0xE610141B.toInt()
     const val ROUTE_CARD_SHADOW = 0x66000000
     const val MANEUVER_ICON = 0xFF2F7BFF.toInt()

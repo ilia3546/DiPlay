@@ -96,6 +96,8 @@
     <string name="dashboard_call_calling">전화 거는 중…</string>
     <string name="dashboard_call_declined">통화 거절됨</string>
     <string name="dashboard_call_ended">통화 종료 · %1$s</string>
+    <string name="dashboard_media_paused">일시정지됨</string>
+    <string name="dashboard_media_sound_off">소리 꺼짐</string>
     <string name="hud_unit_meters">m</string>
     <string name="hud_unit_kilometres">km</string>
     <string name="hud_unit_minutes">분</string>

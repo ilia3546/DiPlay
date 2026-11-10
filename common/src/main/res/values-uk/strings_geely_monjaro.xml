@@ -96,6 +96,8 @@
     <string name="dashboard_call_calling">Виклик…</string>
     <string name="dashboard_call_declined">Виклик відхилено</string>
     <string name="dashboard_call_ended">Виклик завершено · %1$s</string>
+    <string name="dashboard_media_paused">Пауза</string>
+    <string name="dashboard_media_sound_off">Звук вимк.</string>
     <string name="hud_unit_meters">м</string>
     <string name="hud_unit_kilometres">км</string>
     <string name="hud_unit_minutes">хв</string>

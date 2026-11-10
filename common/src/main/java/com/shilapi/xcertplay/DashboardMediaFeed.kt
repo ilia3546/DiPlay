@@ -13,6 +13,7 @@ import com.shilapi.xcertplay.hud.CarPlayCalls
 /**
  * Keeps a [DashboardMediaBlock] on what plays now, from [start] to [stop]: picks the source with
  * [DashboardMediaSource.of], then shows only that source's data, and moves CarPlay's progress on once a second.
+ * The badges under it say whether that source is paused and whether the car's media sound is off.
  * While [DashboardCallShown.of] gives a call, the [call] block takes the media block's place, and the source is
  * still picked behind it. Main thread.
  */
@@ -20,6 +21,9 @@ internal class DashboardMediaFeed(private val block: DashboardMediaBlock, privat
     private val main = Handler(Looper.getMainLooper())
     private val flags = HeadUnitMediaFlags(block.context, ::refresh)
     private val radio = DashboardRadio(block.context, ::refresh)
+    private val volume = CarMediaVolume(block.context, ::refresh)
+    private val pause = DashboardPauseDelay()
+    private val pauseDue = Runnable { refresh() }
     private var music = ClusterMusicState.Snapshot()
     private var playback = ClusterPlaybackState.Snapshot()
     private var stopObservingMusic: (() -> Unit)? = null
@@ -39,6 +43,7 @@ internal class DashboardMediaFeed(private val block: DashboardMediaBlock, privat
         if (started) return
         started = true
         flags.start()
+        volume.start()
         stopObservingMusic = ClusterMusicState.observe { snapshot ->
             music = snapshot
             refresh()
@@ -55,7 +60,10 @@ internal class DashboardMediaFeed(private val block: DashboardMediaBlock, privat
         if (!started) return
         started = false
         main.removeCallbacks(tick)
+        main.removeCallbacks(pauseDue)
         flags.stop()
+        volume.stop()
+        pause.reset()
         stopObservingMusic?.invoke()
         stopObservingMusic = null
         stopObservingPlayback?.invoke()
@@ -92,16 +100,23 @@ internal class DashboardMediaFeed(private val block: DashboardMediaBlock, privat
         }
         val station = radio.station
         val nothing = nothingShown(signals)
+        val elapsed = SystemClock.elapsedRealtime()
+        val pausedShown = pause.shown(paused(next, signals), elapsed)
+        main.removeCallbacks(pauseDue)
+        pause.remainingMillis(elapsed)?.let { main.postDelayed(pauseDue, it) }
         block.show(when (next) {
             DashboardMediaSource.CARPLAY -> if (!track) nothing else DashboardMedia.Track(
                 title = info.title.orEmpty(),
                 artist = info.artist,
                 artwork = music.artwork?.takeUnless { it.isRecycled },
                 progress = DashboardProgress.of(playback.elapsedMillis, playback.elapsedAt, info.durationMillis,
-                    playback.playing, SystemClock.elapsedRealtime()),
+                    playback.playing, elapsed),
+                paused = pausedShown,
+                muted = volume.muted,
             )
-            DashboardMediaSource.RADIO -> station?.let { DashboardMedia.Radio(it.title, it.subtitle, radio.logo) }
-                ?: nothing
+            DashboardMediaSource.RADIO -> station?.let {
+                DashboardMedia.Radio(it.title, it.subtitle, radio.logo, paused = pausedShown, muted = volume.muted)
+            } ?: nothing
             DashboardMediaSource.OTHER, DashboardMediaSource.UNKNOWN -> nothing
         })
         val now = System.currentTimeMillis()
@@ -138,6 +153,41 @@ internal class DashboardMediaFeed(private val block: DashboardMediaBlock, privat
             val sounding = carPlayPlaying || radioSounding || bluetoothPlaying || usbPlaying || radioServicePlaying == true
             if (sounding || carPlayTrack) DashboardMedia.Empty else DashboardMedia.Idle
         }
+
+        /** Whether [source] is shown paused: CarPlay that does not play, or a held radio that does not sound. */
+        fun paused(source: DashboardMediaSource, signals: DashboardMediaSignals): Boolean = when (source) {
+            DashboardMediaSource.CARPLAY -> !signals.carPlayPlaying
+            DashboardMediaSource.RADIO -> !signals.radioSounding
+            DashboardMediaSource.OTHER, DashboardMediaSource.UNKNOWN -> false
+        }
+    }
+}
+
+/**
+ * A pause shows only once it lasts [SHOW_AFTER_MILLIS], since the iPhone may report a short pause while it changes
+ * the track; it hides at once. Times are on one monotonic clock.
+ */
+internal class DashboardPauseDelay {
+    private var since: Long? = null
+
+    fun shown(paused: Boolean, nowMillis: Long): Boolean {
+        if (!paused) {
+            since = null
+            return false
+        }
+        val start = since ?: nowMillis.also { since = it }
+        return nowMillis - start >= SHOW_AFTER_MILLIS
+    }
+
+    /** How long until a pause that does not show yet shows, or null. */
+    fun remainingMillis(nowMillis: Long): Long? = since?.let { it + SHOW_AFTER_MILLIS - nowMillis }?.takeIf { it > 0 }
+
+    fun reset() {
+        since = null
+    }
+
+    companion object {
+        const val SHOW_AFTER_MILLIS = 500L
     }
 }
 

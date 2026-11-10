@@ -448,7 +448,7 @@ private class DashboardCallKey(context: Context) : View(context) {
     }
 }
 
-private fun dashboardGlyph(context: Context, res: Int, color: Int): Drawable =
+internal fun dashboardGlyph(context: Context, res: Int, color: Int): Drawable =
     requireNotNull(ContextCompat.getDrawable(context, res)).mutate().apply { setTint(color) }
 
 private fun Drawable.drawCentred(canvas: Canvas, x: Float, y: Float, size: Int) {

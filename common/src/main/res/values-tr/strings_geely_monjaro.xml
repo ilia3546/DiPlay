@@ -96,6 +96,8 @@
     <string name="dashboard_call_calling">Aranıyor…</string>
     <string name="dashboard_call_declined">Arama reddedildi</string>
     <string name="dashboard_call_ended">Arama sona erdi · %1$s</string>
+    <string name="dashboard_media_paused">Duraklatıldı</string>
+    <string name="dashboard_media_sound_off">Ses kapalı</string>
     <string name="hud_unit_meters">m</string>
     <string name="hud_unit_kilometres">km</string>
     <string name="hud_unit_minutes">dk</string>

@@ -96,6 +96,8 @@
     <string name="dashboard_call_calling">Chiamata in corso…</string>
     <string name="dashboard_call_declined">Chiamata rifiutata</string>
     <string name="dashboard_call_ended">Chiamata terminata · %1$s</string>
+    <string name="dashboard_media_paused">In pausa</string>
+    <string name="dashboard_media_sound_off">Muto</string>
     <string name="hud_unit_meters">m</string>
     <string name="hud_unit_kilometres">km</string>
     <string name="hud_unit_minutes">min</string>

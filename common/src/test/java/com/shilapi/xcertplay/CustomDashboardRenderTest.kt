@@ -123,14 +123,15 @@ class CustomDashboardRenderTest {
             showBackground(DashboardBackground.OCEAN, 0) { null }
             showTemperature(6.4f)
             media.show(DashboardMedia.Radio(station.title, station.subtitle, null))
-            assertEquals(listOf(View.VISIBLE, View.VISIBLE, View.VISIBLE, View.GONE), media.childVisibility())
+            assertEquals(listOf(View.VISIBLE, View.VISIBLE, View.VISIBLE, View.GONE, View.VISIBLE),
+                media.childVisibility())
         }
         render("media-empty") {
             showBackground(DashboardBackground.OCEAN, 0) { null }
             showTemperature(6.4f)
             media.show(DashboardMedia.Track("Hymn", "Charlotte de Witte", cover, 0.38f))
             media.show(DashboardMedia.Empty)
-            assertEquals("nothing of the track stays", listOf(View.VISIBLE, View.GONE, View.GONE, View.GONE),
+            assertEquals("nothing of the track stays", listOf(View.VISIBLE, View.GONE, View.GONE, View.GONE, View.GONE),
                 media.childVisibility())
         }
         render("media-idle") {
@@ -138,7 +139,7 @@ class CustomDashboardRenderTest {
             showTemperature(6.4f)
             media.show(DashboardMedia.Track("Hymn", "Charlotte de Witte", cover, 0.38f))
             media.show(DashboardMedia.Idle)
-            assertEquals(listOf(View.VISIBLE, View.VISIBLE, View.VISIBLE, View.GONE), media.childVisibility())
+            assertEquals(listOf(View.VISIBLE, View.VISIBLE, View.VISIBLE, View.GONE, View.GONE), media.childVisibility())
             assertEquals(listOf("Не воспроизводится", "Выберите музыку на iPhone"),
                 media.descendants<TextView>().map { it.text.toString() })
         }
@@ -169,6 +170,169 @@ class CustomDashboardRenderTest {
     }
 
     private fun DashboardMediaBlock.childVisibility() = (0 until childCount).map { getChildAt(it).visibility }
+
+    @Test fun theMediaBadgesOfEachState() {
+        val track = DashboardMedia.Track("Hymn", "Charlotte de Witte", null, 0.38f)
+        val radio = DashboardMedia.Radio("Europa Plus", "Dua Lipa – Houdini", null)
+        for ((name, media) in listOf("media-paused" to track.copy(paused = true), "media-muted" to track.copy(muted = true),
+            "media-paused-muted" to track.copy(paused = true, muted = true), "media-radio-paused" to radio.copy(paused = true))) {
+            render(name) {
+                showBackground(DashboardBackground.OCEAN, 0) { null }
+                showTemperature(6.4f)
+                this.media.show(media)
+            }
+        }
+        val (paused, pausedRow) = badged(track.copy(paused = true))
+        val pausedRuns = paused.badgeRuns(pausedRow)
+        assertEquals(1, pausedRuns.size)
+        assertCentred(pausedRuns)
+        assertEquals("13 % white over black", Color.rgb(33, 33, 33), paused.getPixel(pausedRuns[0].first + 3, paused.rowMiddle(pausedRow)))
+        val (muted, mutedRow) = badged(track.copy(muted = true))
+        val mutedRuns = muted.badgeRuns(mutedRow)
+        assertEquals(1, mutedRuns.size)
+        assertCentred(mutedRuns)
+        assertEquals("15 % orange over black", Color.rgb(38, 24, 1), muted.getPixel(mutedRuns[0].first + 3, muted.rowMiddle(mutedRow)))
+        val (both, bothRow) = badged(track.copy(paused = true, muted = true))
+        val bothRuns = both.badgeRuns(bothRow)
+        assertEquals(2, bothRuns.size)
+        assertCentred(bothRuns)
+        assertEquals(pausedRuns[0].count(), bothRuns[0].count())
+        assertEquals(mutedRuns[0].count(), bothRuns[1].count())
+        assertEquals("the gap", 8, bothRuns[1].first - bothRuns[0].last - 1)
+        val bottom = MonjaroDashboardLayout.media.top + bothRow.top + bothRow.height
+        assertTrue("the row ends at $bottom, above the firmware's bottom row", bottom <= FIRMWARE_BOTTOM_ROW_TOP)
+        val (station, stationRow) = badged(radio.copy(paused = true))
+        assertEquals(1, station.badgeRuns(stationRow).size)
+        assertTrue("without the progress the row follows the subtitle", stationRow.top < bothRow.top)
+    }
+
+    @Test fun withoutBadgesTheBlockLooksAsBefore() {
+        val track = DashboardMedia.Track("Hymn", "Charlotte de Witte", null, 0.38f)
+        val (plain, row) = badged(track)
+        assertTrue("the row is kept", row.visibility == View.VISIBLE && row.height == MonjaroDashboardLayout.MEDIA_BADGE_HEIGHT)
+        assertEquals(emptyList<IntRange>(), plain.badgeRuns(row))
+        val unrowed = render(null) {
+            showBackground(DashboardBackground.BLACK, 0) { null }
+            media.show(track)
+            media.descendants<DashboardMediaBadges>().single().visibility = View.GONE
+        }
+        assertTrue(plain.sameAs(unrowed))
+        val (unpaused, _) = badged(track, before = track.copy(paused = true, muted = true))
+        assertTrue("the badges leave nothing behind", plain.sameAs(unpaused))
+    }
+
+    @Test fun theBadgesMoveOnlyWithinTheSameMedia() {
+        val track = DashboardMedia.Track("Hymn", "Charlotte de Witte", null, 0.38f)
+        val (one, oneRow) = badged(track.copy(paused = true))
+        val (two, twoRow) = badged(track.copy(paused = true, muted = true))
+        val oneWidth = one.badgeRuns(oneRow).let { it.last().last - it.first().first }
+        val twoWidth = two.badgeRuns(twoRow).let { it.last().last - it.first().first }
+        val looper = shadowOf(Looper.getMainLooper())
+        var row: DashboardMediaBadges? = null
+        val appearing = render("media-muted-appearing", attached = true) {
+            showBackground(DashboardBackground.BLACK, 0) { null }
+            media.show(track.copy(paused = true))
+            media.show(track.copy(paused = true, muted = true))
+            // Later the badge is already as wide as it gets: its max-width passes its width early.
+            looper.idleFor(Duration.ofMillis(50))
+            row = media.descendants<DashboardMediaBadges>().single()
+        }
+        val appearingRuns = appearing.badgeRuns(row!!)
+        assertCentred(appearingRuns)
+        val appearingWidth = appearingRuns.last().last - appearingRuns.first().first
+        assertTrue("$oneWidth < $appearingWidth < $twoWidth", appearingWidth in oneWidth + 1 until twoWidth)
+        val hiding = render("media-badges-hiding", attached = true) {
+            showBackground(DashboardBackground.BLACK, 0) { null }
+            media.show(track.copy(paused = true, muted = true))
+            media.show(track)
+            looper.idleFor(Duration.ofMillis(100))
+            row = media.descendants<DashboardMediaBadges>().single()
+        }
+        val hidingRuns = hiding.badgeRuns(row!!)
+        assertTrue(hidingRuns.isNotEmpty())
+        assertTrue(hidingRuns.last().last - hidingRuns.first().first < twoWidth)
+        val starting = render(null, attached = true) {
+            showBackground(DashboardBackground.BLACK, 0) { null }
+            media.show(track)
+            media.show(track.copy(paused = true))
+            row = media.descendants<DashboardMediaBadges>().single()
+        }
+        assertEquals("a new pause starts from nothing", emptyList<IntRange>(), starting.badgeRuns(row!!))
+        val settled = render(null, attached = true) {
+            showBackground(DashboardBackground.BLACK, 0) { null }
+            media.show(track.copy(paused = true))
+            looper.idleFor(Duration.ofMillis(MonjaroDashboardLayout.MEDIA_BADGE_RESIZE_MILLIS))
+            row = media.descendants<DashboardMediaBadges>().single()
+        }
+        assertTrue("then it ends as drawn at once", settled.sameAs(one))
+        for (before in listOf(DashboardMedia.Idle, DashboardMedia.Empty, DashboardMedia.Radio("Europa Plus", null, null))) {
+            val switched = render(null, attached = true) {
+                showBackground(DashboardBackground.BLACK, 0) { null }
+                media.show(before)
+                media.show(track.copy(paused = true))
+                row = media.descendants<DashboardMediaBadges>().single()
+            }
+            assertEquals("after $before", one.badgeRuns(oneRow), switched.badgeRuns(row!!))
+        }
+    }
+
+    @Test fun anUnchangedTickDoesNotDrawTheBadgesAgain() {
+        val track = DashboardMedia.Track("Hymn", "Charlotte de Witte", null, 0.38f, paused = true)
+        for (attached in listOf(false, true)) {
+            var view: MonjaroDashboardView? = null
+            render(null, attached = attached) {
+                showBackground(DashboardBackground.BLACK, 0) { null }
+                media.show(track.copy(paused = false))
+                media.show(track)
+                shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(MonjaroDashboardLayout.MEDIA_BADGE_RESIZE_MILLIS))
+                view = this
+            }
+            val media = view!!.media
+            val row = media.descendants<DashboardMediaBadges>().single()
+            assertFalse("attached=$attached drawn", row.isDirty)
+            media.show(track.copy(progress = 0.4f))
+            assertFalse("attached=$attached: the same badges a second later", row.isDirty)
+            media.show(track.copy(muted = true))
+            assertTrue("attached=$attached: a new badge", row.isDirty)
+        }
+    }
+
+    /** A black dashboard with [media] shown after [before], drawn outside a window, and its badge row. */
+    private fun badged(media: DashboardMedia, before: DashboardMedia? = null): Pair<Bitmap, DashboardMediaBadges> {
+        var row: DashboardMediaBadges? = null
+        val frame = render(null) {
+            showBackground(DashboardBackground.BLACK, 0) { null }
+            before?.let(this.media::show)
+            this.media.show(media)
+            row = this.media.descendants<DashboardMediaBadges>().single()
+        }
+        return frame to row!!
+    }
+
+    private fun Bitmap.rowMiddle(row: DashboardMediaBadges) = MonjaroDashboardLayout.media.top + row.top + row.height / 2
+
+    /** The x ranges drawn across the middle of the badge row, on a black dashboard. */
+    private fun Bitmap.badgeRuns(row: DashboardMediaBadges): List<IntRange> {
+        val box = MonjaroDashboardLayout.media
+        val y = rowMiddle(row)
+        val runs = mutableListOf<IntRange>()
+        var start = -1
+        for (x in box.left..box.left + box.width) {
+            val drawn = x < box.left + box.width && getPixel(x, y) != Color.BLACK
+            if (drawn && start < 0) start = x
+            if (!drawn && start >= 0) {
+                runs += start until x
+                start = -1
+            }
+        }
+        return runs
+    }
+
+    private fun assertCentred(runs: List<IntRange>) {
+        val centre = MonjaroDashboardLayout.media.let { it.left + it.width / 2f }
+        val middle = (runs.first().first + runs.last().last + 1) / 2f
+        assertEquals("centred, $runs", centre, middle, 1f)
+    }
 
     @Test fun theCallBlockInEachState() {
         val name = "Анна Смирнова"
@@ -470,5 +634,8 @@ class CustomDashboardRenderTest {
 
     private companion object {
         val SKELETON = Color.rgb(0x10, 0x15, 0x1d)
+
+        /** The top of the firmware's fuel, temperature and gear readouts at the bottom of design v2. */
+        const val FIRMWARE_BOTTOM_ROW_TOP = 636
     }
 }

@@ -96,6 +96,8 @@
     <string name="dashboard_call_calling">Llamando…</string>
     <string name="dashboard_call_declined">Llamada rechazada</string>
     <string name="dashboard_call_ended">Llamada finalizada · %1$s</string>
+    <string name="dashboard_media_paused">En pausa</string>
+    <string name="dashboard_media_sound_off">Silenciado</string>
     <string name="hud_unit_meters">m</string>
     <string name="hud_unit_kilometres">km</string>
     <string name="hud_unit_minutes">min</string>

@@ -96,6 +96,8 @@
     <string name="dashboard_call_calling">正在呼叫…</string>
     <string name="dashboard_call_declined">已拒绝来电</string>
     <string name="dashboard_call_ended">通话结束 · %1$s</string>
+    <string name="dashboard_media_paused">已暂停</string>
+    <string name="dashboard_media_sound_off">已静音</string>
     <string name="hud_unit_meters">米</string>
     <string name="hud_unit_kilometres">公里</string>
     <string name="hud_unit_minutes">分钟</string>
