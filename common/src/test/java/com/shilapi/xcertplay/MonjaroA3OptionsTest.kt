@@ -22,6 +22,7 @@ class MonjaroA3OptionsTest {
         AirPlayPersistence.saveRootHotspotDetails(context, true)
         AirPlayPersistence.saveDisconnectPhoneBluetooth(context, true)
         AirPlayPersistence.saveHotspotAudioFirewall(context, true)
+        AirPlayPersistence.saveRequestLostAudio(context, true)
         AirPlayPersistence.saveMicrophoneInput(context, MicrophoneInput.ALL_CABIN_MICROPHONES)
         AirPlayPersistence.saveDashboardMusic(context, true)
         AirPlayPersistence.saveDashboardCalls(context, true)
@@ -54,7 +55,7 @@ class MonjaroA3OptionsTest {
         ShadowBuild.setProduct("geely_fx11")
         ShadowBuild.setModel("KX11-A3-L1")
         assertEquals(MonjaroA3Options(rootHotspotDetails = true, disconnectPhoneBluetooth = true, hotspotAudioFirewall = true,
-            microphoneInput = MicrophoneInput.ALL_CABIN_MICROPHONES, dashboardMusic = true, dashboardCalls = true, wheelSeek = true, customDashboard = true,
+            requestLostAudio = true, microphoneInput = MicrophoneInput.ALL_CABIN_MICROPHONES, dashboardMusic = true, dashboardCalls = true, wheelSeek = true, customDashboard = true,
             dashboardWheelToggle = true, dashboardBackground = DashboardBackground.NEON, dashboardDimmingPercent = 40,
             dashboardIconBackdrop = true, hudManeuvers = true,
             hudDensity = HudSettings.Variant.BOLD, hudHeight = 260, hudScalePercent = 80, hudLanes = false, hudTrip = false),
@@ -66,6 +67,13 @@ class MonjaroA3OptionsTest {
         AirPlayPersistence.saveDashboardCalls(context, true)
         assertTrue(MonjaroA3Options.load(context, monjaroA3 = true).dashboardCalls)
         assertFalse(MonjaroA3Options.load(context, monjaroA3 = false).dashboardCalls)
+    }
+
+    @Test fun requestingLostAudioIsOffByDefaultAndOffOnAnyOtherHeadUnit() {
+        assertFalse(MonjaroA3Options.load(context, monjaroA3 = true).requestLostAudio)
+        AirPlayPersistence.saveRequestLostAudio(context, true)
+        assertTrue(MonjaroA3Options.load(context, monjaroA3 = true).requestLostAudio)
+        assertFalse(MonjaroA3Options.load(context, monjaroA3 = false).requestLostAudio)
     }
 
     @Test fun theIconBackdropIsOffByDefaultAndOffOnAnyOtherHeadUnit() {

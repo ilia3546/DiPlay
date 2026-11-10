@@ -795,7 +795,8 @@ class AdaptiveSettingsUiTest {
         fun indexedTitles(screen: DiPlayActivity) =
             ReflectionHelpers.callInstanceMethod<List<DiPlayActivity.SettingsSearchResult>>(screen, "buildSettingsSearchIndex")
         val options = listOf(R.string.settings_geely_monjaro_a3_support, R.string.settings_root_hotspot_details,
-            R.string.settings_disconnect_phone_bluetooth, R.string.settings_hotspot_audio_firewall, R.string.settings_microphone_input,
+            R.string.settings_disconnect_phone_bluetooth, R.string.settings_hotspot_audio_firewall, R.string.settings_request_lost_audio,
+            R.string.settings_microphone_input,
             R.string.settings_dashboard_music, R.string.settings_dashboard_calls, R.string.settings_custom_dashboard,
             R.string.settings_hud_maneuvers)
 

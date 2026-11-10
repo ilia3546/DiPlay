@@ -5360,6 +5360,7 @@ open class CarPlayHostActivity : ComponentActivity() {
             sink = sink,
             microphoneEnabled = microphoneAvailable,
             audioCaptureDirectory = audioCaptureDirectory(),
+            requestLostAudio = MonjaroA3Options.load(this).requestLostAudio,
         )
 
     private fun createSessionListener(controllerGeneration: Int): AirPlaySessionListener =

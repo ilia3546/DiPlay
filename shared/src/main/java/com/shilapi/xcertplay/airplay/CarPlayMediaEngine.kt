@@ -7,6 +7,7 @@ import java.io.File
 import java.net.Inet4Address
 import java.net.Inet6Address
 import java.net.InetAddress
+import java.net.InetSocketAddress
 import java.math.BigInteger
 import java.util.Collections
 import java.util.WeakHashMap
@@ -63,6 +64,7 @@ class CarPlayMediaEngine(
     private val sink: MediaSink,
     private val microphoneEnabled: Boolean = false,
     private val audioCaptureDirectory: File? = null,
+    private val requestLostAudio: Boolean = false,
 ) : AirPlayMediaHandler {
     internal data class StreamKey(
         val session: AirPlaySession,
@@ -218,7 +220,11 @@ class CarPlayMediaEngine(
         if (capture != null) audioCaptures[streamKey] = capture
         val clockProbe = RtpClockProbe()
         val microphoneStart = microphone?.let { config -> MicrophoneStart { sink.onMicrophoneStarted(streamId, config) } }
-        val audio = AudioStream(key, type, session::logDebug)
+        val resendControlPort = (stream["controlPort"] as? Number)?.toInt()?.takeIf { it in 1..0xffff }
+        val resend = if (requestLostAudio && audioType == "media" && resendControlPort != null) {
+            AudioStream.Resend(session.remoteAddress?.let { InetSocketAddress(it, resendControlPort) })
+        } else null
+        val audio = AudioStream(key, type, session::logDebug, resend)
         val (dataPort, controlPort) = audio.listen(
             object : AudioStream.Listener {
                 override fun onStarted(firstSample: Int) {

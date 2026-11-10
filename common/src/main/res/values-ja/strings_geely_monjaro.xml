@@ -10,6 +10,8 @@
     <string name="settings_disconnect_phone_bluetooth_description">ワイヤレス CarPlay が始まると、純正の CarPlay と同じように iPhone の Bluetooth の通話、音楽、連絡先、メディア操作をヘッドユニットから切断します。Bluetooth 経由で CarPlay の音楽を一時停止してしまうファームウェア向けです。CarPlay は Wi-Fi で動作し続けます。その後 iPhone が Bluetooth を自動で再接続することはありません。複数の iPhone をペアリングしている場合は、DiPlay で使う iPhone を選んでください。Bluetooth が切断されていると、次回 DiPlay は自動で選べません。root（Magisk）が必要です。次回の接続から反映されます。</string>
     <string name="settings_hotspot_audio_firewall">CarPlay の音声を車のファイアウォールに通す（実験的機能）</string>
     <string name="settings_hotspot_audio_firewall_description">車のホットスポットでワイヤレス CarPlay を使っている間、ホットスポット上の iPhone からの UDP を受け入れるファイアウォールのルールを追加し、セッション終了時に削除します。ファイアウォールが数秒後に CarPlay の音声を遮断してしまうファームウェア向けです。root（Magisk）が必要です。次回の接続から反映されます。</string>
+    <string name="settings_request_lost_audio">失われた音声パケットを再要求する（実験的機能）</string>
+    <string name="settings_request_lost_audio_description">Wi-Fi で CarPlay の音楽パケットが失われたとき、iPhone に再送を求め、途切れが聞こえる前に埋めます。iPhone が応答しない場合もあります。次回の接続から反映されます。</string>
     <string name="settings_microphone_input">マイク入力（実験的機能）</string>
     <string name="settings_microphone_input_description">DiPlay が CarPlay の通話と Siri に使う録音入力です。自動では DiPlay が選んだ入力を使います。相手や Siri に声が届かない場合は別の入力を試してください。音声アシスタント バスはヘッドユニットの bus14_vr_in 入力から録音し、その入力がない場合は自動を使います。車内のすべてのマイクは、マイク入力の全チャンネルを録音してミックスするため、後席の声も届きます。ヘッドユニットが対応しない場合は自動を使います。再接続しなくても、次の通話や Siri の呼び出しから反映されます。</string>
     <string name="settings_microphone_input_auto">自動</string>

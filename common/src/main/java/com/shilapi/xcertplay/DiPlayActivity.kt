@@ -2181,6 +2181,12 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 AirPlayPersistence.saveHotspotAudioFirewall(this, it)
                 markReconnectNeeded()
             }
+            toggle(card, getString(R.string.settings_request_lost_audio),
+                getString(R.string.settings_request_lost_audio_description),
+                AirPlayPersistence.loadRequestLostAudio(this)) {
+                AirPlayPersistence.saveRequestLostAudio(this, it)
+                markReconnectNeeded()
+            }
             toggle(card, getString(R.string.settings_dashboard_music),
                 getString(R.string.settings_dashboard_music_description),
                 AirPlayPersistence.loadDashboardMusic(this)) {

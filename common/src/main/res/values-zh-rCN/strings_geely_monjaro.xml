@@ -10,6 +10,8 @@
     <string name="settings_disconnect_phone_bluetooth_description">无线 CarPlay 启动后，像车辆原厂 CarPlay 一样，从车机断开 iPhone 的蓝牙通话、音乐、联系人和媒体控制。适用于会通过蓝牙暂停 CarPlay 音乐的固件。CarPlay 继续通过 Wi-Fi 运行；之后 iPhone 不会自动重新连接蓝牙。如果配对了多部 iPhone，请在 DiPlay 中选择你的 iPhone：蓝牙断开后，DiPlay 下次无法自动选出它。需要 root（Magisk）。下次连接时生效。</string>
     <string name="settings_hotspot_audio_firewall">让 CarPlay 音频通过车辆防火墙（实验性）</string>
     <string name="settings_hotspot_audio_firewall_description">无线 CarPlay 通过车辆热点运行时，添加一条防火墙规则，接受热点上来自 iPhone 的 UDP，并在会话结束时将其删除。适用于防火墙会在几秒后切断 CarPlay 声音的固件。需要 root（Magisk）。下次连接时生效。</string>
+    <string name="settings_request_lost_audio">重新请求丢失的音频数据包（实验性）</string>
+    <string name="settings_request_lost_audio_description">CarPlay 音乐数据包在 Wi-Fi 上丢失时，请求 iPhone 重新发送，以便在听到中断之前补上空缺。iPhone 可能不会响应。下次连接时生效。</string>
     <string name="settings_microphone_input">麦克风输入（实验性）</string>
     <string name="settings_microphone_input_description">DiPlay 用于 CarPlay 通话和 Siri 的录音输入。自动会保留 DiPlay 自己的选择。如果对方或 Siri 听不到你的声音，请尝试其他输入。语音助手总线从车机的 bus14_vr_in 输入录音，没有该输入时使用自动。全部车内麦克风会录制麦克风输入的所有声道并混合，后排乘客的声音也能被听到；车机不支持时使用自动。从下一次通话或 Siri 请求开始生效，无需重新连接。</string>
     <string name="settings_microphone_input_auto">自动</string>

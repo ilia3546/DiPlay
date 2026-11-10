@@ -10,6 +10,8 @@
     <string name="settings_disconnect_phone_bluetooth_description">무선 CarPlay가 시작되면 차량 기본 CarPlay처럼 iPhone의 Bluetooth 통화, 음악, 연락처, 미디어 제어를 헤드 유닛에서 연결 해제합니다. Bluetooth로 CarPlay 음악을 일시 정지시키는 펌웨어용입니다. CarPlay는 Wi-Fi로 계속 작동하며, 이후 iPhone이 Bluetooth를 스스로 다시 연결하지 않습니다. 페어링된 iPhone이 여러 대라면 DiPlay에서 사용할 iPhone을 선택하세요. Bluetooth 연결이 해제되면 다음번에 DiPlay가 스스로 고를 수 없습니다. 루트(Magisk)가 필요합니다. 다음 연결부터 적용됩니다.</string>
     <string name="settings_hotspot_audio_firewall">차량 방화벽에서 CarPlay 오디오 허용 (실험 기능)</string>
     <string name="settings_hotspot_audio_firewall_description">차량 핫스팟에서 무선 CarPlay가 실행되는 동안 핫스팟의 iPhone에서 오는 UDP를 허용하는 방화벽 규칙을 추가하고, 세션이 끝나면 제거합니다. 방화벽이 몇 초 뒤 CarPlay 소리를 끊는 펌웨어용입니다. 루트(Magisk)가 필요합니다. 다음 연결부터 적용됩니다.</string>
+    <string name="settings_request_lost_audio">손실된 오디오 패킷 다시 요청 (실험 기능)</string>
+    <string name="settings_request_lost_audio_description">Wi-Fi에서 CarPlay 음악 패킷이 손실되면 iPhone에 다시 보내 달라고 요청해 끊김이 들리기 전에 채웁니다. iPhone이 응답하지 않을 수 있습니다. 다음 연결부터 적용됩니다.</string>
     <string name="settings_microphone_input">마이크 입력 (실험 기능)</string>
     <string name="settings_microphone_input_description">DiPlay가 CarPlay 통화와 Siri에 사용하는 녹음 입력입니다. 자동은 DiPlay가 고른 입력을 그대로 사용합니다. 상대방이나 Siri가 목소리를 듣지 못하면 다른 입력을 사용해 보세요. 음성 비서 버스는 헤드 유닛의 bus14_vr_in 입력에서 녹음하며, 이 입력이 없으면 자동을 사용합니다. 실내 전체 마이크는 마이크 입력의 모든 채널을 녹음해 섞으므로 뒷좌석 승객의 목소리도 전달되며, 헤드 유닛이 거부하면 자동을 사용합니다. 다시 연결하지 않아도 다음 통화나 Siri 요청부터 적용됩니다.</string>
     <string name="settings_microphone_input_auto">자동</string>

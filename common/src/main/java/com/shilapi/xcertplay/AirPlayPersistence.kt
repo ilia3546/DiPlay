@@ -139,6 +139,7 @@ object AirPlayPersistence {
     private const val KEY_ROOT_HOTSPOT_DETAILS = "root_hotspot_details"
     private const val KEY_DISCONNECT_PHONE_BLUETOOTH = "disconnect_phone_bluetooth_wireless"
     private const val KEY_HOTSPOT_AUDIO_FIREWALL = "hotspot_audio_firewall"
+    private const val KEY_REQUEST_LOST_AUDIO = "monjaro_request_lost_audio"
     private const val KEY_MICROPHONE_INPUT = "microphone_input"
     private const val KEY_DASHBOARD_MUSIC = "monjaro_dashboard_music"
     private const val KEY_DASHBOARD_CALLS = "monjaro_dashboard_calls"
@@ -615,6 +616,14 @@ object AirPlayPersistence {
     fun saveHotspotAudioFirewall(context: Context, enabled: Boolean) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putBoolean(KEY_HOTSPOT_AUDIO_FIREWALL, enabled).apply()
+    }
+
+    fun loadRequestLostAudio(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_REQUEST_LOST_AUDIO, false)
+
+    fun saveRequestLostAudio(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putBoolean(KEY_REQUEST_LOST_AUDIO, enabled).apply()
     }
 
     fun loadMicrophoneInput(context: Context): MicrophoneInput {

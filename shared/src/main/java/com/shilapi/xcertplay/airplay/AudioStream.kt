@@ -35,7 +35,11 @@ class AudioStream(
     private val key: ByteArray,
     private val streamType: Int = -1,
     private val onDiagnostic: (String) -> Unit = {},
+    private val resend: Resend? = null,
 ) : Closeable {
+    /** Lost packets are requested again; [setupPeer] is the iPhone's SETUP control port, if known. */
+    class Resend(val setupPeer: InetSocketAddress?)
+
     interface Listener {
         fun onStarted(firstSample: Int) {}
         fun onRtp(rtp: ByteArray, sample: Int) {}
@@ -56,6 +60,8 @@ class AudioStream(
     private var dataThread: Thread? = null
     private var controlThread: Thread? = null
     private var started = false
+    private val delivery = Any()
+    private var resendRequests: AudioResendRequests? = null
 
     fun listen(listener: Listener): Pair<Int, Int> {
         val data = bindAnyPort()
@@ -69,11 +75,16 @@ class AudioStream(
         val control = bindAnyPort()
         dataSocket = data
         controlSocket = control
+        resendRequests = resend?.let {
+            AudioResendRequests(it.setupPeer, send = { request, peer ->
+                control.send(DatagramPacket(request, request.size, peer))
+            }, label = "audio type=$streamType", report = onDiagnostic)
+        }
         dataThread = Thread({ runData(data, listener) }, "airplay-audio-rx").apply {
             isDaemon = true
             start()
         }
-        controlThread = Thread({ runControl(control) }, "airplay-rtcp-rx").apply {
+        controlThread = Thread({ runControl(control, listener) }, "airplay-rtcp-rx").apply {
             isDaemon = true
             start()
         }
@@ -92,6 +103,7 @@ class AudioStream(
         // When the head unit opens its 360° camera, default-priority audio threads wait behind it (#737).
         runCatching { android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_AUDIO) }
         val stats = StreamReceiveStats("audio type=$streamType", onDiagnostic)
+        val requests = resendRequests
         val buffer = ByteArray(DATAGRAM_BYTES)
         try {
             while (!closed.get()) {
@@ -102,11 +114,10 @@ class AudioStream(
                 } catch (_: Exception) {
                     if (closed.get()) return else continue
                 }
+                val sequence = if (packet.length >= RTP_HEADER_LEN) readU16Be(buffer, 2) else null
                 stats.received(
                     size = packet.length,
-                    sequence = if (packet.length >= RTP_HEADER_LEN) {
-                        ((buffer[2].toInt() and 0xff) shl 8) or (buffer[3].toInt() and 0xff)
-                    } else null,
+                    sequence = sequence,
                     timestamp = if (packet.length >= RTP_HEADER_LEN) readU32Be(buffer, 4) else null,
                 )
                 val wire = packet.data.copyOf(packet.length)
@@ -118,25 +129,22 @@ class AudioStream(
                             "audio stream type=$streamType short packet bytes=${wire.size}",
                         )
                     }
-                    listener.onPacket(
-                        wire,
-                        null,
-                        null,
-                        IOException("audio packet shorter than RTP header plus tail"),
-                    )
+                    synchronized(delivery) {
+                        listener.onPacket(
+                            wire,
+                            null,
+                            null,
+                            IOException("audio packet shorter than RTP header plus tail"),
+                        )
+                    }
                     stats.processed()
+                    requests?.flush()
                     continue
                 }
 
-                val aad = wire.copyOfRange(4, RTP_HEADER_LEN)
-                val sealedEnd = wire.size - NONCE_LEN
-                val sealed = wire.copyOfRange(RTP_HEADER_LEN, sealedEnd)
-                val shortNonce = wire.copyOfRange(sealedEnd, wire.size)
-                val nonce = ByteArray(12).also { shortNonce.copyInto(it, 4) }
                 val sample = readU32Be(wire, 4)
-
                 val payload = try {
-                    AirPlayCrypto.chachaOpen(key, nonce, sealed, aad)
+                    open(wire)
                 } catch (error: Exception) {
                     val failureNumber = authenticationFailures.incrementAndGet()
                     if (failureNumber == 1) {
@@ -147,8 +155,9 @@ class AudioStream(
                             error,
                         )
                     }
-                    listener.onPacket(wire, null, sample, error)
+                    synchronized(delivery) { listener.onPacket(wire, null, sample, error) }
                     stats.processed()
+                    requests?.flush()
                     continue
                 }
                 val rtp = wire.copyOf(RTP_HEADER_LEN) + payload
@@ -167,26 +176,70 @@ class AudioStream(
                             "authFailures=${authenticationFailures.get()}",
                     )
                 }
-                listener.onPacket(wire, rtp, sample, null)
-                if (!started) {
-                    started = true
-                    listener.onStarted(sample)
+                synchronized(delivery) {
+                    requests?.received(readU16Be(wire, 2))
+                    deliverLocked(listener, wire, rtp, sample)
                 }
-                listener.onRtp(rtp, sample)
                 stats.processed()
+                requests?.flush()
             }
-        } finally { stats.flush(ended = true) }
+        } finally {
+            stats.flush(ended = true)
+            requests?.flush(ended = true)
+        }
     }
 
-    private fun runControl(socket: DatagramSocket) {
+    private fun runControl(socket: DatagramSocket, listener: Listener) {
         val buffer = ByteArray(DATAGRAM_BYTES)
+        val requests = resendRequests
+        // Replies reach the renderer under [delivery]; the data thread must not wait behind a lower priority (#737).
+        if (requests != null) {
+            runCatching { android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_AUDIO) }
+        }
         while (!closed.get()) {
+            val packet = DatagramPacket(buffer, buffer.size)
             try {
-                socket.receive(DatagramPacket(buffer, buffer.size))
+                socket.receive(packet)
             } catch (_: Exception) {
-                if (closed.get()) return
+                if (closed.get()) return else continue
+            }
+            if (requests == null) continue
+            requests.controlPacket(packet.socketAddress, AudioResendRequests.payloadType(buffer, packet.length))
+            val wire = AudioResendRequests.resentDatagram(buffer, packet.length) ?: continue
+            if (wire.size < RTP_HEADER_LEN + TAIL_LEN) {
+                requests.replyFailed()
+                continue
+            }
+            val payload = try {
+                open(wire)
+            } catch (_: Exception) {
+                requests.replyFailed()
+                continue
+            }
+            synchronized(delivery) {
+                if (requests.placeReply(readU16Be(wire, 2), packet.socketAddress) == AudioResendRequests.Reply.TAKEN) {
+                    deliverLocked(listener, wire, wire.copyOf(RTP_HEADER_LEN) + payload, readU32Be(wire, 4))
+                }
             }
         }
+    }
+
+    /** Caller holds [delivery]: the data and control threads both hand packets to [listener]. */
+    private fun deliverLocked(listener: Listener, wire: ByteArray, rtp: ByteArray, sample: Int) {
+        listener.onPacket(wire, rtp, sample, null)
+        if (!started) {
+            started = true
+            listener.onStarted(sample)
+        }
+        listener.onRtp(rtp, sample)
+    }
+
+    private fun open(wire: ByteArray): ByteArray {
+        val aad = wire.copyOfRange(4, RTP_HEADER_LEN)
+        val sealedEnd = wire.size - NONCE_LEN
+        val sealed = wire.copyOfRange(RTP_HEADER_LEN, sealedEnd)
+        val nonce = ByteArray(12).also { wire.copyInto(it, 4, sealedEnd, wire.size) }
+        return AirPlayCrypto.chachaOpen(key, nonce, sealed, aad)
     }
 
     private fun bindAnyPort(): DatagramSocket {
@@ -195,6 +248,9 @@ class AudioStream(
         socket.bind(InetSocketAddress(InetAddress.getByName("::"), 0))
         return socket
     }
+
+    private fun readU16Be(source: ByteArray, offset: Int): Int =
+        ((source[offset].toInt() and 0xff) shl 8) or (source[offset + 1].toInt() and 0xff)
 
     private fun readU32Be(source: ByteArray, offset: Int): Int =
         ((source[offset].toInt() and 0xff) shl 24) or
