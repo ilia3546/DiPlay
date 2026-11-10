@@ -46,6 +46,8 @@
     <string name="settings_custom_dashboard_map_height">Harita yüksekliği</string>
     <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
     <string name="settings_custom_dashboard_map_size_note">Kart hemen değişir; iPhone haritayı yeniden bağlandıktan sonra yeni boyutta gönderir.</string>
+    <string name="settings_custom_dashboard_icon_backdrop">Sürüş asistanı simgesinin altında zemin</string>
+    <string name="settings_custom_dashboard_icon_backdrop_description">Yazılım, sürüş asistanı simgesini gösterge panelinin üzerine haritanın solunda sabit bir yere çizer ve geniş bir harita onun altına girer. Buzlu bir zemin simgeyi haritadan ayırır. Hemen uygulanır.</string>
     <string name="settings_custom_dashboard_maneuver">Harita üzerinde sonraki manevra</string>
     <string name="settings_custom_dashboard_maneuver_description">CarPlay sizi yönlendirirken sonraki dönüş, mesafesi ve sokak haritanın sol üst köşesinde görünür. Hemen uygulanır.</string>
     <string name="settings_custom_dashboard_arrival">Harita üzerinde varış</string>
@@ -83,6 +85,8 @@
     <string name="custom_dashboard_unit_minutes">dk</string>
     <string name="custom_dashboard_unit_litres_per_100_km">L/100 km</string>
     <string name="custom_dashboard_arrival">varış</string>
+    <string name="custom_dashboard_media_empty_title">Hiçbir şey çalmıyor</string>
+    <string name="custom_dashboard_media_empty_subtitle">iPhone\'da müzik seçin</string>
     <string name="dashboard_call_incoming">Gelen arama</string>
     <string name="dashboard_call_decline">Reddet</string>
     <string name="dashboard_call_answer">Yanıtla</string>

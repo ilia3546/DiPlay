@@ -29,6 +29,7 @@ class MonjaroA3OptionsTest {
         AirPlayPersistence.saveCustomDashboard(context, true)
         AirPlayPersistence.saveDashboardBackground(context, DashboardBackground.NEON)
         AirPlayPersistence.saveDashboardDimmingPercent(context, 40)
+        AirPlayPersistence.saveDashboardIconBackdrop(context, true)
         AirPlayPersistence.saveHudManeuvers(context, true)
         AirPlayPersistence.saveHudDensity(context, HudSettings.Variant.BOLD)
         AirPlayPersistence.saveHudHeight(context, 260)
@@ -53,7 +54,8 @@ class MonjaroA3OptionsTest {
         ShadowBuild.setModel("KX11-A3-L1")
         assertEquals(MonjaroA3Options(rootHotspotDetails = true, disconnectPhoneBluetooth = true, hotspotAudioFirewall = true,
             microphoneInput = MicrophoneInput.ALL_CABIN_MICROPHONES, dashboardMusic = true, dashboardCalls = true, wheelSeek = true, customDashboard = true,
-            dashboardBackground = DashboardBackground.NEON, dashboardDimmingPercent = 40, hudManeuvers = true,
+            dashboardBackground = DashboardBackground.NEON, dashboardDimmingPercent = 40, dashboardIconBackdrop = true,
+            hudManeuvers = true,
             hudDensity = HudSettings.Variant.BOLD, hudHeight = 260, hudScalePercent = 80, hudLanes = false, hudTrip = false),
             MonjaroA3Options.load(context))
     }
@@ -63,6 +65,13 @@ class MonjaroA3OptionsTest {
         AirPlayPersistence.saveDashboardCalls(context, true)
         assertTrue(MonjaroA3Options.load(context, monjaroA3 = true).dashboardCalls)
         assertFalse(MonjaroA3Options.load(context, monjaroA3 = false).dashboardCalls)
+    }
+
+    @Test fun theIconBackdropIsOffByDefaultAndOffOnAnyOtherHeadUnit() {
+        assertFalse(MonjaroA3Options.load(context, monjaroA3 = true).dashboardIconBackdrop)
+        AirPlayPersistence.saveDashboardIconBackdrop(context, true)
+        assertTrue(MonjaroA3Options.load(context, monjaroA3 = true).dashboardIconBackdrop)
+        assertFalse(MonjaroA3Options.load(context, monjaroA3 = false).dashboardIconBackdrop)
     }
 
     @Test fun theHudIsOffAndDrawsTheBalancedLineAt215And65PercentWithLanesAndTripByDefault() {

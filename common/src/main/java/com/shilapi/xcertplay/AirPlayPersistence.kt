@@ -152,6 +152,7 @@ object AirPlayPersistence {
     private const val KEY_DASHBOARD_BOTTOM_LINE = "monjaro_dashboard_bottom_line"
     private const val KEY_DASHBOARD_ARRIVAL = "monjaro_dashboard_arrival"
     private const val KEY_DASHBOARD_MAP_HEIGHT = "monjaro_dashboard_map_height"
+    private const val KEY_DASHBOARD_ICON_BACKDROP = "monjaro_dashboard_icon_backdrop"
     private const val KEY_HUD_MANEUVERS = "monjaro_hud_maneuvers"
     private const val KEY_HUD_DENSITY = "monjaro_hud_density"
     private const val KEY_HUD_HEIGHT = "monjaro_hud_height"
@@ -696,6 +697,14 @@ object AirPlayPersistence {
         val height = prefs.getInt(KEY_DASHBOARD_MAP_HEIGHT, default.height)
             .takeIf { it in MonjaroDashboardLayout.mapHeights } ?: default.height
         return MonjaroDashboardLayout.MapGeometry(width, height)
+    }
+
+    fun loadDashboardIconBackdrop(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_DASHBOARD_ICON_BACKDROP, false)
+
+    fun saveDashboardIconBackdrop(context: Context, shown: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putBoolean(KEY_DASHBOARD_ICON_BACKDROP, shown).apply()
     }
 
     fun loadDashboardManeuver(context: Context): Boolean =

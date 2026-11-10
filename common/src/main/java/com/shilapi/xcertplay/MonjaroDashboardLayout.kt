@@ -56,7 +56,7 @@ internal object MonjaroDashboardLayout {
         )
     }
 
-    private const val MAP_CENTRE_Y = 440
+    const val MAP_CENTRE_Y = 440
     private const val MAP_STEP = 8
     val mapWidths = (448..800 step MAP_STEP).toList()
     val mapHeights = (200..480 step MAP_STEP).toList()
@@ -66,6 +66,61 @@ internal object MonjaroDashboardLayout {
     const val MAP_RADIUS = 28f
     const val MAP_SHADOW_DY = 18f
     const val MAP_SHADOW_BLUR = 50f
+
+    /** The map until its first live frame: a grid of lines every [SKELETON_GRID_STEP] px and a passing shine. */
+    const val SKELETON_GRID_STEP = 70
+    const val SKELETON_SHINE_MILLIS = 1_800L
+    const val SKELETON_SHINE_DEGREES = 100f
+    const val SKELETON_FADE_MILLIS = 250L
+    const val SKELETON_RETURN_MILLIS = 100L
+
+    /**
+     * With its map app closed or restarting, the iPhone keeps streaming frames of one flat colour; a probe of
+     * [MAP_BLANK_PROBE_WIDTH]x[MAP_BLANK_PROBE_HEIGHT] px every [MAP_BLANK_CHECK_MILLIS] ms whose channels spread
+     * by at most [MAP_BLANK_SPREAD] brings the skeleton back.
+     */
+    const val MAP_BLANK_PROBE_WIDTH = 16
+    const val MAP_BLANK_PROBE_HEIGHT = 8
+    const val MAP_BLANK_CHECK_MILLIS = 100L
+    const val MAP_BLANK_SPREAD = 8
+
+    /**
+     * The firmware draws its driver assistance icon at one place of the cluster, whatever the map's size; the
+     * backdrop lies under it, behind the icon and over the map.
+     */
+    val iconBackdrop = Box(left = 607, top = 449, width = 104, height = 92)
+    const val ICON_BACKDROP_RADIUS = 22f
+    const val ICON_BACKDROP_SHADOW_DY = 8f
+    const val ICON_BACKDROP_SHADOW_BLUR = 24f
+
+    /**
+     * Three box blurs of 4 px over a quarter-size copy spread a pixel with a deviation of about 18 px, close to the
+     * 16 px of the design's CSS blur.
+     */
+    const val ICON_BACKDROP_DOWNSCALE = 4
+    const val ICON_BACKDROP_BLUR_RADIUS = 4
+    const val ICON_BACKDROP_BLUR_PASSES = 3
+    const val ICON_BACKDROP_SATURATION = 1.2f
+
+    /** How often the backdrop copies a playing map again; each copy reads the map's frame back from the GPU. */
+    const val ICON_BACKDROP_REFRESH_MILLIS = 250L
+
+    /** The start-up's logos are centred on this point, which is above the map's centre. */
+    const val BOOT_LOGO_CENTRE_X = WIDTH / 2
+    const val BOOT_LOGO_CENTRE_Y = 388
+    const val BOOT_GEELY_WIDTH = 342
+    const val BOOT_GEELY_HEIGHT = 46
+    const val BOOT_GEELY_GAP = 46
+    const val BOOT_DIVIDER_WIDTH = 2
+    const val BOOT_DIVIDER_HEIGHT = 54
+    const val BOOT_CARPLAY_START = 16
+    const val BOOT_CARPLAY_GAP = 46
+    const val BOOT_CARPLAY_LOGO_SIZE = 62
+    const val BOOT_CARPLAY_TEXT = 44f
+    const val BOOT_CARPLAY_TEXT_GAP = 18
+    const val BOOT_CARPLAY_LETTER_SPACING = 0.3f
+    const val BOOT_SIDE_SHIFT = 50f
+    const val BOOT_MAP_SCALE = 0.9f
 
     /**
      * Where the iPhone keeps the car marker and route, in percent of the map: below the maneuver and arrival cards,
@@ -99,6 +154,9 @@ internal object MonjaroDashboardLayout {
     const val ARRIVAL_VALUE_TEXT = 24f
     const val ARRIVAL_LABEL_TEXT = 14f
 
+    /** The map's last frame, kept this much smaller for drawing it where TextureView cannot: in a software canvas. */
+    const val MAP_STILL_DOWNSCALE = 4
+
     /** The parked map: its blurred frame is the video scaled down by this factor, refreshed this often. */
     const val PARKED_BLUR_DOWNSCALE = 8
     const val PARKED_BLUR_REFRESH_MILLIS = 500L
@@ -115,6 +173,10 @@ internal object MonjaroDashboardLayout {
     const val MEDIA_TITLE_GAP = 26
     const val MEDIA_ARTIST_TEXT = 21f
     const val MEDIA_ARTIST_GAP = 4
+    const val MEDIA_EMPTY_TITLE_TEXT = 28f
+    const val MEDIA_EMPTY_SUBTITLE_TEXT = 19f
+    const val MEDIA_EMPTY_SUBTITLE_GAP = 6
+    const val MEDIA_EMPTY_GLYPH_SIZE = 64
     const val PROGRESS_WIDTH = 260
     const val PROGRESS_HEIGHT = 4
     const val PROGRESS_GAP = 22
@@ -175,6 +237,17 @@ internal object MonjaroDashboardLayout {
     const val LABEL = 0xFFB9C3D0.toInt()
     const val SECONDARY = 0xFFC9D2DE.toInt()
     const val MAP_EMPTY = 0xFF121821.toInt()
+    const val MAP_SKELETON = 0xFF10151D.toInt()
+    const val MAP_SKELETON_GRID = 0x09FFFFFF
+    const val MAP_SKELETON_SHINE = 0x0FFFFFFF
+    const val ICON_BACKDROP_TINT = 0x8C0A0E14.toInt()
+    const val ICON_BACKDROP_BORDER = 0x1FFFFFFF
+    const val ICON_BACKDROP_SHADOW = 0x59000000
+    const val BOOT_LOGO = 0xFFE9EDF2.toInt()
+    const val BOOT_DIVIDER = 0x8CFFFFFF.toInt()
+    const val MEDIA_EMPTY_TILE = 0x0FFFFFFF
+    const val MEDIA_EMPTY_BORDER = 0x1FFFFFFF
+    const val MEDIA_EMPTY_TITLE = 0xFFD7DDE6.toInt()
     const val ROUTE_CARD = 0xE610141B.toInt()
     const val ROUTE_CARD_SHADOW = 0x66000000
     const val MANEUVER_ICON = 0xFF2F7BFF.toInt()

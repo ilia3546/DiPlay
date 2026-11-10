@@ -59,7 +59,8 @@ class CustomDashboardSettingsScreenshotsTest {
                 }
                 ReflectionHelpers.callInstanceMethod<Unit>(activity, "allSettingsSections",
                     ReflectionHelpers.ClassParameter.from(LinearLayout::class.java, content))
-                for (title in listOf(R.string.settings_custom_dashboard_background, R.string.settings_custom_dashboard_dimming)) {
+                for (title in listOf(R.string.settings_custom_dashboard_background, R.string.settings_custom_dashboard_dimming,
+                    R.string.settings_custom_dashboard_icon_backdrop)) {
                     assertTrue(allViews(content).filterIsInstance<TextView>().any {
                         it.text.startsWith(activity.getString(title))
                     })

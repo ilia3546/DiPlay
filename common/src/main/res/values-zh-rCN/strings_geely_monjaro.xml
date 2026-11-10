@@ -46,6 +46,8 @@
     <string name="settings_custom_dashboard_map_height">地图高度</string>
     <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
     <string name="settings_custom_dashboard_map_size_note">卡片立即变化；重新连接后 iPhone 才会按新尺寸发送地图。</string>
+    <string name="settings_custom_dashboard_icon_backdrop">驾驶辅助图标下的衬底</string>
+    <string name="settings_custom_dashboard_icon_backdrop_description">固件会在仪表盘上地图左侧的固定位置绘制驾驶辅助图标，较宽的地图会延伸到它下面。磨砂衬底将图标与地图分开。立即生效。</string>
     <string name="settings_custom_dashboard_maneuver">地图上显示下一个转向</string>
     <string name="settings_custom_dashboard_maneuver_description">CarPlay 导航时，在地图左上角显示下一个转向、距离和道路。立即生效。</string>
     <string name="settings_custom_dashboard_arrival">地图上显示到达信息</string>
@@ -83,6 +85,8 @@
     <string name="custom_dashboard_unit_minutes">分钟</string>
     <string name="custom_dashboard_unit_litres_per_100_km">升/百公里</string>
     <string name="custom_dashboard_arrival">到达</string>
+    <string name="custom_dashboard_media_empty_title">未在播放</string>
+    <string name="custom_dashboard_media_empty_subtitle">在 iPhone 上选择音乐</string>
     <string name="dashboard_call_incoming">来电</string>
     <string name="dashboard_call_decline">拒绝</string>
     <string name="dashboard_call_answer">接听</string>

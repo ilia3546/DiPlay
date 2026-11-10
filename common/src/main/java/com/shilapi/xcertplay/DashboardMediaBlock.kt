@@ -19,8 +19,14 @@ import kotlin.math.max
 
 /** What the dashboard's media block shows. */
 internal sealed interface DashboardMedia {
-    /** Nothing is known to play, so nothing from an earlier source stays on screen. */
+    /**
+     * Something may sound, but there is nothing to show of it: the placeholder alone, so nothing from an earlier
+     * source stays on screen.
+     */
     object Empty : DashboardMedia
+
+    /** Nothing sounds and nothing is there to show: the empty tile asks for music on the iPhone. */
+    object Idle : DashboardMedia
 
     /** [progress] runs from 0 to 1, and is null for a track of unknown length. */
     data class Track(val title: String, val artist: String?, val artwork: Bitmap?, val progress: Float?) : DashboardMedia
@@ -28,7 +34,10 @@ internal sealed interface DashboardMedia {
     data class Radio(val title: String, val subtitle: String?, val logo: Bitmap?) : DashboardMedia
 }
 
-/** The right block of design v2 A: the artwork, the title, the artist and the progress of what plays. */
+/**
+ * The right block of design v2 A: the artwork, the title, the artist and the progress of what plays. While
+ * nothing sounds it shows design v4's empty tile and asks for music on the iPhone.
+ */
 internal class DashboardMediaBlock(context: Context) : LinearLayout(context) {
     private val artwork = DashboardArtworkView(context)
     private val title = dashboardText(context, L.MEDIA_TITLE_TEXT, 600).apply { gravity = Gravity.CENTER_HORIZONTAL }
@@ -36,6 +45,7 @@ internal class DashboardMediaBlock(context: Context) : LinearLayout(context) {
         gravity = Gravity.CENTER_HORIZONTAL
     }
     private val progress = DashboardProgressView(context)
+    private var idle = false
 
     init {
         orientation = VERTICAL
@@ -52,14 +62,29 @@ internal class DashboardMediaBlock(context: Context) : LinearLayout(context) {
     }
 
     fun show(media: DashboardMedia) {
+        styleFor(idle = media == DashboardMedia.Idle)
         when (media) {
             DashboardMedia.Empty -> show(null, NOW_PLAYING, null, null, null)
+            DashboardMedia.Idle -> show(null, null, context.getString(R.string.custom_dashboard_media_empty_title),
+                context.getString(R.string.custom_dashboard_media_empty_subtitle), null)
             is DashboardMedia.Track -> show(media.artwork, NOW_PLAYING, media.title, media.artist, media.progress)
             is DashboardMedia.Radio -> show(media.logo, R.drawable.art_radio_placeholder, media.title, media.subtitle, null)
         }
     }
 
-    private fun show(image: Bitmap?, placeholder: Int, title: String?, subtitle: String?, progress: Float?) {
+    private fun styleFor(idle: Boolean) {
+        if (this.idle == idle) return
+        this.idle = idle
+        title.setDashboardTextSize(if (idle) L.MEDIA_EMPTY_TITLE_TEXT else L.MEDIA_TITLE_TEXT)
+        title.setTextColor(if (idle) L.MEDIA_EMPTY_TITLE else L.TEXT)
+        subtitle.setDashboardTextSize(if (idle) L.MEDIA_EMPTY_SUBTITLE_TEXT else L.MEDIA_ARTIST_TEXT)
+        subtitle.setTextColor(if (idle) L.TITLE_MUTED else L.SECONDARY)
+        subtitle.layoutParams = (subtitle.layoutParams as LayoutParams).apply {
+            topMargin = if (idle) L.MEDIA_EMPTY_SUBTITLE_GAP else L.MEDIA_ARTIST_GAP
+        }
+    }
+
+    private fun show(image: Bitmap?, placeholder: Int?, title: String?, subtitle: String?, progress: Float?) {
         artwork.show(image, placeholder)
         this.title.showText(title)
         this.subtitle.showText(subtitle)
@@ -78,16 +103,26 @@ internal class DashboardMediaBlock(context: Context) : LinearLayout(context) {
     }
 }
 
-/** The rounded artwork with its shadow, or a placeholder drawable of the source when there is none. */
+/**
+ * The rounded artwork with its shadow, or a placeholder drawable of the source when there is none. Without either it
+ * is the empty tile: a faint bordered square with a note and no shadow.
+ */
 internal class DashboardArtworkView(context: Context) : View(context) {
     private val shadow = DashboardShadow(L.ARTWORK_RADIUS, L.ARTWORK_SHADOW_DY, L.ARTWORK_SHADOW_BLUR, L.ARTWORK_SHADOW)
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+    private val emptyTile = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = L.MEDIA_EMPTY_TILE }
+    private val emptyBorder = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 1f
+        color = L.MEDIA_EMPTY_BORDER
+    }
+    private val note = requireNotNull(context.getDrawable(R.drawable.ic_dashboard_music_note))
     private val placeholders = mutableMapOf<Int, Bitmap>()
     private var image: Bitmap? = null
-    private var placeholder = R.drawable.art_now_playing_placeholder
+    private var placeholder: Int? = R.drawable.art_now_playing_placeholder
 
     /** [image] stays its owner's: the view never recycles it. */
-    fun show(image: Bitmap?, placeholder: Int) {
+    fun show(image: Bitmap?, placeholder: Int?) {
         if (image === this.image && placeholder == this.placeholder) return
         this.image = image
         this.placeholder = placeholder
@@ -95,8 +130,13 @@ internal class DashboardArtworkView(context: Context) : View(context) {
     }
 
     override fun onDraw(canvas: Canvas) {
+        val placeholder = placeholder
+        if (image == null && placeholder == null) {
+            drawEmpty(canvas)
+            return
+        }
         shadow.draw(canvas, width, height)
-        val picture = image ?: placeholders.getOrPut(placeholder) {
+        val picture = image ?: placeholders.getOrPut(checkNotNull(placeholder)) {
             requireNotNull(context.getDrawable(placeholder)).toBitmap(L.ARTWORK_SIZE, L.ARTWORK_SIZE)
         }
         val crop = centerCrop(picture.width, picture.height, width, height)
@@ -108,6 +148,17 @@ internal class DashboardArtworkView(context: Context) : View(context) {
             })
         }
         canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), L.ARTWORK_RADIUS, L.ARTWORK_RADIUS, paint)
+    }
+
+    private fun drawEmpty(canvas: Canvas) {
+        canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), L.ARTWORK_RADIUS, L.ARTWORK_RADIUS, emptyTile)
+        val half = emptyBorder.strokeWidth / 2
+        canvas.drawRoundRect(half, half, width - half, height - half, L.ARTWORK_RADIUS - half, L.ARTWORK_RADIUS - half,
+            emptyBorder)
+        val left = (width - L.MEDIA_EMPTY_GLYPH_SIZE) / 2
+        val top = (height - L.MEDIA_EMPTY_GLYPH_SIZE) / 2
+        note.setBounds(left, top, left + L.MEDIA_EMPTY_GLYPH_SIZE, top + L.MEDIA_EMPTY_GLYPH_SIZE)
+        note.draw(canvas)
     }
 }
 

@@ -90,17 +90,19 @@ internal class DashboardMediaFeed(private val block: DashboardMediaBlock, privat
             Log.i(TAG, "media source $next: $signals")
             source = next
         }
+        val station = radio.station
+        val nothing = nothingShown(signals)
         block.show(when (next) {
-            DashboardMediaSource.CARPLAY -> if (!track) DashboardMedia.Empty else DashboardMedia.Track(
+            DashboardMediaSource.CARPLAY -> if (!track) nothing else DashboardMedia.Track(
                 title = info.title.orEmpty(),
                 artist = info.artist,
                 artwork = music.artwork?.takeUnless { it.isRecycled },
                 progress = DashboardProgress.of(playback.elapsedMillis, playback.elapsedAt, info.durationMillis,
                     playback.playing, SystemClock.elapsedRealtime()),
             )
-            DashboardMediaSource.RADIO -> radio.station?.let { DashboardMedia.Radio(it.title, it.subtitle, radio.logo) }
-                ?: DashboardMedia.Empty
-            DashboardMediaSource.OTHER, DashboardMediaSource.UNKNOWN -> DashboardMedia.Empty
+            DashboardMediaSource.RADIO -> station?.let { DashboardMedia.Radio(it.title, it.subtitle, radio.logo) }
+                ?: nothing
+            DashboardMediaSource.OTHER, DashboardMediaSource.UNKNOWN -> nothing
         })
         val now = System.currentTimeMillis()
         showCall(DashboardCallShown.of(MonjaroDashboardCall.active(block.context), CarPlayCalls.current(), now), now)
@@ -126,6 +128,16 @@ internal class DashboardMediaFeed(private val block: DashboardMediaBlock, privat
     companion object {
         private const val TAG = "DiPlay-CustomDashboard"
         private const val PROGRESS_REFRESH_MILLIS = 1_000L
+
+        /**
+         * What the block shows without a track or a station to show: [DashboardMedia.Idle] only when no signal says
+         * that something sounds and there is no CarPlay track at all, [DashboardMedia.Empty] otherwise. A station the
+         * radio service remembers while the radio is silent does not count.
+         */
+        fun nothingShown(signals: DashboardMediaSignals): DashboardMedia = with(signals) {
+            val sounding = carPlayPlaying || radioSounding || bluetoothPlaying || usbPlaying || radioServicePlaying == true
+            if (sounding || carPlayTrack) DashboardMedia.Empty else DashboardMedia.Idle
+        }
     }
 }
 

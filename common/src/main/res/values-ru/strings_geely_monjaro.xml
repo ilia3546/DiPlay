@@ -46,6 +46,8 @@
     <string name="settings_custom_dashboard_map_height">Высота карты</string>
     <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
     <string name="settings_custom_dashboard_map_size_note">Карточка меняется сразу; iPhone пришлёт карту нового размера после переподключения.</string>
+    <string name="settings_custom_dashboard_icon_backdrop">Подложка под значком ассистента</string>
+    <string name="settings_custom_dashboard_icon_backdrop_description">Прошивка рисует значок ассистента вождения поверх приборки в одном месте слева от карты, и широкая карта заходит под него. Матовая подложка отделяет значок от карты. Применяется сразу.</string>
     <string name="settings_custom_dashboard_maneuver">Следующий манёвр на карте</string>
     <string name="settings_custom_dashboard_maneuver_description">Пока CarPlay ведёт по маршруту, в левом верхнем углу карты показываются следующий поворот, расстояние до него и улица. Применяется сразу.</string>
     <string name="settings_custom_dashboard_arrival">Прибытие на карте</string>
@@ -83,6 +85,8 @@
     <string name="custom_dashboard_unit_minutes">мин</string>
     <string name="custom_dashboard_unit_litres_per_100_km">л/100 км</string>
     <string name="custom_dashboard_arrival">прибытие</string>
+    <string name="custom_dashboard_media_empty_title">Не воспроизводится</string>
+    <string name="custom_dashboard_media_empty_subtitle">Выберите музыку на iPhone</string>
     <string name="dashboard_call_incoming">Входящий вызов</string>
     <string name="dashboard_call_decline">Отклонить</string>
     <string name="dashboard_call_answer">Ответить</string>

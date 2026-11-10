@@ -8,7 +8,7 @@ internal enum class DashboardMediaSource {
     /** Bluetooth or USB music of the head unit: the block shows nothing. */
     OTHER,
 
-    /** Nothing plays, or the signals disagree: the block shows nothing. */
+    /** Nothing plays, or the signals disagree: the block shows no track, and says so only when nothing sounds. */
     UNKNOWN;
 
     companion object {
@@ -42,8 +42,6 @@ internal enum class DashboardMediaSource {
 
         fun of(signals: DashboardMediaSignals): DashboardMediaSource = with(signals) {
             val carPlaySounding = (carPlayFocus || carPlayFocusDisabled) && carPlayPlaying
-            // The firmware leaves its radio flag set after the radio pauses for another source; the radio service knows.
-            val radioSounding = radioPlaying && radioServicePlaying != false
             val headUnitSources = listOf(radioSounding, bluetoothPlaying, usbPlaying).count { it }
             when {
                 carPlaySounding -> if (headUnitSources == 0) CARPLAY else UNKNOWN
@@ -72,7 +70,10 @@ internal data class DashboardMediaSignals(
     val usbPlaying: Boolean = false,
     val radioServicePlaying: Boolean? = null,
     val carSource: Boolean? = null,
-)
+) {
+    /** The firmware leaves its radio flag set after the radio pauses for another source; the radio service knows. */
+    val radioSounding: Boolean get() = radioPlaying && radioServicePlaying != false
+}
 
 internal object DashboardProgress {
     /** How far a CarPlay track is at [nowMillis], counted on from the iPhone's last position while it plays. */

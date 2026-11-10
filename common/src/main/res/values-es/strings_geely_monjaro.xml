@@ -46,6 +46,8 @@
     <string name="settings_custom_dashboard_map_height">Alto del mapa</string>
     <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
     <string name="settings_custom_dashboard_map_size_note">La tarjeta cambia al instante; el iPhone envía el mapa con el nuevo tamaño tras volver a conectar.</string>
+    <string name="settings_custom_dashboard_icon_backdrop">Fondo bajo el icono de asistencia</string>
+    <string name="settings_custom_dashboard_icon_backdrop_description">El firmware dibuja su icono de asistencia a la conducción sobre el panel en un mismo lugar a la izquierda del mapa, y un mapa ancho pasa por debajo. Un fondo esmerilado separa el icono del mapa. Se aplica al instante.</string>
     <string name="settings_custom_dashboard_maneuver">Próxima maniobra sobre el mapa</string>
     <string name="settings_custom_dashboard_maneuver_description">Mientras CarPlay te guía, el próximo giro, su distancia y la calle aparecen en la esquina superior izquierda del mapa. Se aplica al instante.</string>
     <string name="settings_custom_dashboard_arrival">Llegada sobre el mapa</string>
@@ -83,6 +85,8 @@
     <string name="custom_dashboard_unit_minutes">min</string>
     <string name="custom_dashboard_unit_litres_per_100_km">L/100 km</string>
     <string name="custom_dashboard_arrival">llegada</string>
+    <string name="custom_dashboard_media_empty_title">No se reproduce nada</string>
+    <string name="custom_dashboard_media_empty_subtitle">Elige música en el iPhone</string>
     <string name="dashboard_call_incoming">Llamada entrante</string>
     <string name="dashboard_call_decline">Rechazar</string>
     <string name="dashboard_call_answer">Responder</string>

@@ -46,6 +46,8 @@
     <string name="settings_custom_dashboard_map_height">지도 높이</string>
     <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
     <string name="settings_custom_dashboard_map_size_note">카드는 즉시 바뀌며, iPhone은 다시 연결한 후 새 크기로 지도를 보냅니다.</string>
+    <string name="settings_custom_dashboard_icon_backdrop">운전 보조 아이콘 아래 배경</string>
+    <string name="settings_custom_dashboard_icon_backdrop_description">펌웨어는 운전 보조 아이콘을 계기판 위 지도 왼쪽의 정해진 자리에 그리며, 넓은 지도는 그 아래로 들어갑니다. 반투명 유리 배경이 아이콘을 지도와 구분합니다. 즉시 적용됩니다.</string>
     <string name="settings_custom_dashboard_maneuver">지도 위 다음 안내</string>
     <string name="settings_custom_dashboard_maneuver_description">CarPlay가 경로를 안내하는 동안 다음 회전, 거리, 도로명을 지도 왼쪽 위에 표시합니다. 즉시 적용됩니다.</string>
     <string name="settings_custom_dashboard_arrival">지도 위 도착 정보</string>
@@ -83,6 +85,8 @@
     <string name="custom_dashboard_unit_minutes">분</string>
     <string name="custom_dashboard_unit_litres_per_100_km">L/100km</string>
     <string name="custom_dashboard_arrival">도착</string>
+    <string name="custom_dashboard_media_empty_title">재생 중인 항목 없음</string>
+    <string name="custom_dashboard_media_empty_subtitle">iPhone에서 음악을 선택하세요</string>
     <string name="dashboard_call_incoming">수신 전화</string>
     <string name="dashboard_call_decline">거절</string>
     <string name="dashboard_call_answer">응답</string>

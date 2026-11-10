@@ -2300,6 +2300,12 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     row.onCommit = { markReconnectNeeded() }
                 })
                 card.addView(choiceNote(getString(R.string.settings_custom_dashboard_map_size_note)))
+                toggle(card, getString(R.string.settings_custom_dashboard_icon_backdrop),
+                    getString(R.string.settings_custom_dashboard_icon_backdrop_description),
+                    AirPlayPersistence.loadDashboardIconBackdrop(this)) {
+                    AirPlayPersistence.saveDashboardIconBackdrop(this, it)
+                    MonjaroCustomDashboard.settingChanged()
+                }
                 toggle(card, getString(R.string.settings_custom_dashboard_maneuver),
                     getString(R.string.settings_custom_dashboard_maneuver_description),
                     AirPlayPersistence.loadDashboardManeuver(this)) {

@@ -46,6 +46,8 @@
     <string name="settings_custom_dashboard_map_height">Map height</string>
     <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
     <string name="settings_custom_dashboard_map_size_note">The card changes at once; the iPhone sends the map in the new size after you reconnect.</string>
+    <string name="settings_custom_dashboard_icon_backdrop">Backdrop under the driver assist icon</string>
+    <string name="settings_custom_dashboard_icon_backdrop_description">The firmware draws its driver assistance icon over the dashboard at one place left of the map, and a wide map runs under it. A frosted backdrop sets the icon apart from the map. Applies at once.</string>
     <string name="settings_custom_dashboard_maneuver">Next maneuver over the map</string>
     <string name="settings_custom_dashboard_maneuver_description">While CarPlay guides you, the next turn, its distance and the street are in the map\'s top left corner. Applies at once.</string>
     <string name="settings_custom_dashboard_arrival">Arrival over the map</string>
@@ -83,6 +85,8 @@
     <string name="custom_dashboard_unit_minutes">min</string>
     <string name="custom_dashboard_unit_litres_per_100_km">L/100 km</string>
     <string name="custom_dashboard_arrival">arrival</string>
+    <string name="custom_dashboard_media_empty_title">Nothing playing</string>
+    <string name="custom_dashboard_media_empty_subtitle">Choose music on iPhone</string>
     <string name="dashboard_call_incoming">Incoming call</string>
     <string name="dashboard_call_decline">Decline</string>
     <string name="dashboard_call_answer">Answer</string>
