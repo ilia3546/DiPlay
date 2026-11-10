@@ -40,15 +40,30 @@ class EcarxWheelSpeedTest {
         for (code in listOf(5, 6, 7, -1)) assertNull(EcarxSignalReadings.leverGear(code))
     }
 
-    @Test fun aCarSignalSpeedIsReadForOneAndAHalfSeconds() {
+    @Test fun aCarSignalSpeedIsReadForTwoAndAHalfSeconds() {
         val readings = EcarxSignalReadings()
         assertNull(readings.metersPerSecond(1_000))
         readings.speed(1.82f, 1_000)
         assertEquals(1.82, readings.metersPerSecond(1_000)!!, 1e-6)
-        assertEquals(1.82, readings.metersPerSecond(2_500)!!, 1e-6)
-        assertNull(readings.metersPerSecond(2_501))
-        readings.speed(500f, 3_000)
-        assertNull(readings.metersPerSecond(3_000))
+        assertEquals(1.82, readings.metersPerSecond(3_500)!!, 1e-6)
+        assertNull(readings.metersPerSecond(3_501))
+        readings.speed(500f, 4_000)
+        assertNull(readings.metersPerSecond(4_000))
+    }
+
+    @Test fun theLongitudinalSpeedIsComparedOnlyWithAFreshSpeedAboveTwentyKmh() {
+        val readings = EcarxSignalReadings()
+        readings.longitudinal(10f, 500)
+        assertNull(readings.comparison())
+        readings.speed(15 / 3.6f, 1_000)
+        readings.longitudinal(4f, 1_100)
+        assertNull(readings.comparison())
+        readings.speed(60 / 3.6f, 2_000)
+        readings.longitudinal(50 / 3.6f, 2_100)
+        readings.longitudinal(52 / 3.6f, 2_200)
+        readings.longitudinal(50 / 3.6f, 4_501)
+        assertEquals("speed=60.0 VehSpdLgtA=51.0 km/h ratio=1.176 n=2", readings.comparison())
+        assertNull(readings.comparison())
     }
 
     @Test fun theStatusSaysHowOldTheSpeedTheLastEventAndTheLastErrorAre() {
@@ -130,11 +145,11 @@ class EcarxWheelSpeedTest {
         assertEquals(VehicleSpeedReading(VehicleGear.REVERSE, listOf(VehicleSpeedSample(10_250, 0.74f.toDouble()))),
             EcarxWheelSpeed.drain())
 
-        val (_, stale) = EcarxWheelSpeed.readSignal(12_000)
+        val (_, stale) = EcarxWheelSpeed.readSignal(13_000)
         assertNull(stale)
         assertNull(EcarxWheelSpeed.motion()!!.metersPerSecond)
         assertNull(EcarxWheelSpeed.drain())
         readings.clear()
-        EcarxWheelSpeed.readSignal(12_000)
+        EcarxWheelSpeed.readSignal(13_000)
     }
 }

@@ -8,6 +8,7 @@ import android.os.SystemClock
 import android.util.Log
 import com.shilapi.xcertplay.transport.VehicleGear
 import java.lang.reflect.Proxy
+import java.util.Locale
 
 /**
  * The latest speed and gear values with the time they came, from either ECARX source, and the summary
@@ -21,12 +22,41 @@ internal class EcarxSignalReadings {
     private var eventMillis: Long? = null
     private var error: String? = null
     private var errorMillis = 0L
+    private var compared = 0
+    private var comparedSpeed = 0.0
+    private var comparedLongitudinal = 0.0
 
+    /** The speed in m/s. */
     @Synchronized
     fun speed(raw: Float, elapsedMillis: Long) {
         speed = raw
         speedMillis = elapsedMillis
         eventMillis = elapsedMillis
+    }
+
+    /** `VehSpdLgtA` in m/s, kept only to compare with the speed while the car moves above [COMPARE_FROM]. */
+    @Synchronized
+    fun longitudinal(metersPerSecond: Float, elapsedMillis: Long) {
+        val current = speed ?: return
+        if (elapsedMillis - speedMillis > FRESH_MILLIS || current < COMPARE_FROM) return
+        compared++
+        comparedSpeed += current
+        comparedLongitudinal += metersPerSecond
+    }
+
+    /** Average speed and `VehSpdLgtA` in km/h since the last call, or null when the car did not move fast enough. */
+    @Synchronized
+    fun comparison(): String? {
+        if (compared == 0) return null
+        val speedKmh = comparedSpeed / compared * 3.6
+        val longitudinalKmh = comparedLongitudinal / compared * 3.6
+        return String.format(Locale.US, "speed=%.1f VehSpdLgtA=%.1f km/h ratio=%.3f n=%d",
+            speedKmh, longitudinalKmh, if (longitudinalKmh > 0) speedKmh / longitudinalKmh else 0.0, compared)
+            .also {
+                compared = 0
+                comparedSpeed = 0.0
+                comparedLongitudinal = 0.0
+            }
     }
 
     @Synchronized
@@ -69,11 +99,16 @@ internal class EcarxSignalReadings {
         gear = null
         eventMillis = null
         error = null
+        compared = 0
+        comparedSpeed = 0.0
+        comparedLongitudinal = 0.0
     }
 
     companion object {
-        /** `car_signal` sends the speed about twice a second while the car stands, and only faster on the move. */
-        const val FRESH_MILLIS = 1_500L
+        /** `car_signal` sends the cluster's speed about once a second, a little more often on the move. */
+        const val FRESH_MILLIS = 2_500L
+
+        const val COMPARE_FROM = 20 / 3.6f
 
         /** `GearLvrIndcn`, the selector lever position; 4 is manual mode, 5-7 are reserved or undefined. */
         fun leverGear(code: Int): VehicleGear? = when (code) {
@@ -147,9 +182,11 @@ internal class EcarxSignalLink {
 
 /**
  * Speed and gear events from the `car_signal` manager of `ecarx.car` into [readings]. Firmware that refuses
- * AdaptAPI to apps without an ECARX signature still serves `car_signal` to an ordinary app. `VehSpdLgtA` is in
- * m/s and has no sign, so reverse comes from the gear; it arrives about twice a second while the car stands
- * and 12-25 times a second on the move. `GearLvrIndcn` arrives at subscription and on each change.
+ * AdaptAPI to apps without an ECARX signature still serves `car_signal` to an ordinary app. The speed is
+ * `SIVehSpdIndcd`, the cluster's whole km/h, about once a second, with no sign, so reverse comes from the gear.
+ * `VehSpdLgtA` comes 12-25 times a second in m/s, but on the Geely Monjaro it reads below both the cluster
+ * and the phone's GPS, which agree, so it is only compared with the speed for the report.
+ * `GearLvrIndcn` arrives at subscription and on each change.
  *
  * [poll] and [close] run on the polling thread; the service connection and the events come on others.
  */
@@ -159,6 +196,7 @@ internal class EcarxCarSignal(private val app: Context, private val readings: Ec
     private var manager: Any? = null
     private var callback: Any? = null
     @Volatile private var speedId: Int? = null
+    @Volatile private var longitudinalId: Int? = null
     @Volatile private var gearId: Int? = null
     private var failureLogged = false
 
@@ -201,12 +239,15 @@ internal class EcarxCarSignal(private val app: Context, private val readings: Ec
             val manager = EcarxCar.manager(car, "car_signal")
             val filterType = Class.forName(FILTER)
             val filter = filterType.getConstructor().newInstance()
-            val speed = manager.javaClass.getField("SignalId_VehSpdLgtA").getInt(null)
+            val speed = manager.javaClass.getField("SignalId_SIVehSpdIndcd").getInt(null)
+            val longitudinal = manager.javaClass.getField("SignalId_VehSpdLgtA").getInt(null)
             val gear = manager.javaClass.getField("SignalId_GearLvrIndcn").getInt(null)
             val add = filterType.getMethod("add", Int::class.javaObjectType)
             add.invoke(filter, speed)
+            add.invoke(filter, longitudinal)
             add.invoke(filter, gear)
             speedId = speed
+            longitudinalId = longitudinal
             gearId = gear
             val callbackType = Class.forName(CALLBACK)
             val callback = Proxy.newProxyInstance(app.classLoader, arrayOf(callbackType)) { proxy, method, args ->
@@ -252,7 +293,8 @@ internal class EcarxCarSignal(private val app: Context, private val readings: Ec
             val raw = value.javaClass.getMethod("getValue").invoke(value) as? Number ?: return
             val now = SystemClock.elapsedRealtime()
             when (id) {
-                speedId -> readings.speed(raw.toFloat(), now)
+                speedId -> readings.speed(raw.toFloat() / 3.6f, now)
+                longitudinalId -> readings.longitudinal(raw.toFloat(), now)
                 gearId -> raw.toInt().let { readings.gear(it, EcarxSignalReadings.leverGear(it), now) }
             }
         }

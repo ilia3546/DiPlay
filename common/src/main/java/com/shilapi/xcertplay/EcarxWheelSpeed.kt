@@ -190,6 +190,8 @@ internal object EcarxWheelSpeed : VehicleSpeedSource {
         return "ecarx=${source.label} $state ${readings.describe(SystemClock.elapsedRealtime())}"
     }
 
+    override fun comparison(): String? = readings.comparison()
+
     private fun poll(run: Polling) {
         if (run.closed) return
         val source = source ?: firstSource().also { source = it }
