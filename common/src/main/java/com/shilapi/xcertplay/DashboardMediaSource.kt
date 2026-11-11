@@ -58,7 +58,8 @@ internal enum class DashboardMediaSource {
 /**
  * The inputs of [DashboardMediaSource.of]: DiPlay's media focus, or whether the settings keep DiPlay from taking
  * it, and CarPlay's play state and track, and the firmware's `Settings.Global` play flags; [radioServicePlaying]
- * is the radio service's own answer, or null while DiPlay is not bound to it.
+ * is the radio service's own answer, or null while DiPlay is not bound to it. [carPlayMediaAudio] is the iPhone's
+ * media audio stream, which an app such as a video feed opens without a track.
  */
 internal data class DashboardMediaSignals(
     val carPlayFocus: Boolean = false,
@@ -70,6 +71,7 @@ internal data class DashboardMediaSignals(
     val usbPlaying: Boolean = false,
     val radioServicePlaying: Boolean? = null,
     val carSource: Boolean? = null,
+    val carPlayMediaAudio: Boolean = false,
 ) {
     /** The firmware leaves its radio flag set after the radio pauses for another source; the radio service knows. */
     val radioSounding: Boolean get() = radioPlaying && radioServicePlaying != false

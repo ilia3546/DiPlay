@@ -91,6 +91,8 @@
     <string name="custom_dashboard_arrival">varış</string>
     <string name="custom_dashboard_media_empty_title">Hiçbir şey çalmıyor</string>
     <string name="custom_dashboard_media_empty_subtitle">iPhone\'da müzik seçin</string>
+    <string name="custom_dashboard_media_untitled_title">iPhone\'dan ses</string>
+    <string name="custom_dashboard_media_untitled_subtitle">Uygulama neyin çaldığını paylaşmıyor</string>
     <string name="dashboard_call_incoming">Gelen arama</string>
     <string name="dashboard_call_decline">Reddet</string>
     <string name="dashboard_call_answer">Yanıtla</string>

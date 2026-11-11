@@ -91,6 +91,8 @@
     <string name="custom_dashboard_arrival">الوصول</string>
     <string name="custom_dashboard_media_empty_title">لا يوجد تشغيل</string>
     <string name="custom_dashboard_media_empty_subtitle">اختر موسيقى على iPhone</string>
+    <string name="custom_dashboard_media_untitled_title">صوت من iPhone</string>
+    <string name="custom_dashboard_media_untitled_subtitle">التطبيق لا يعرض ما يتم تشغيله</string>
     <string name="dashboard_call_incoming">مكالمة واردة</string>
     <string name="dashboard_call_decline">رفض</string>
     <string name="dashboard_call_answer">رد</string>

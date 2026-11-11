@@ -91,6 +91,8 @@
     <string name="custom_dashboard_arrival">прибытие</string>
     <string name="custom_dashboard_media_empty_title">Не воспроизводится</string>
     <string name="custom_dashboard_media_empty_subtitle">Выберите музыку на iPhone</string>
+    <string name="custom_dashboard_media_untitled_title">Звук с iPhone</string>
+    <string name="custom_dashboard_media_untitled_subtitle">Приложение не передаёт, что играет</string>
     <string name="dashboard_call_incoming">Входящий вызов</string>
     <string name="dashboard_call_decline">Отклонить</string>
     <string name="dashboard_call_answer">Ответить</string>

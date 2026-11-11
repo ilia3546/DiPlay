@@ -91,6 +91,8 @@
     <string name="custom_dashboard_arrival">arrival</string>
     <string name="custom_dashboard_media_empty_title">Nothing playing</string>
     <string name="custom_dashboard_media_empty_subtitle">Choose music on iPhone</string>
+    <string name="custom_dashboard_media_untitled_title">Sound from iPhone</string>
+    <string name="custom_dashboard_media_untitled_subtitle">The app doesn\'t share what\'s playing</string>
     <string name="dashboard_call_incoming">Incoming call</string>
     <string name="dashboard_call_decline">Decline</string>
     <string name="dashboard_call_answer">Answer</string>

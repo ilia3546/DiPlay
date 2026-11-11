@@ -14,7 +14,6 @@ import android.text.TextUtils
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.core.graphics.drawable.toBitmap
 import com.shilapi.xcertplay.MonjaroDashboardLayout as L
 import com.shilapi.xcertplay.host.R
 import kotlin.math.max
@@ -23,13 +22,16 @@ import kotlin.math.roundToInt
 /** What the dashboard's media block shows. */
 internal sealed interface DashboardMedia {
     /**
-     * Something may sound, but there is nothing to show of it: the placeholder alone, so nothing from an earlier
+     * Something may sound, but there is nothing to show of it: the empty tile alone, so nothing from an earlier
      * source stays on screen.
      */
     object Empty : DashboardMedia
 
     /** Nothing sounds and nothing is there to show: the empty tile asks for music on the iPhone. */
     object Idle : DashboardMedia
+
+    /** CarPlay sounds, but the app on the iPhone sends no track: the empty tile says so. */
+    object Untitled : DashboardMedia
 
     /** A track or a station, with the badges under it: paused, and the car's media sound off. */
     sealed interface Playing : DashboardMedia {
@@ -58,7 +60,8 @@ internal sealed interface DashboardMedia {
 
 /**
  * The right block of design v2 A: the artwork, the title, the artist and the progress of what plays, and design v5's
- * badges under them. While nothing sounds it shows design v4's empty tile and asks for music on the iPhone.
+ * badges under them. While nothing sounds it shows design v4's empty tile and asks for music on the iPhone, and the
+ * same tile says when the iPhone sounds without a track.
  */
 internal class DashboardMediaBlock(context: Context) : LinearLayout(context) {
     private val artwork = DashboardArtworkView(context)
@@ -89,13 +92,15 @@ internal class DashboardMediaBlock(context: Context) : LinearLayout(context) {
     }
 
     fun show(media: DashboardMedia) {
-        styleFor(idle = media == DashboardMedia.Idle)
+        styleFor(idle = media == DashboardMedia.Idle || media == DashboardMedia.Untitled)
         when (media) {
-            DashboardMedia.Empty -> show(null, NOW_PLAYING, null, null, null)
-            DashboardMedia.Idle -> show(null, null, context.getString(R.string.custom_dashboard_media_empty_title),
+            DashboardMedia.Empty -> show(null, null, null, null)
+            DashboardMedia.Idle -> show(null, context.getString(R.string.custom_dashboard_media_empty_title),
                 context.getString(R.string.custom_dashboard_media_empty_subtitle), null)
-            is DashboardMedia.Track -> show(media.artwork, NOW_PLAYING, media.title, media.artist, media.progress)
-            is DashboardMedia.Radio -> show(media.logo, R.drawable.art_radio_placeholder, media.title, media.subtitle, null)
+            DashboardMedia.Untitled -> show(null, context.getString(R.string.custom_dashboard_media_untitled_title),
+                context.getString(R.string.custom_dashboard_media_untitled_subtitle), null)
+            is DashboardMedia.Track -> show(media.artwork, media.title, media.artist, media.progress)
+            is DashboardMedia.Radio -> show(media.logo, media.title, media.subtitle, null)
         }
         showBadges(media, animated = media.javaClass == shown.javaClass)
         shown = media
@@ -119,8 +124,8 @@ internal class DashboardMediaBlock(context: Context) : LinearLayout(context) {
         }
     }
 
-    private fun show(image: Bitmap?, placeholder: Int?, title: String?, subtitle: String?, progress: Float?) {
-        artwork.show(image, placeholder)
+    private fun show(image: Bitmap?, title: String?, subtitle: String?, progress: Float?) {
+        artwork.show(image)
         this.title.showText(title)
         this.subtitle.showText(subtitle)
         this.progress.progress = progress
@@ -132,16 +137,9 @@ internal class DashboardMediaBlock(context: Context) : LinearLayout(context) {
         if (!TextUtils.equals(text, value.orEmpty())) text = value
         visibility = if (value.isNullOrEmpty()) GONE else VISIBLE
     }
-
-    private companion object {
-        val NOW_PLAYING = R.drawable.art_now_playing_placeholder
-    }
 }
 
-/**
- * The rounded artwork with its shadow, or a placeholder drawable of the source when there is none. Without either it
- * is the empty tile: a faint bordered square with a note and no shadow.
- */
+/** The rounded artwork with its shadow, or without one the empty tile: a faint bordered square with a note and no shadow. */
 internal class DashboardArtworkView(context: Context) : View(context) {
     private val shadow = DashboardShadow(L.ARTWORK_RADIUS, L.ARTWORK_SHADOW_DY, L.ARTWORK_SHADOW_BLUR, L.ARTWORK_SHADOW)
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
@@ -152,28 +150,18 @@ internal class DashboardArtworkView(context: Context) : View(context) {
         color = L.MEDIA_EMPTY_BORDER
     }
     private val note = requireNotNull(context.getDrawable(R.drawable.ic_dashboard_music_note))
-    private val placeholders = mutableMapOf<Int, Bitmap>()
     private var image: Bitmap? = null
-    private var placeholder: Int? = R.drawable.art_now_playing_placeholder
 
     /** [image] stays its owner's: the view never recycles it. */
-    fun show(image: Bitmap?, placeholder: Int?) {
-        if (image === this.image && placeholder == this.placeholder) return
+    fun show(image: Bitmap?) {
+        if (image === this.image) return
         this.image = image
-        this.placeholder = placeholder
         invalidate()
     }
 
     override fun onDraw(canvas: Canvas) {
-        val placeholder = placeholder
-        if (image == null && placeholder == null) {
-            drawEmpty(canvas)
-            return
-        }
+        val picture = image ?: return drawEmpty(canvas)
         shadow.draw(canvas, width, height)
-        val picture = image ?: placeholders.getOrPut(checkNotNull(placeholder)) {
-            requireNotNull(context.getDrawable(placeholder)).toBitmap(L.ARTWORK_SIZE, L.ARTWORK_SIZE)
-        }
         val crop = centerCrop(picture.width, picture.height, width, height)
         val scale = max(width / crop.width().toFloat(), height / crop.height().toFloat())
         paint.shader = BitmapShader(picture, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {

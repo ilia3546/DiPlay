@@ -91,6 +91,8 @@
     <string name="custom_dashboard_arrival">到着</string>
     <string name="custom_dashboard_media_empty_title">再生していません</string>
     <string name="custom_dashboard_media_empty_subtitle">iPhone で音楽を選んでください</string>
+    <string name="custom_dashboard_media_untitled_title">iPhone のサウンド</string>
+    <string name="custom_dashboard_media_untitled_subtitle">アプリが再生中の内容を送信していません</string>
     <string name="dashboard_call_incoming">着信</string>
     <string name="dashboard_call_decline">拒否</string>
     <string name="dashboard_call_answer">応答</string>

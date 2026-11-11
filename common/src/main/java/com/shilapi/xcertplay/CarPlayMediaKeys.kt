@@ -491,7 +491,7 @@ internal object CarPlayMediaKeys {
 
     private fun publishClusterPlaybackLocked() = ClusterPlaybackState.publish(ClusterPlaybackState.Snapshot(
         nowPlaying.playing, nowPlaying.elapsedMillis, elapsedUpdatedAt, focusHeld,
-        carAudioOwnsWheel.takeIf { pauseForCarAudio() }))
+        carAudioOwnsWheel.takeIf { pauseForCarAudio() }, mediaAudioActive))
 
     private fun pauseForCarAudio() = appContext?.let { MonjaroA3Options.load(it).pauseCarPlayForCarAudio } == true
 

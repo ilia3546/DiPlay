@@ -91,6 +91,8 @@
     <string name="custom_dashboard_arrival">抵達</string>
     <string name="custom_dashboard_media_empty_title">未在播放</string>
     <string name="custom_dashboard_media_empty_subtitle">在 iPhone 上選擇音樂</string>
+    <string name="custom_dashboard_media_untitled_title">來自 iPhone 的聲音</string>
+    <string name="custom_dashboard_media_untitled_subtitle">此 App 未提供正在播放的內容</string>
     <string name="dashboard_call_incoming">來電</string>
     <string name="dashboard_call_decline">拒絕</string>
     <string name="dashboard_call_answer">接聽</string>

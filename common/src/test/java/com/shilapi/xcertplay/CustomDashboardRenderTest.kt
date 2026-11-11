@@ -146,6 +146,30 @@ class CustomDashboardRenderTest {
             assertEquals(listOf("Не воспроизводится", "Выберите музыку на iPhone"),
                 media.descendants<TextView>().map { it.text.toString() })
         }
+        render("media-untitled") {
+            showBackground(DashboardBackground.OCEAN, 0) { null }
+            showTemperature(6.4f)
+            media.show(DashboardMedia.Track("Hymn", "Charlotte de Witte", cover, 0.38f))
+            media.show(DashboardMedia.Untitled)
+            assertEquals(listOf(View.VISIBLE, View.VISIBLE, View.VISIBLE, View.GONE, View.GONE), media.childVisibility())
+            assertEquals(listOf("Звук с iPhone", "Приложение не передаёт, что играет"),
+                media.descendants<TextView>().map { it.text.toString() })
+        }
+    }
+
+    @Test fun withoutArtworkEveryBlockShowsTheEmptyTile() {
+        val tile = MonjaroDashboardLayout.media.let { it.left + (it.width - MonjaroDashboardLayout.ARTWORK_SIZE) / 2 }
+        val top = MonjaroDashboardLayout.media.top
+        for (shown in listOf(DashboardMedia.Empty, DashboardMedia.Untitled,
+            DashboardMedia.Track("Hymn", "Charlotte de Witte", null, 0.38f),
+            DashboardMedia.Radio("Europa Plus", "106.2", null))) {
+            val frame = render(null) {
+                showBackground(DashboardBackground.BLACK, 0) { null }
+                media.show(shown)
+            }
+            assertEquals("$shown", Color.rgb(15, 15, 15), frame.getPixel(tile + 20, top + 20))
+            assertEquals("$shown has no shadow", Color.BLACK, frame.getPixel(tile + 100, top + 208))
+        }
     }
 
     @Test fun theIdleMediaBlockIsAFaintTileWithANote() {

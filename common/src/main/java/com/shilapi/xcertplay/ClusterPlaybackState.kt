@@ -10,8 +10,9 @@ import android.os.Looper
 internal object ClusterPlaybackState {
     /** [elapsedMillis] is the position at [elapsedAt] on the elapsed-realtime clock. */
     /** [carSource] is null without the option to pause CarPlay for the car's audio, else whether the car's own source has the wheel. */
+    /** [mediaAudio] is whether the iPhone streams media audio, which an app may do without any now-playing data. */
     data class Snapshot(val playing: Boolean = false, val elapsedMillis: Long? = null, val elapsedAt: Long = 0L,
-        val focusHeld: Boolean = false, val carSource: Boolean? = null)
+        val focusHeld: Boolean = false, val carSource: Boolean? = null, val mediaAudio: Boolean = false)
     private val main = Handler(Looper.getMainLooper())
     private val listeners = mutableSetOf<(Snapshot) -> Unit>()
     private var state = Snapshot()

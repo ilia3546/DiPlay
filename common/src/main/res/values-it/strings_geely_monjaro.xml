@@ -91,6 +91,8 @@
     <string name="custom_dashboard_arrival">arrivo</string>
     <string name="custom_dashboard_media_empty_title">Nessuna riproduzione</string>
     <string name="custom_dashboard_media_empty_subtitle">Scegli la musica sull\'iPhone</string>
+    <string name="custom_dashboard_media_untitled_title">Audio dall\'iPhone</string>
+    <string name="custom_dashboard_media_untitled_subtitle">L\'app non indica cosa è in riproduzione</string>
     <string name="dashboard_call_incoming">Chiamata in arrivo</string>
     <string name="dashboard_call_decline">Rifiuta</string>
     <string name="dashboard_call_answer">Rispondi</string>

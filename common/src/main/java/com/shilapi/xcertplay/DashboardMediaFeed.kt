@@ -92,6 +92,7 @@ internal class DashboardMediaFeed(private val block: DashboardMediaBlock, privat
             usbPlaying = heard.usb,
             radioServicePlaying = radio.servicePlaying,
             carSource = playback.carSource,
+            carPlayMediaAudio = playback.mediaAudio,
         )
         val next = DashboardMediaSource.after(source, signals)
         if (next != source) {
@@ -145,13 +146,19 @@ internal class DashboardMediaFeed(private val block: DashboardMediaBlock, privat
         private const val PROGRESS_REFRESH_MILLIS = 1_000L
 
         /**
-         * What the block shows without a track or a station to show: [DashboardMedia.Idle] only when no signal says
-         * that something sounds and there is no CarPlay track at all, [DashboardMedia.Empty] otherwise. A station the
-         * radio service remembers while the radio is silent does not count.
+         * What the block shows without a track or a station to show: [DashboardMedia.Untitled] while CarPlay alone
+         * sounds and has no track, [DashboardMedia.Idle] only when no signal says that something sounds and there is
+         * no CarPlay track at all, [DashboardMedia.Empty] otherwise. A station the radio service remembers while the
+         * radio is silent does not count.
          */
         fun nothingShown(signals: DashboardMediaSignals): DashboardMedia = with(signals) {
-            val sounding = carPlayPlaying || radioSounding || bluetoothPlaying || usbPlaying || radioServicePlaying == true
-            if (sounding || carPlayTrack) DashboardMedia.Empty else DashboardMedia.Idle
+            val headUnitSounding = radioSounding || bluetoothPlaying || usbPlaying || radioServicePlaying == true
+            val carPlaySounding = carPlayPlaying || carPlayMediaAudio
+            when {
+                carPlaySounding && !carPlayTrack && !headUnitSounding -> DashboardMedia.Untitled
+                carPlaySounding || headUnitSounding || carPlayTrack -> DashboardMedia.Empty
+                else -> DashboardMedia.Idle
+            }
         }
 
         /** Whether [source] is shown paused: CarPlay that does not play, or a held radio that does not sound. */
