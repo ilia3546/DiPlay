@@ -54,8 +54,8 @@
     <string name="settings_custom_dashboard_maneuver_description">Пока CarPlay ведёт по маршруту, в левом верхнем углу карты показываются следующий поворот, расстояние до него и улица. Применяется сразу.</string>
     <string name="settings_custom_dashboard_arrival">Прибытие на карте</string>
     <string name="settings_custom_dashboard_arrival_description">Пока CarPlay ведёт по маршруту, в правом верхнем углу карты показываются время прибытия и оставшиеся минуты и километры. Применяется сразу.</string>
-    <string name="settings_custom_dashboard_wheel_toggle">Удержание кнопки паузы на руле 3 секунды возвращает штатную приборку (экспериментально)</string>
-    <string name="settings_custom_dashboard_wheel_toggle_description">Удержание кнопки воспроизведения/паузы на руле около 3 секунд скрывает свою приборку и возвращает экран штатной до следующего такого удержания или следующего подключения. Короткое нажатие по-прежнему ставит на паузу и продолжает воспроизведение, а более короткое удержание остаётся машине. Для прошивок, которые сообщают приложениям об удержании этой кнопки. Применяется сразу.</string>
+    <string name="settings_custom_dashboard_wheel_toggle">Удержание кнопки вида приборки на руле возвращает штатную приборку (экспериментально)</string>
+    <string name="settings_custom_dashboard_wheel_toggle_description">Удержание кнопки переключения вида приборки на руле около 1,5 секунды скрывает свою приборку и возвращает экран штатной до следующего такого удержания или следующего подключения. Короткое нажатие по-прежнему переключает вид штатной приборки. Для прошивок, у которых сервис кнопок разрешает приложениям слушать эту кнопку. Применяется сразу.</string>
     <string name="settings_custom_dashboard_trip_qnx">Данные поездки с QNX…</string>
     <string name="settings_custom_dashboard_trip_qnx_on">Данные поездки: читаются с QNX</string>
     <string name="settings_custom_dashboard_trip_qnx_off">Данные поездки: выключены, нет пароля QNX</string>

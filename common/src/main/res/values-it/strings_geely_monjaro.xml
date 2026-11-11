@@ -54,8 +54,8 @@
     <string name="settings_custom_dashboard_maneuver_description">Mentre CarPlay ti guida, la prossima svolta, la distanza e la via sono nell\'angolo in alto a sinistra della mappa. Si applica subito.</string>
     <string name="settings_custom_dashboard_arrival">Arrivo sulla mappa</string>
     <string name="settings_custom_dashboard_arrival_description">Mentre CarPlay ti guida, l\'orario di arrivo e i minuti e chilometri rimanenti sono nell\'angolo in alto a destra della mappa. Si applica subito.</string>
-    <string name="settings_custom_dashboard_wheel_toggle">Tieni premuto play/pausa sul volante per 3 secondi per tornare al quadro dell\'auto (sperimentale)</string>
-    <string name="settings_custom_dashboard_wheel_toggle_description">Tenendo premuto il tasto play/pausa del volante per circa 3 secondi, il quadro personalizzato si nasconde e il quadro torna all\'auto fino a un\'altra pressione altrettanto lunga o alla connessione successiva. Una pressione breve avvia o mette ancora in pausa la riproduzione, e una pressione prolungata più breve resta all\'auto. Per firmware che segnala alle app la pressione prolungata del tasto. Si applica subito.</string>
+    <string name="settings_custom_dashboard_wheel_toggle">Tieni premuto il tasto vista quadro sul volante per tornare al quadro dell\'auto (sperimentale)</string>
+    <string name="settings_custom_dashboard_wheel_toggle_description">Tenendo premuto il tasto vista quadro del volante per circa 1,5 secondi, il quadro personalizzato si nasconde e il quadro torna all\'auto fino a un\'altra pressione altrettanto lunga o alla connessione successiva. Una pressione breve cambia ancora la vista del quadro dell\'auto. Per firmware il cui servizio dei tasti permette alle app di ascoltare quel tasto. Si applica subito.</string>
     <string name="settings_custom_dashboard_trip_qnx">Dati del viaggio da QNX…</string>
     <string name="settings_custom_dashboard_trip_qnx_on">Dati del viaggio: letti da QNX</string>
     <string name="settings_custom_dashboard_trip_qnx_off">Dati del viaggio: disattivati, nessuna password QNX</string>

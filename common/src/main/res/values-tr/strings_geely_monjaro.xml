@@ -54,8 +54,8 @@
     <string name="settings_custom_dashboard_maneuver_description">CarPlay sizi yönlendirirken sonraki dönüş, mesafesi ve sokak haritanın sol üst köşesinde görünür. Hemen uygulanır.</string>
     <string name="settings_custom_dashboard_arrival">Harita üzerinde varış</string>
     <string name="settings_custom_dashboard_arrival_description">CarPlay sizi yönlendirirken varış saati ile kalan dakika ve kilometre haritanın sağ üst köşesinde görünür. Hemen uygulanır.</string>
-    <string name="settings_custom_dashboard_wheel_toggle">Direksiyondaki oynat/duraklat tuşunu 3 saniye basılı tutarak aracın kendi göstergesine dön (deneysel)</string>
-    <string name="settings_custom_dashboard_wheel_toggle_description">Direksiyondaki oynat/duraklat tuşu yaklaşık 3 saniye basılı tutulunca özel gösterge paneli gizlenir ve ekran, tuş yeniden bu kadar basılı tutulana ya da bir sonraki bağlantıya kadar araca geri verilir. Kısa basış oynatmayı başlatmaya ve duraklatmaya devam eder, daha kısa basılı tutma ise araca kalır. Tuşun basılı tutulduğunu uygulamalara bildiren yazılımlar içindir. Hemen uygulanır.</string>
+    <string name="settings_custom_dashboard_wheel_toggle">Direksiyondaki gösterge görünümü tuşunu basılı tutarak aracın kendi göstergesine dön (deneysel)</string>
+    <string name="settings_custom_dashboard_wheel_toggle_description">Direksiyondaki gösterge görünümü tuşu yaklaşık 1,5 saniye basılı tutulunca özel gösterge paneli gizlenir ve ekran, tuş yeniden basılı tutulana ya da bir sonraki bağlantıya kadar araca geri verilir. Kısa basış aracın gösterge görünümünü değiştirmeye devam eder. Tuş servisi uygulamaların bu tuşu dinlemesine izin veren yazılımlar içindir. Hemen uygulanır.</string>
     <string name="settings_custom_dashboard_trip_qnx">QNX\'ten yolculuk verileri…</string>
     <string name="settings_custom_dashboard_trip_qnx_on">Yolculuk verileri: QNX\'ten okunuyor</string>
     <string name="settings_custom_dashboard_trip_qnx_off">Yolculuk verileri: kapalı, QNX parolası yok</string>

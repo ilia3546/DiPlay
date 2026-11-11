@@ -54,8 +54,8 @@
     <string name="settings_custom_dashboard_maneuver_description">Mientras CarPlay te guía, el próximo giro, su distancia y la calle aparecen en la esquina superior izquierda del mapa. Se aplica al instante.</string>
     <string name="settings_custom_dashboard_arrival">Llegada sobre el mapa</string>
     <string name="settings_custom_dashboard_arrival_description">Mientras CarPlay te guía, la hora de llegada y los minutos y kilómetros restantes aparecen en la esquina superior derecha del mapa. Se aplica al instante.</string>
-    <string name="settings_custom_dashboard_wheel_toggle">Mantener play/pausa en el volante 3 segundos para volver al cuadro del coche (experimental)</string>
-    <string name="settings_custom_dashboard_wheel_toggle_description">Al mantener pulsada la tecla de reproducir/pausa del volante unos 3 segundos, se oculta el panel propio y el cuadro vuelve al coche hasta otra pulsación igual de larga o hasta la siguiente conexión. Una pulsación corta sigue reproduciendo o pausando, y una pulsación larga más breve queda para el coche. Para firmware que avisa a las apps de que la tecla se mantiene pulsada. Se aplica al instante.</string>
+    <string name="settings_custom_dashboard_wheel_toggle">Mantener la tecla de vista del cuadro en el volante para volver al cuadro del coche (experimental)</string>
+    <string name="settings_custom_dashboard_wheel_toggle_description">Al mantener pulsada la tecla de vista del cuadro del volante unos 1,5 segundos, se oculta el panel propio y el cuadro vuelve al coche hasta otra pulsación igual de larga o hasta la siguiente conexión. Una pulsación corta sigue cambiando la vista del cuadro del coche. Para firmware cuyo servicio de teclas permite a las apps escuchar esa tecla. Se aplica al instante.</string>
     <string name="settings_custom_dashboard_trip_qnx">Datos del viaje desde QNX…</string>
     <string name="settings_custom_dashboard_trip_qnx_on">Datos del viaje: leídos desde QNX</string>
     <string name="settings_custom_dashboard_trip_qnx_off">Datos del viaje: desactivados, sin contraseña de QNX</string>

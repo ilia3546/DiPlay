@@ -41,6 +41,7 @@
         <package android:name="com.ts.car.someip.service" />
         <package android:name="com.byd.amapservice" />
         <package android:name="com.byd.automap" />
+        <package android:name="com.desaysv.ivi.vds.sms" />
         <intent>
             <action android:name="com.android.settings.WIFI_TETHER_SETTINGS" />
         </intent>

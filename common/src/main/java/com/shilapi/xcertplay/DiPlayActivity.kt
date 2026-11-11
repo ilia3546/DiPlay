@@ -2227,7 +2227,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 getString(R.string.settings_custom_dashboard_description), customDashboard) {
                 AirPlayPersistence.saveCustomDashboard(this, it)
                 MonjaroCustomDashboard.settingChanged()
-                GeelyWheelKeys.refreshRegistration()
+                DesayWheelKeys.refresh()
                 if (it) {
                     if (!CenterMapOverlay.permitted(this)) openOverlayPermission()
                     markReconnectNeeded()
@@ -2339,7 +2339,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     getString(R.string.settings_custom_dashboard_wheel_toggle_description),
                     AirPlayPersistence.loadDashboardWheelToggle(this)) {
                     AirPlayPersistence.saveDashboardWheelToggle(this, it)
-                    GeelyWheelKeys.refreshRegistration()
+                    DesayWheelKeys.refresh()
                     if (!it) MonjaroCustomDashboard.wheelToggleTurnedOff()
                 }
             }

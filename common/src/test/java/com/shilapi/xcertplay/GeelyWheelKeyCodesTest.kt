@@ -69,26 +69,4 @@ class GeelyWheelKeyCodesTest {
             GeelyWheelKeyCodes.registeredCodes(bluetoothAudio = false, calls = true).toList(),
         )
     }
-
-    @Test fun theDashboardToggleAddsPlayPauseOnlyWhereItIsNotForwarded() {
-        listOf(true, false).forEach { bluetooth ->
-            listOf(true, false).forEach { calls ->
-                val forwarded = GeelyWheelKeyCodes.forwardedCodes(bluetooth, calls).toList()
-                assertEquals(forwarded, GeelyWheelKeyCodes.registeredCodes(bluetooth, calls).toList())
-                val withToggle = GeelyWheelKeyCodes.registeredCodes(bluetooth, calls, dashboardToggle = true).toList()
-                val expected = if (GeelyWheelKeyCodes.KEY_PLAY_PAUSE in forwarded) forwarded
-                    else forwarded + GeelyWheelKeyCodes.KEY_PLAY_PAUSE
-                assertEquals(expected, withToggle)
-            }
-        }
-    }
-
-    @Test fun playPauseIsNotForwardedOverTheCarsBluetoothEvenWhenRegisteredForTheToggle() {
-        listOf(true, false).forEach { calls ->
-            assertTrue(GeelyWheelKeyCodes.KEY_PLAY_PAUSE in
-                GeelyWheelKeyCodes.registeredCodes(bluetoothAudio = true, calls = calls, dashboardToggle = true).toList())
-            assertFalse(GeelyWheelKeyCodes.KEY_PLAY_PAUSE in
-                GeelyWheelKeyCodes.forwardedCodes(bluetoothAudio = true, calls = calls).toList())
-        }
-    }
 }

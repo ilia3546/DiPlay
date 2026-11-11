@@ -54,8 +54,8 @@
     <string name="settings_custom_dashboard_maneuver_description">While CarPlay guides you, the next turn, its distance and the street are in the map\'s top left corner. Applies at once.</string>
     <string name="settings_custom_dashboard_arrival">Arrival over the map</string>
     <string name="settings_custom_dashboard_arrival_description">While CarPlay guides you, the arrival time and the minutes and kilometres left are in the map\'s top right corner. Applies at once.</string>
-    <string name="settings_custom_dashboard_wheel_toggle">Hold play/pause on the steering wheel for 3 seconds to show the car\'s own dashboard (experimental)</string>
-    <string name="settings_custom_dashboard_wheel_toggle_description">Holding the steering-wheel play/pause key for about 3 seconds hides the custom dashboard and gives the cluster back to the car until the key is held as long again or the next connection. A short press still plays or pauses, and a shorter hold is left to the car. For firmware that tells apps the key is held. Applies at once.</string>
+    <string name="settings_custom_dashboard_wheel_toggle">Hold the dashboard view key on the steering wheel to show the car\'s own dashboard (experimental)</string>
+    <string name="settings_custom_dashboard_wheel_toggle_description">Holding the steering-wheel dashboard view key for about 1.5 seconds hides the custom dashboard and gives the cluster back to the car until the key is held again or the next connection. A short press still switches the car\'s dashboard view. For firmware whose key service lets apps listen to that key. Applies at once.</string>
     <string name="settings_custom_dashboard_trip_qnx">Trip data from the QNX side…</string>
     <string name="settings_custom_dashboard_trip_qnx_on">Trip data: read from QNX</string>
     <string name="settings_custom_dashboard_trip_qnx_off">Trip data: off, no QNX password</string>

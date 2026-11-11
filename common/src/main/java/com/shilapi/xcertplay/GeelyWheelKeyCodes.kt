@@ -24,16 +24,9 @@ internal object GeelyWheelKeyCodes {
      * iPhone's music, so registering the media keys here too would double-fire play/pause and skip.
      * Only the microphone key is registered then (long press -> Siri), plus previous and next for the
      * CarPlay call keys when [calls] is on ([GeelyCallKeys.route] keeps them from the iPhone outside a
-     * call); otherwise all of them are. [dashboardToggle] adds play/pause, whose hold hides or shows the
-     * custom dashboard; its short press is forwarded only when [forwardedCodes] has it.
+     * call); otherwise all of them are.
      */
-    fun registeredCodes(bluetoothAudio: Boolean, calls: Boolean, dashboardToggle: Boolean = false): IntArray {
-        val keys = forwardedCodes(bluetoothAudio, calls)
-        return if (dashboardToggle && KEY_PLAY_PAUSE !in keys) keys + KEY_PLAY_PAUSE else keys
-    }
-
-    /** The registered keys whose short press goes to CarPlay. */
-    fun forwardedCodes(bluetoothAudio: Boolean, calls: Boolean): IntArray = when {
+    fun registeredCodes(bluetoothAudio: Boolean, calls: Boolean): IntArray = when {
         !bluetoothAudio -> ALL
         calls -> CALLS_AND_SIRI
         else -> SIRI_ONLY

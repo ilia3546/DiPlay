@@ -54,8 +54,8 @@
     <string name="settings_custom_dashboard_maneuver_description">CarPlay のルート案内中、次の曲がり角、その距離、通り名を地図の左上に表示します。すぐに適用されます。</string>
     <string name="settings_custom_dashboard_arrival">地図上に到着情報</string>
     <string name="settings_custom_dashboard_arrival_description">CarPlay のルート案内中、到着時刻と残りの分数・キロ数を地図の右上に表示します。すぐに適用されます。</string>
-    <string name="settings_custom_dashboard_wheel_toggle">ステアリングの再生/一時停止キーを3秒長押しで純正メーターに戻す（実験的機能）</string>
-    <string name="settings_custom_dashboard_wheel_toggle_description">ステアリングの再生/一時停止キーを約3秒長押しすると、カスタムメーターを隠し、次に同じだけ長押しするか次に接続するまで純正メーターに戻します。短く押すと従来どおり再生・一時停止し、それより短い長押しは車両側の操作のままです。このキーの長押しをアプリに伝えるファームウェア向けです。すぐに反映されます。</string>
+    <string name="settings_custom_dashboard_wheel_toggle">ステアリングのメーター表示切替キーを長押しで純正メーターに戻す（実験的機能）</string>
+    <string name="settings_custom_dashboard_wheel_toggle_description">ステアリングのメーター表示切替キーを約1.5秒長押しすると、カスタムメーターを隠し、次に同じだけ長押しするか次に接続するまで純正メーターに戻します。短く押すと従来どおり純正メーターの表示が切り替わります。キーサービスがこのキーをアプリに通知するファームウェア向けです。すぐに反映されます。</string>
     <string name="settings_custom_dashboard_trip_qnx">QNX から走行データ…</string>
     <string name="settings_custom_dashboard_trip_qnx_on">走行データ：QNX から読み取り中</string>
     <string name="settings_custom_dashboard_trip_qnx_off">走行データ：オフ（QNX パスワードなし）</string>
