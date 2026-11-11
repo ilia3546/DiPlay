@@ -60,6 +60,18 @@ internal class AudioFocusCoordinator(
 
     private fun listenerFor(generation: Long) = AudioManager.OnAudioFocusChangeListener { change ->
         synchronized(this) {
+            if (generation == focusGeneration && request != null) {
+                when (change) {
+                    AudioManager.AUDIOFOCUS_GAIN -> RendererAudioFocus.claim(this)
+                    AudioManager.AUDIOFOCUS_LOSS -> RendererAudioFocus.release(this)
+                }
+            }
+        }
+        onFocusChange(generation, change)
+    }
+
+    private fun onFocusChange(generation: Long, change: Int) {
+        synchronized(this) {
             // Android may have queued callbacks before a request was abandoned or replaced.
             if (generation != focusGeneration || request == null || active.isEmpty()) {
                 // Dropping this silently hides the one window that matters: between a telephony
@@ -102,9 +114,10 @@ internal class AudioFocusCoordinator(
         if (active.remove(track) != null) refreshRequest()
     }
 
+    /** A focus change of the media-key request, which says nothing about who holds this coordinator's focus. */
     fun onExternalFocusChange(change: Int) {
-        val current = synchronized(this) { currentListener }
-        current.onAudioFocusChange(change)
+        val generation = synchronized(this) { focusGeneration }
+        onFocusChange(generation, change)
     }
 
     @Synchronized
@@ -123,6 +136,7 @@ internal class AudioFocusCoordinator(
             request = null
             requestedChannel = null
             mediaVolume = FULL_VOLUME
+            RendererAudioFocus.release(this)
             manager?.let { abandoned?.abandon(it) }
             return
         }
@@ -139,8 +153,10 @@ internal class AudioFocusCoordinator(
         val next = AudioFocusRequestCompat(gain, primary.attributes, currentListener, Handler(Looper.getMainLooper()))
         request = next
         requestedChannel = primary.channel
+        // Claimed before the request: Android tells the media-key request about its loss meanwhile.
+        RendererAudioFocus.claim(this)
         val result = manager?.let(next::request)
-        if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) setMediaVolume(FULL_VOLUME)
+        if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) setMediaVolume(FULL_VOLUME) else RendererAudioFocus.release(this)
         val line = "Audio: focus requested channel=${primary.channel} gain=$gain granted=$result activeTracks=${active.size}"
         Log.i(TAG, line)
         runCatching { report(line) }

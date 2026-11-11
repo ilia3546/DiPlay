@@ -158,6 +158,32 @@ class AudioFocusAutoYieldTest {
         assertTrue(volumes(late).isEmpty())
     }
 
+    @Test fun rendererFocusIsHeldFromTheGrantUntilAndroidTakesItOrTheTrackCloses() {
+        val coordinator = coordinator()
+        val media = track()
+        coordinator.acquire(media, AudioChannel.MEDIA, attributes)
+        assertTrue(RendererAudioFocus.held)
+        coordinator.onExternalFocusChange(AudioManager.AUDIOFOCUS_LOSS)
+        assertTrue("the media-key request's loss is not this one's", RendererAudioFocus.held)
+        coordinator.listener.onAudioFocusChange(AudioManager.AUDIOFOCUS_LOSS)
+        assertFalse(RendererAudioFocus.held)
+        coordinator.listener.onAudioFocusChange(AudioManager.AUDIOFOCUS_GAIN)
+        assertTrue(RendererAudioFocus.held)
+        coordinator.release(media)
+        assertFalse(RendererAudioFocus.held)
+    }
+
+    @Test fun aRefusedRequestDoesNotHoldRendererFocus() {
+        shadowOf(manager).setNextFocusRequestResponse(AudioManager.AUDIOFOCUS_REQUEST_FAILED)
+        coordinator().acquire(track(), AudioChannel.MEDIA, attributes)
+        assertFalse(RendererAudioFocus.held)
+    }
+
+    @Test fun disabledFocusNeverHoldsRendererFocus() {
+        coordinator(enabled = false).acquire(track(), AudioChannel.MEDIA, attributes)
+        assertFalse(RendererAudioFocus.held)
+    }
+
     private fun coordinator(enabled: Boolean = true, autoYield: Boolean = true) =
         AudioFocusCoordinator(context, enabled, autoYield).also(coordinators::add)
     private fun track(): AudioTrack = AudioTrack.Builder().setAudioAttributes(attributes)

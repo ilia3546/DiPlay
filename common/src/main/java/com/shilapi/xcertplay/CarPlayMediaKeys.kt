@@ -24,6 +24,7 @@ import com.shilapi.xcertplay.host.R
 import com.shilapi.xcertplay.hud.BydOutputSettings
 import com.shilapi.xcertplay.hud.CarPlayCalls
 import com.shilapi.xcertplay.media.CarPlayNowPlaying
+import com.shilapi.xcertplay.media.RendererAudioFocus
 import com.shilapi.xcertplay.orchestration.CarPlayController
 import java.util.concurrent.Executors
 import java.util.concurrent.Executor
@@ -388,14 +389,17 @@ internal object CarPlayMediaKeys {
         grantedRevision: Long? = null) {
         var pauseIphone = false
         var takeBack = false
+        var ownRenderer = false
         val current = synchronized(this) {
             if (controller !== expectedController || focusOwner !== owner ||
                 (grantedRevision != null && grantedRevision != focusEventRevision)) false
             else {
-                val carAudio = change == AudioManager.AUDIOFOCUS_LOSS && pauseForCarAudio()
+                // With the Audio focus setting on, DiPlay's own player takes the focus from this request too.
+                ownRenderer = change == AudioManager.AUDIOFOCUS_LOSS && RendererAudioFocus.held && pauseForCarAudio()
+                val carAudio = change == AudioManager.AUDIOFOCUS_LOSS && !ownRenderer && pauseForCarAudio()
                 // The firmware's media centre hands each wheel key to its last own source too, so a car source
                 // starting right after a key DiPlay sent to CarPlay answered that key, not a choice of the driver.
-                takeBack = carAudio && wheelKeyJustHandled()
+                takeBack = ownRenderer || (carAudio && wheelKeyJustHandled())
                 if (carAudio && !takeBack) carAudioOwnsWheel = true
                 pauseIphone = carAudio && !takeBack && (nowPlaying.playing || mediaAudioActive)
                 focusEventRevision += 1
@@ -424,7 +428,8 @@ internal object CarPlayMediaKeys {
             Log.i(TAG, "car audio took focus, CarPlay paused sent=$sent")
         }
         if (takeBack) {
-            Log.i(TAG, "car audio answered a wheel key sent to CarPlay; taking the focus back")
+            Log.i(TAG, if (ownRenderer) "DiPlay's player took the focus, not car audio; taking it back"
+                else "car audio answered a wheel key sent to CarPlay; taking the focus back")
             mainHandler.post { synchronized(this) { if (controller === expectedController) regainFocusLocked() } }
         }
         // Resolve the matching sink and invoke it outside the media-key monitor. An abandoned

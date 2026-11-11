@@ -8,8 +8,10 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.Parcel
 import android.provider.Settings
+import com.shilapi.xcertplay.airplay.CarPlayMediaButton
 import com.shilapi.xcertplay.compat.AudioFocusRequestCompat
 import com.shilapi.xcertplay.media.CarPlayNowPlaying
+import com.shilapi.xcertplay.media.RendererAudioFocus
 import com.shilapi.xcertplay.network.GeelyHeadUnit
 import com.shilapi.xcertplay.orchestration.CarPlayController
 import java.util.concurrent.CountDownLatch
@@ -23,6 +25,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.never
+import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
@@ -43,6 +47,7 @@ class CarPlayWheelOwnerAtStartTest {
     private val app get() = RuntimeEnvironment.getApplication()
     private val controller = mock(CarPlayController::class.java)
     private val mediaCentre = RecordingMediaCentre()
+    private val renderer = Any()
     private fun idle() = shadowOf(Looper.getMainLooper()).idle()
     private fun carAudioOwnsWheel(): Boolean = ReflectionHelpers.getField(CarPlayMediaKeys, "carAudioOwnsWheel")
 
@@ -68,6 +73,7 @@ class CarPlayWheelOwnerAtStartTest {
     }
 
     @After fun clean() {
+        RendererAudioFocus.release(renderer)
         CarPlayMediaKeys.detach(controller)
         Settings.Global.putInt(app.contentResolver, "radio_is_playing", 0)
         app.getSharedPreferences("xcertplay_airplay", 0).edit().clear().commit()
@@ -100,6 +106,41 @@ class CarPlayWheelOwnerAtStartTest {
         assertTrue(carAudioOwnsWheel())
         assertEquals(true, published().carSource)
         assertEquals(DashboardMediaSource.RADIO, mediaBlock(published().carSource))
+    }
+
+    @Test fun theCarTakingTheAudioPausesCarPlay() {
+        loseMediaKeyFocusWhilePlaying()
+        verify(controller).sendMediaButton(CarPlayMediaButton.PAUSE)
+    }
+
+    @Test fun diPlaysOwnPlayerTakingTheFocusLeavesCarPlayPlayingAndTakesTheFocusBack() {
+        RendererAudioFocus.claim(renderer)
+        loseMediaKeyFocusWhilePlaying()
+        verify(controller, never()).sendMediaButton(CarPlayMediaButton.PAUSE)
+        assertFalse(carAudioOwnsWheel())
+        assertEquals(DashboardMediaSource.CARPLAY, mediaBlock(published().carSource))
+        assertTrue(ReflectionHelpers.getField<Boolean>(CarPlayMediaKeys, "focusHeld"))
+    }
+
+    @Test fun aLossAfterDiPlaysPlayerLetTheFocusGoStillPausesCarPlay() {
+        RendererAudioFocus.claim(renderer)
+        RendererAudioFocus.release(renderer)
+        loseMediaKeyFocusWhilePlaying()
+        verify(controller).sendMediaButton(CarPlayMediaButton.PAUSE)
+    }
+
+    private fun loseMediaKeyFocusWhilePlaying() {
+        AirPlayPersistence.savePauseCarPlayForCarAudio(app, true)
+        AirPlayPersistence.saveDisableMediaKeyAudioFocus(app, false)
+        shadowOf(app.getSystemService(AudioManager::class.java))
+            .setNextFocusRequestResponse(AudioManager.AUDIOFOCUS_REQUEST_GRANTED)
+        CarPlayMediaKeys.attach(app, controller)
+        CarPlayMediaKeys.onMediaAudioChanged(true)
+        idle()
+        val request = ReflectionHelpers.getField<AudioFocusRequestCompat>(CarPlayMediaKeys, "focusRequest")
+        ReflectionHelpers.getField<AudioManager.OnAudioFocusChangeListener>(request, "listener")
+            .onAudioFocusChange(AudioManager.AUDIOFOCUS_LOSS)
+        idle()
     }
 
     @Test fun withoutThePauseOptionTheStartIsUnchanged() {
