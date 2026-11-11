@@ -330,7 +330,6 @@
     <string name="right_hand_drive">右駕</string>
     <string name="running">執行中</string>
     <string name="s_0_3x">0.3x</string>
-    <string name="s_1000_ms_most_stable">1000 毫秒 · 最穩定</string>
     <string name="s_1_0x">1.0x</string>
     <string name="s_1_choose_your_connection">1 · 選擇連線方式</string>
     <string name="s_1_connect_a_computer_with_adb_installed_to_the_car_using">1. 使用已安裝 ADB 的電腦，透過現有的 USB 或無線除錯連線至車機。如出現除錯授權提示，請予以允許。\n\n2. 在電腦終端機中執行此指令：</string>
@@ -342,6 +341,7 @@
     <string name="s_3_connect">3 · 連線</string>
     <string name="s_3_tap_check_and_enable_below_this_enables_the_cluster_ma">3. 點一下下方的「檢查並啟用」。這會啟用儀表板地圖和自動主題跟隨。進行中的 CarPlay 工作階段會重新連線一次，之後即可中斷電腦連線。</string>
     <string name="settings_music_buffer_ms">%1$d 毫秒</string>
+    <string name="settings_music_buffer_ms_most_stable">%1$d 毫秒 · 最穩定</string>
     <string name="settings_music_buffer_wireless">音樂快取（無線）</string>
     <string name="settings_music_buffer_wired">音樂快取（USB 有線）</string>
     <string name="s_5_ghz">5 GHz</string>

@@ -22,6 +22,8 @@ data class AudioFormat(
      * 0x10000000 and 0x20000000 count at 16 and 24 kHz (see [MicrophoneConfig.opusClockRate]).
      */
     val rtpClockRate: Int = sampleRate,
+    /** The iPhone is asked again for packets lost on the way, so a gap in the sequence may still fill. */
+    val requestsLostPackets: Boolean = false,
 )
 
 /**
@@ -62,6 +64,7 @@ class AudioStream(
     private var started = false
     private val delivery = Any()
     private var resendRequests: AudioResendRequests? = null
+    private var replyFailuresDescribed = 0 // control thread only
 
     fun listen(listener: Listener): Pair<Int, Int> {
         val data = bindAnyPort()
@@ -207,13 +210,13 @@ class AudioStream(
             requests.controlPacket(packet.socketAddress, AudioResendRequests.payloadType(buffer, packet.length))
             val wire = AudioResendRequests.resentDatagram(buffer, packet.length) ?: continue
             if (wire.size < RTP_HEADER_LEN + TAIL_LEN) {
-                requests.replyFailed()
+                replyFailed(requests, buffer, packet.length)
                 continue
             }
             val payload = try {
                 open(wire)
             } catch (_: Exception) {
-                requests.replyFailed()
+                replyFailed(requests, buffer, packet.length)
                 continue
             }
             synchronized(delivery) {
@@ -223,6 +226,32 @@ class AudioStream(
             }
         }
     }
+
+    /**
+     * The layout of a reply that does not open is not known yet. The first few are described by their size, the
+     * header and nonce bytes (no key material), and whether the sealed datagram opens at another offset.
+     */
+    private fun replyFailed(requests: AudioResendRequests, datagram: ByteArray, length: Int) {
+        requests.replyFailed()
+        if (replyFailuresDescribed >= DESCRIBED_REPLY_FAILURES) return
+        replyFailuresDescribed++
+        val reply = datagram.copyOf(length)
+        val opensAt = REPLY_OFFSETS.joinToString(",") { offset ->
+            val opens = reply.size - offset >= RTP_HEADER_LEN + TAIL_LEN &&
+                runCatching { open(reply.copyOfRange(offset, reply.size)) }.isSuccess
+            "$offset:${if (opens) "yes" else "no"}"
+        }
+        val header = minOf(length, AudioResendRequests.RESPONSE_HEADER_LEN)
+        runCatching {
+            onDiagnostic("Resend: audio type=$streamType reply did not open bytes=$length " +
+                "hdr=${reply.copyOf(header).hexWords()} rtp=${reply.copyOfRange(header, minOf(length, 16)).hexWords()} " +
+                "tail=${reply.copyOfRange(maxOf(0, length - NONCE_LEN), length).hexWords()} opensAt=$opensAt")
+        }
+    }
+
+    /** In 4-byte words: the exported report hides a longer run of hex as an identifier. */
+    private fun ByteArray.hexWords(): String =
+        toList().chunked(4).joinToString(" ") { word -> word.toByteArray().toHexString() }
 
     /** Caller holds [delivery]: the data and control threads both hand packets to [listener]. */
     private fun deliverLocked(listener: Listener, wire: ByteArray, rtp: ByteArray, sample: Int) {
@@ -271,6 +300,8 @@ class AudioStream(
         const val TAIL_LEN = TAG_LEN + NONCE_LEN
         const val FIRST_PACKET_LOG_COUNT = 3
         const val PACKET_LOG_INTERVAL = 100
+        const val DESCRIBED_REPLY_FAILURES = 2
+        val REPLY_OFFSETS = listOf(0, AudioResendRequests.RESPONSE_HEADER_LEN, 8, 12)
     }
 }
 

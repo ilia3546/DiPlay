@@ -740,6 +740,22 @@ class AdaptiveSettingsUiTest {
         assertTrue(texts(screen).any { it.text == screen.getString(R.string.picture_adjustments) })
     }
 
+    @Test fun theLongestMusicBufferOfEachTransportIsTheMostStable() {
+        val screen = openSettings()
+        descendants(screen.window.decorView).first { candidate ->
+            candidate.contentDescription == screen.getString(R.string.settings_open_category, screen.getString(R.string.audio))
+        }.performClick()
+        fun options(title: Int): List<String> {
+            texts(screen).first { it.text.startsWith(screen.getString(title)) }.performClick()
+            val dialog = ShadowAlertDialog.getLatestAlertDialog()
+            val adapter = dialog.listView.adapter
+            return List(adapter.count) { adapter.getItem(it).toString() }.also { dialog.dismiss() }
+        }
+        assertEquals(listOf("300 ms · default", "500 ms", "1000 ms", "2000 ms", "3000 ms · most stable"),
+            options(R.string.settings_music_buffer_wireless))
+        assertEquals("1000 ms · most stable", options(R.string.settings_music_buffer_wired).last())
+    }
+
     @Test fun settingsLiveWhereDriversLookForThem() {
         val screen = openSettings()
         fun visibleIn(category: Int): List<CharSequence> {

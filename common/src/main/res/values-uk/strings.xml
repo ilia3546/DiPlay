@@ -330,7 +330,6 @@
     <string name="right_hand_drive">Кермо праворуч</string>
     <string name="running">Працює</string>
     <string name="s_0_3x">0.3x</string>
-    <string name="s_1000_ms_most_stable">1000 мс · найстабільніше</string>
     <string name="s_1_0x">1.0x</string>
     <string name="s_1_choose_your_connection">1 · Виберіть спосіб підключення</string>
     <string name="s_1_connect_a_computer_with_adb_installed_to_the_car_using">1. Підключіть до автомобіля комп’ютер з установленим ADB через наявне USB-з’єднання або бездротове налагодження. Якщо автомобіль запитає, дозвольте налагодження.\n\n2. Виконайте цю команду в терміналі комп’ютера:</string>
@@ -342,6 +341,7 @@
     <string name="s_3_connect">3 · Підключіться</string>
     <string name="s_3_tap_check_and_enable_below_this_enables_the_cluster_ma">3. Натисніть «Перевірити й увімкнути» нижче. Це ввімкне карту на панелі приладів та автоматичне стеження за темою. Активний сеанс CarPlay перепідключиться один раз. Після цього комп’ютер можна відключити.</string>
     <string name="settings_music_buffer_ms">%1$d мс</string>
+    <string name="settings_music_buffer_ms_most_stable">%1$d мс · найстабільніше</string>
     <string name="settings_music_buffer_wireless">Буфер музики (бездротовий CarPlay)</string>
     <string name="settings_music_buffer_wired">Буфер музики (USB-кабель)</string>
     <string name="s_5_ghz">5 ГГц</string>

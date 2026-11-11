@@ -4,15 +4,16 @@ package com.shilapi.xcertplay.media
  * Jitter buffer for streams mapped to the media channel. Wireless CarPlay delivers audio over the same Wi-Fi link as
  * video; radio gaps of several hundred milliseconds are normal, so music needs a buffer that
  * outlasts them. Calls, Siri and navigation prompts keep the small low-latency buffer.
- * Wireless and wired USB keep separate settings. Wireless offers the classic presets that outlast Wi-Fi gaps.
+ * Wireless and wired USB keep separate settings. Wireless offers the classic presets that outlast Wi-Fi gaps,
+ * and 2 and 3 s for links that drop out for a second or more; music then also starts and pauses that much later.
  * Wired USB has no radio gaps, so it also offers short presets that let music start and pause sooner.
  * The device minimum AudioTrack size can still make the real buffer longer than a short preset.
  */
 object MediaAudioBuffer {
     const val DEFAULT_MILLIS = 300
-    const val MOST_STABLE_MILLIS = 1000
-    val wirelessPresets = listOf(DEFAULT_MILLIS, 500, MOST_STABLE_MILLIS)
-    val wiredPresets = listOf(50, 100, 150, 200) + (DEFAULT_MILLIS..MOST_STABLE_MILLIS step 100)
+    const val MAX_WIRED_MILLIS = 1000
+    val wirelessPresets = listOf(DEFAULT_MILLIS, 500, 1000, 2000, 3000)
+    val wiredPresets = listOf(50, 100, 150, 200) + (DEFAULT_MILLIS..MAX_WIRED_MILLIS step 100)
     /** Every delay a session can use; [plan] accepts any of them. */
     val presets = (wiredPresets + wirelessPresets).distinct().sorted()
 

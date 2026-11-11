@@ -36,15 +36,28 @@ class MediaAudioBufferTest {
     fun `wired presets step by 50 ms up to 200 ms, then by 100 ms up to 1000 ms`() {
         assertEquals(listOf(50, 100, 150, 200, 300, 400, 500, 600, 700, 800, 900, 1000), MediaAudioBuffer.wiredPresets)
         assertEquals(MediaAudioBuffer.DEFAULT_MILLIS, MediaAudioBuffer.wiredPresets[4])
-        assertEquals(MediaAudioBuffer.MOST_STABLE_MILLIS, MediaAudioBuffer.wiredPresets.last())
+        assertEquals(MediaAudioBuffer.MAX_WIRED_MILLIS, MediaAudioBuffer.wiredPresets.last())
     }
 
     @Test
-    fun `wireless keeps the classic presets`() {
-        assertEquals(listOf(300, 500, 1000), MediaAudioBuffer.wirelessPresets)
+    fun `wireless keeps the classic presets and adds two and three seconds`() {
+        assertEquals(listOf(300, 500, 1000, 2000, 3000), MediaAudioBuffer.wirelessPresets)
         assertEquals(MediaAudioBuffer.DEFAULT_MILLIS, MediaAudioBuffer.sanitizeWireless(50))
         assertEquals(MediaAudioBuffer.DEFAULT_MILLIS, MediaAudioBuffer.sanitizeWireless(400))
         assertEquals(50, MediaAudioBuffer.sanitizeWired(50))
+        for (millis in listOf(2000, 3000)) {
+            assertEquals(millis, MediaAudioBuffer.sanitizeWireless(millis))
+            assertEquals(millis, MediaAudioBuffer.sanitize(millis))
+            assertEquals(MediaAudioBuffer.DEFAULT_MILLIS, MediaAudioBuffer.sanitizeWired(millis))
+        }
+    }
+
+    @Test
+    fun `three seconds of music fit a track of 3,2 s and start below a smaller granted one`() {
+        val plan = MediaAudioBuffer.plan(true, 48_000, 2, minBufferBytes = 7_680, mediaMillis = 3000)
+        assertEquals(576_000, plan.startBytes)
+        assertEquals(614_400, plan.trackBufferBytes)
+        assertEquals(262_144 - 2_048, MediaAudioBuffer.startBytesFor(plan.startBytes, 262_144, 2_048))
     }
 
     @Test

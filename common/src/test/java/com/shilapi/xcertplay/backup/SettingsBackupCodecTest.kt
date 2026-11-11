@@ -32,6 +32,16 @@ class SettingsBackupCodecTest {
     }
 
     @Test
+    fun aLongWirelessMusicBufferSurvivesBackupAndRestore() {
+        AirPlayPersistence.saveMediaBufferMillis(context, wireless = true, millis = 3000)
+        val document = SettingsBackupCodec.export(context, "0.2.22")
+        prefs("xcertplay_airplay").edit().clear().commit()
+        assertEquals(300, AirPlayPersistence.loadMediaBufferMillis(context, wireless = true))
+        assertFalse(SettingsBackupCodec.import(context, document).invalid)
+        assertEquals(3000, AirPlayPersistence.loadMediaBufferMillis(context, wireless = true))
+    }
+
+    @Test
     fun consentToRootStepsDoesNotTravel() {
         AirPlayPersistence.saveRootHotspotDetails(context, true)
         AirPlayPersistence.saveDisconnectPhoneBluetooth(context, true)

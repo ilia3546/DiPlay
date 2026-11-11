@@ -199,4 +199,204 @@ class RtpReorderQueueTest {
         assertEquals(taken.distinct().size, taken.size)
         assertEquals(total, taken.size + late)
     }
+
+    private var nowNs = 0L
+
+    private inner class RecordingWait(private val allowMs: Long, private val room: Boolean = true) : RtpReorderQueue.GapWait {
+        val events = mutableListOf<String>()
+        private var deadlineNs = 0L
+        override fun start(): Boolean {
+            events += "start"
+            deadlineNs = nowNs + allowMs * 1_000_000
+            return room
+        }
+        override fun remainingNanos() = deadlineNs - nowNs
+        override fun ended(waitedNs: Long, end: RtpReorderQueue.GapEnd) {
+            events += "${end.name.lowercase()} after ${waitedNs / 1_000_000} ms"
+        }
+    }
+
+    private fun clockedQueue() = RtpReorderQueue<Packet>(192, Packet::sequence, Packet::sample) { nowNs }
+
+    private fun RtpReorderQueue<Packet>.take(wait: RtpReorderQueue.GapWait?) = poll(0, TimeUnit.MILLISECONDS, wait)?.sequence
+
+    private fun RtpReorderQueue<Packet>.drain(wait: RtpReorderQueue.GapWait) = generateSequence { take(wait) }.toList()
+
+    @Test fun thePacketAfterAGapWaitsForTheMissingOneAndThenPlaysInOrder() {
+        val queue = clockedQueue()
+        val wait = RecordingWait(1_000)
+        listOf(1, 2).forEach { queue.insert(packet(it)) }
+        assertEquals(listOf(1, 2), queue.drain(wait))
+        listOf(4, 5).forEach { queue.insert(packet(it)) }
+        assertNull(queue.take(wait))
+        nowNs += 120_000_000
+        assertNull(queue.take(wait))
+        assertEquals(Placement.REORDERED, queue.insert(packet(3)))
+        assertEquals(listOf(3, 4, 5), queue.drain(wait))
+        assertEquals(listOf("start", "filled after 120 ms"), wait.events)
+    }
+
+    @Test fun aGapThatNeverFillsIsGivenUpWithoutLosingThePacketsAfterIt() {
+        val queue = clockedQueue()
+        val wait = RecordingWait(100)
+        queue.insert(packet(1))
+        assertEquals(1, queue.take(wait))
+        listOf(3, 4).forEach { queue.insert(packet(it)) }
+        assertNull(queue.take(wait))
+        nowNs += 100_000_000
+        assertEquals(listOf(3, 4), queue.drain(wait))
+        assertEquals(Placement.LATE, queue.insert(packet(2)))
+        assertEquals(listOf("start", "gave_up after 100 ms"), wait.events)
+    }
+
+    @Test fun aPartlyFilledGapKeepsOneDeadline() {
+        val queue = clockedQueue()
+        val wait = RecordingWait(100)
+        queue.insert(packet(1))
+        assertEquals(1, queue.take(wait))
+        queue.insert(packet(5))
+        assertNull(queue.take(wait))
+        nowNs += 60_000_000
+        queue.insert(packet(4))
+        assertNull(queue.take(wait))
+        nowNs += 40_000_000
+        assertEquals(listOf(4, 5), queue.drain(wait))
+        assertEquals(listOf("start", "gave_up after 100 ms"), wait.events)
+    }
+
+    @Test fun aGivenUpGapIsNotWaitedForAgainAfterPartOfItArrived() {
+        val queue = clockedQueue()
+        val wait = RecordingWait(100)
+        queue.insert(packet(1))
+        assertEquals(1, queue.take(wait))
+        queue.insert(packet(5))
+        assertNull(queue.take(wait))
+        queue.insert(packet(3))
+        nowNs += 100_000_000
+        assertEquals(3, queue.take(wait))
+        assertEquals(5, queue.take(wait))
+        assertEquals(Placement.LATE, queue.insert(packet(4)))
+        assertEquals(listOf("start", "gave_up after 100 ms"), wait.events)
+    }
+
+    @Test fun withoutAGapWaitTheQueueGoesPastAGapAtOnce() {
+        val queue = clockedQueue()
+        listOf(1, 3).forEach { queue.insert(packet(it)) }
+        assertEquals(listOf(1, 3), List(2) { queue.take(null) })
+    }
+
+    @Test fun theGapBetweenTwoRunsIsNotWaitedFor() {
+        val queue = clockedQueue()
+        val wait = RecordingWait(1_000)
+        queue.insert(packet(1))
+        assertEquals(1, queue.take(wait))
+        queue.insert(packet(3))
+        queue.restartSequence()
+        queue.insert(packet(100))
+        assertEquals(listOf(3, 100), queue.drain(wait))
+        queue.restartSequence()
+        queue.insert(packet(7))
+        assertEquals(7, queue.take(wait))
+        assertEquals(emptyList<String>(), wait.events)
+    }
+
+    @Test fun aLongGapWaitsForTheTailThatCanStillBePlacedAndSkipsItsStart() {
+        // On the car a Wi-Fi drop lost 72 and 118 packets; the iPhone was asked for the last 64 of them.
+        for (gap in listOf(72, 118)) {
+            nowNs = 0
+            val queue = clockedQueue()
+            val wait = RecordingWait(1_000)
+            queue.insert(packet(100))
+            assertEquals(100, queue.take(wait))
+            val afterGap = 101 + gap
+            queue.insert(packet(afterGap))
+            assertNull(queue.take(wait))
+            val newest = afterGap + 7
+            (afterGap + 1..newest).forEach { queue.insert(packet(it)) }
+            assertNull(queue.take(wait))
+            nowNs += 150_000_000
+            val firstPlaceable = newest - RtpReorderQueue.MAX_REORDER_PACKETS
+            (firstPlaceable until afterGap).forEach { assertEquals("gap=$gap $it", Placement.REORDERED, queue.insert(packet(it))) }
+            assertEquals("gap=$gap", (firstPlaceable..newest).toList(), queue.drain(wait))
+            assertEquals("gap=$gap", listOf("start", "filled after 150 ms"), wait.events)
+        }
+    }
+
+    @Test fun aGapAlreadyTooFarBehindIsNotWaitedForAndOneThatFallsBehindIsGivenUp() {
+        val queue = clockedQueue()
+        val wait = RecordingWait(1_000)
+        queue.insert(packet(1))
+        assertEquals(1, queue.take(wait))
+        (3..3 + RtpReorderQueue.MAX_REORDER_PACKETS).forEach { queue.insert(packet(it)) }
+        assertEquals(3, queue.take(wait))
+        assertEquals(emptyList<String>(), wait.events)
+
+        val next = clockedQueue()
+        next.insert(packet(200))
+        assertEquals(200, next.take(wait))
+        next.insert(packet(202))
+        assertNull(next.take(wait))
+        (203..201 + RtpReorderQueue.MAX_REORDER_PACKETS).forEach { next.insert(packet(it)) }
+        assertNull(next.take(wait))
+        next.insert(packet(202 + RtpReorderQueue.MAX_REORDER_PACKETS))
+        assertEquals(202, next.take(wait))
+        assertEquals(listOf("start", "gave_up after 0 ms"), wait.events)
+    }
+
+    @Test fun aGapWithoutRoomToWaitGoesOnAtOnceAndEndsNothing() {
+        val queue = clockedQueue()
+        val wait = RecordingWait(1_000, room = false)
+        queue.insert(packet(1))
+        assertEquals(1, queue.take(wait))
+        listOf(3, 4).forEach { queue.insert(packet(it)) }
+        assertEquals(listOf(3, 4), queue.drain(wait))
+        assertEquals(listOf("start"), wait.events)
+    }
+
+    @Test fun aWaitEndedByARestartOrTheLagGuardIsReportedAsAbandoned() {
+        val queue = clockedQueue()
+        val wait = RecordingWait(1_000)
+        queue.insert(packet(1))
+        assertEquals(1, queue.take(wait))
+        queue.insert(packet(3))
+        assertNull(queue.take(wait))
+        nowNs += 40_000_000
+        queue.restartSequence()
+        queue.insert(packet(100))
+        assertEquals(listOf(3, 100), queue.drain(wait))
+        assertEquals(listOf("start", "abandoned after 40 ms"), wait.events)
+
+        queue.insert(packet(102))
+        assertNull(queue.take(wait))
+        nowNs += 30_000_000
+        // MediaPacketLagGuard drops stale packets with poll().
+        assertEquals(102, queue.poll()?.sequence)
+        queue.insert(packet(103))
+        assertEquals(103, queue.take(wait))
+        assertEquals(listOf("start", "abandoned after 40 ms", "start", "abandoned after 30 ms"), wait.events)
+    }
+
+    @Test fun aPacketThatFillsTheGapWakesTheWait() {
+        val queue = queue()
+        val wait = RecordingWait(10_000)
+        queue.insert(packet(1))
+        assertEquals(1, queue.poll(0, TimeUnit.MILLISECONDS, wait)?.sequence)
+        queue.insert(packet(3))
+        val waiting = CountDownLatch(1)
+        var taken: Int? = null
+        var tookMs = 0L
+        val consumer = Thread {
+            waiting.countDown()
+            val start = System.nanoTime()
+            taken = queue.poll(5, TimeUnit.SECONDS, wait)?.sequence
+            tookMs = (System.nanoTime() - start) / 1_000_000
+        }.apply { start() }
+        waiting.await()
+        Thread.sleep(50)
+        queue.insert(packet(2))
+        consumer.join(5_000)
+        assertFalse(consumer.isAlive)
+        assertEquals(2, taken)
+        assertTrue("took $tookMs ms", tookMs < 2_000)
+    }
 }

@@ -6788,7 +6788,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         val labels = presets.map { millis ->
             when (millis) {
                 buffer.DEFAULT_MILLIS -> getString(R.string.s_300_ms_default)
-                buffer.MOST_STABLE_MILLIS -> getString(R.string.s_1000_ms_most_stable)
+                presets.last() -> getString(R.string.settings_music_buffer_ms_most_stable, millis)
                 else -> getString(R.string.settings_music_buffer_ms, millis)
             }
         }

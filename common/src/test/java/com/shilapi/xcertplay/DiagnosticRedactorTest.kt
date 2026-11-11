@@ -35,6 +35,13 @@ class DiagnosticRedactorTest {
         } finally { folder.deleteRecursively() }
     }
 
+    @Test fun aResendReplyThatDidNotOpenKeepsItsBytesInFourByteWords() {
+        val line = "Resend: audio type=102 reply did not open bytes=60 hdr=80d60001 rtp=09090909 80660003 00000c00 " +
+            "tail=03040506 0708090a opensAt=0:no,4:no,8:yes,12:no"
+        assertEquals(line, DiagnosticRedactor.redact(line))
+        assertEquals("head=[identifier]", DiagnosticRedactor.redact("head=80d60001090909098066000300000c00"))
+    }
+
     @Test fun boundedMicrophoneStartFailureAndCaptureCountersSurviveRedaction() {
         val lines = listOf(
             "Microphone: start type=telephony source=VOICE_COMMUNICATION codec=OPUS rate=48000 channels=1 frameMs=20 routedDeviceType=15",

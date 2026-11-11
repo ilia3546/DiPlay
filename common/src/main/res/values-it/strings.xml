@@ -327,7 +327,6 @@
     <string name="right_hand_drive">Guida a destra</string>
     <string name="running">In esecuzione</string>
     <string name="s_0_3x">0,3x</string>
-    <string name="s_1000_ms_most_stable">1000 ms · più stabile</string>
     <string name="s_1_0x">1,0x</string>
     <string name="s_1_choose_your_connection">1 · Scegli la connessione</string>
     <string name="s_1_connect_a_computer_with_adb_installed_to_the_car_using">1. Collega all’auto un computer con ADB installato, usando la connessione di debug USB o wireless già in uso. Approva il debug sull’auto se richiesto.\n\n2. Esegui questo comando nel terminale del computer:</string>
@@ -339,6 +338,7 @@
     <string name="s_3_connect">3 · Connetti</string>
     <string name="s_3_tap_check_and_enable_below_this_enables_the_cluster_ma">3. Tocca Verifica e attiva qui sotto. Questo abilita la mappa sul quadro strumenti e l’adattamento automatico del tema. Una sessione CarPlay attiva si riconnette una volta. Poi puoi scollegare il computer.</string>
     <string name="settings_music_buffer_ms">%1$d ms</string>
+    <string name="settings_music_buffer_ms_most_stable">%1$d ms · più stabile</string>
     <string name="settings_music_buffer_wireless">Buffer musicale (CarPlay wireless)</string>
     <string name="settings_music_buffer_wired">Buffer musicale (cavo USB)</string>
     <string name="s_60_fps_smoother_motion">60 fps · movimento più fluido</string>

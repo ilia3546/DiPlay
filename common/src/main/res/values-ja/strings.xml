@@ -330,7 +330,6 @@
     <string name="right_hand_drive">右ハンドル</string>
     <string name="running">実行中</string>
     <string name="s_0_3x">0.3倍</string>
-    <string name="s_1000_ms_most_stable">1000 ms · 最も安定</string>
     <string name="s_1_0x">1.0倍</string>
     <string name="s_1_choose_your_connection">1 · 接続方法を選択</string>
     <string name="s_1_connect_a_computer_with_adb_installed_to_the_car_using">1. ADBをインストールしたパソコンを、既存のUSBまたは無線デバッグ接続で車載端末につなぎます。車載端末に確認が表示されたらデバッグを許可します。\n\n2. パソコンのターミナルで次のコマンドを実行します。</string>
@@ -342,6 +341,7 @@
     <string name="s_3_connect">3 · 接続</string>
     <string name="s_3_tap_check_and_enable_below_this_enables_the_cluster_ma">3. 下の「確認して有効化」をタップします。メーター内地図とテーマの自動追従が有効になります。接続中のCarPlayは1回再接続します。</string>
     <string name="settings_music_buffer_ms">%1$d ms</string>
+    <string name="settings_music_buffer_ms_most_stable">%1$d ms · 最も安定</string>
     <string name="settings_music_buffer_wireless">音楽のバッファ（ワイヤレス）</string>
     <string name="settings_music_buffer_wired">音楽のバッファ（USB ケーブル）</string>
     <string name="s_5_ghz">5 GHz</string>

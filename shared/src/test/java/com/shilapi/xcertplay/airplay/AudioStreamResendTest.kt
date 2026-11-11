@@ -53,6 +53,31 @@ class AudioStreamResendTest {
         assertTrue(line, line.contains("resendReplies=2 resendTaken=1 resendDuplicate=0 resendTooLate=0 resendNotRequested=0 resendReplyFailures=1 "))
     }
 
+    @Test fun theFirstTwoRepliesThatDoNotOpenAreDescribedWithoutBeingPlayed() {
+        val phone = DatagramSocket(0, loopback).apply { soTimeout = 3_000 }
+        val stream = AudioStream(key, 102, diagnostics::add, AudioStream.Resend(InetSocketAddress(loopback, phone.localPort)))
+        val prefix = byteArrayOf(0x80.toByte(), 0xd6.toByte(), 0, 1)
+        try {
+            val (_, controlPort) = stream.listen(listener)
+            phone.sendTo(prefix + byteArrayOf(9, 9, 9, 9) + seal(3), controlPort)
+            phone.sendTo(prefix + ByteArray(8), controlPort)
+            phone.sendTo(prefix + ByteArray(40), controlPort)
+            waitFor { diagnostics.count { it.contains(" did not open ") } == 2 }
+        } finally {
+            stream.close()
+            phone.close()
+        }
+        waitFor { diagnostics.any { it.startsWith("Resend: ") && it.contains("ended=true") } }
+        assertTrue(diagnostics.last { it.startsWith("Resend: ") }.contains(" resendReplyFailures=3 "))
+        assertEquals(listOf(
+            "Resend: audio type=102 reply did not open bytes=60 hdr=80d60001 rtp=09090909 80660003 00000c00 " +
+                "tail=03040506 0708090a opensAt=0:no,4:no,8:yes,12:no",
+            "Resend: audio type=102 reply did not open bytes=12 hdr=80d60001 rtp=00000000 00000000 " +
+                "tail=00000000 00000000 opensAt=0:no,4:no,8:no,12:no",
+        ), diagnostics.filter { it.contains(" did not open ") })
+        assertTrue(delivered.isEmpty())
+    }
+
     @Test fun withoutResendNothingIsSentAndControlRepliesAreIgnored() {
         val phone = DatagramSocket(0, loopback).apply { soTimeout = 500 }
         val stream = AudioStream(key, 102, diagnostics::add)

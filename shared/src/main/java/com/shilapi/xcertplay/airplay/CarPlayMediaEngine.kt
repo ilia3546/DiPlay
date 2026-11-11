@@ -189,11 +189,15 @@ class CarPlayMediaEngine(
         sink.onAudioStopped(streamId)
 
         val key = outputKey(session, stream) ?: return null
+        val resendControlPort = (stream["controlPort"] as? Number)?.toInt()?.takeIf { it in 1..0xffff }
+        val resend = if (requestLostAudio && audioType == "media" && resendControlPort != null) {
+            AudioStream.Resend(session.remoteAddress?.let { InetSocketAddress(it, resendControlPort) })
+        } else null
         val format = AudioStreamCodec.fromFormatBits(
             (stream["audioFormat"] as? Number)?.toLong() ?: 0L,
             type,
             audioType,
-        )
+        ).copy(requestsLostPackets = resend != null)
         Log.i(
             TAG,
             "airplay audio format type=$type audioType=$audioType codec=${format.codec} " +
@@ -220,10 +224,6 @@ class CarPlayMediaEngine(
         if (capture != null) audioCaptures[streamKey] = capture
         val clockProbe = RtpClockProbe()
         val microphoneStart = microphone?.let { config -> MicrophoneStart { sink.onMicrophoneStarted(streamId, config) } }
-        val resendControlPort = (stream["controlPort"] as? Number)?.toInt()?.takeIf { it in 1..0xffff }
-        val resend = if (requestLostAudio && audioType == "media" && resendControlPort != null) {
-            AudioStream.Resend(session.remoteAddress?.let { InetSocketAddress(it, resendControlPort) })
-        } else null
         val audio = AudioStream(key, type, session::logDebug, resend)
         val (dataPort, controlPort) = audio.listen(
             object : AudioStream.Listener {

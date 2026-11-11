@@ -45,6 +45,16 @@ class MediaBufferPersistenceTest {
         assertEquals(1000, AirPlayPersistence.loadMediaBufferMillis(context, wireless = true))
     }
 
+    @Test fun longWirelessDelaysAreKeptWithoutMovingWired() {
+        for (millis in listOf(2000, 3000)) {
+            AirPlayPersistence.saveMediaBufferMillis(context, wireless = true, millis = millis)
+            assertEquals(millis, AirPlayPersistence.loadMediaBufferMillis(context, wireless = true))
+            assertEquals(300, AirPlayPersistence.loadMediaBufferMillis(context, wireless = false))
+        }
+        AirPlayPersistence.saveMediaBufferMillis(context, wireless = false, millis = 3000)
+        assertEquals(300, AirPlayPersistence.loadMediaBufferMillis(context, wireless = false))
+    }
+
     @Test fun wirelessRejectsWiredOnlyPresets() {
         AirPlayPersistence.saveMediaBufferMillis(context, wireless = true, millis = 100)
         assertEquals(300, AirPlayPersistence.loadMediaBufferMillis(context, wireless = true))

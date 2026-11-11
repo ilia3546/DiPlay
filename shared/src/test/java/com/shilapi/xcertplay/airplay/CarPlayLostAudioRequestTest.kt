@@ -8,6 +8,7 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketTimeoutException
 import java.security.SecureRandom
+import java.util.concurrent.CopyOnWriteArrayList
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -18,24 +19,34 @@ import org.robolectric.annotation.Config
 @Config(sdk = [29], manifest = Config.NONE)
 class CarPlayLostAudioRequestTest {
     private val loopback = InetAddress.getLoopbackAddress()
+    private val startedFormats = CopyOnWriteArrayList<AudioFormat>()
+    private val sink = object : MediaSink {
+        override fun onAudioStarted(id: AudioStreamId, format: AudioFormat, firstSample: Int) {
+            startedFormats += format
+        }
+    }
 
     @Test fun musicWithASetupControlPortAsksTheIphoneForItsLostPackets() {
         assertTrue(requestSent(requestLostAudio = true, audioType = "media", sendsControlPort = true))
+        assertTrue(startedFormats.single().requestsLostPackets)
     }
 
     @Test fun nothingIsRequestedWhileTheOptionIsOff() {
         assertFalse(requestSent(requestLostAudio = false, audioType = "media", sendsControlPort = true))
+        assertFalse(startedFormats.single().requestsLostPackets)
     }
 
     @Test fun callsAndStreamsWithoutAControlPortAreLeftAlone() {
         assertFalse(requestSent(requestLostAudio = true, audioType = "telephony", sendsControlPort = true))
         assertFalse(requestSent(requestLostAudio = true, audioType = "media", sendsControlPort = false))
+        assertEquals(2, startedFormats.size)
+        assertTrue(startedFormats.none { it.requestsLostPackets })
     }
 
     private fun requestSent(requestLostAudio: Boolean, audioType: String, sendsControlPort: Boolean): Boolean {
         val phone = DatagramSocket(0, loopback).apply { soTimeout = 500 }
         val rtsp = ServerSocket(0, 1, loopback)
-        val engine = CarPlayMediaEngine(object : MediaSink {}, requestLostAudio = requestLostAudio)
+        val engine = CarPlayMediaEngine(sink, requestLostAudio = requestLostAudio)
         val session = session(Socket(loopback, rtsp.localPort))
         try {
             val setup = mutableMapOf<String, Any?>("audioType" to audioType, "audioFormat" to 0x800000L, "streamConnectionID" to 42L)

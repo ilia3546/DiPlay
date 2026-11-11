@@ -1822,6 +1822,7 @@ private class AudioRenderer(
         { RtpReorderQueue.rtpSequence(it.rtp) }, AudioPacket::sample)
     /** Music with sustained decoder backpressure must not keep playing minutes-old packets. */
     private val mediaLagGuard = if (format.audioType == "media") MediaPacketLagGuard(format.rtpClockRate) else null
+    private val gapHold = if (format.requestsLostPackets) AudioGapHold() else null
     // The newest RTP time that arrived; a reordered, late or duplicate packet does not move it back.
     @Volatile private var newestRtpSample = 0
     private var newestRtpSampleKnown = false
@@ -1975,7 +1976,8 @@ private class AudioRenderer(
                 // Report Settings changes from this worker, never from the UI thread, also between prompts.
                 applyNavigationAttenuation()
                 diagnosticStage = "packet"
-                queue.poll(AUDIO_POLL_MILLIS, TimeUnit.MILLISECONDS)?.let(::handle)
+                gapHold?.observeTrack(playbackStarted, unplayedPcmNanos())
+                queue.poll(AUDIO_POLL_MILLIS, TimeUnit.MILLISECONDS, gapHold)?.let(::handle)
                 // Output becomes ready asynchronously, including after the last packet of a burst.
                 // Waiting for the next UDP packet can strand decoded sound for hundreds of ms.
                 diagnosticStage = "decoder-output"
@@ -2562,7 +2564,7 @@ private class AudioRenderer(
         val compressedPcmFrames = compressedRtpFrames * format.sampleRate /
             format.rtpClockRate.coerceAtLeast(1)
         // A late packet dropped by the reorder queue leaves a gap too, which must not read as a fast clock.
-        val dropped = packetsDroppedTotal.get() + packetsLateDroppedTotal.get() + inputDropped
+        val dropped = packetsDroppedTotal.get() + packetsLateDroppedTotal.get() + inputDropped + (gapHold?.gaveUpTotal ?: 0)
         if (dropped != droppedAtLastTrim) {
             droppedAtLastTrim = dropped
             trim.measureAgain()
@@ -2595,6 +2597,12 @@ private class AudioRenderer(
             frameNs += rtpFrames.toDouble() * format.sampleRate / clockRate * (nowNs - packet.arrivedNs)
         }
         return frameNs
+    }
+
+    private fun unplayedPcmNanos(): Long {
+        val track = track ?: return 0L
+        if (bytesPerSecond <= 0) return 0L
+        return bufferProgress.queuedBytes(track.playbackHeadPosition) * 1_000_000_000L / bytesPerSecond
     }
 
     private fun maintainPlaybackBuffer() {
@@ -2662,6 +2670,7 @@ private class AudioRenderer(
             "lastWriteError=${lastWriteErrorCode ?: "none"} zeroWrites=$zeroWritesThisWindow " +
             "partialWrites=$partialWritesThisWindow " +
             "decoderDroppedTotal=$inputDropped outputBuffersTotal=$outputBuffers rebuffers=$rebufferCount " +
+            (gapHold?.let { "${it.takeStats()} " } ?: "") +
             "playbackRate=${clockTrim?.rate ?: -1} ended=$force"
         Log.i(STATS_TAG, line)
         report(line)

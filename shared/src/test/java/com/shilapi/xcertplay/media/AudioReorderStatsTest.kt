@@ -4,6 +4,7 @@ import com.shilapi.xcertplay.airplay.AudioCodecKind
 import com.shilapi.xcertplay.airplay.AudioFormat
 import java.util.Queue
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -55,5 +56,21 @@ class AudioReorderStatsTest {
         type.getDeclaredMethod("start").apply { isAccessible = true }.invoke(renderer)
         (101..102).forEach(::submit)
         assertEquals(listOf(101, 102), queue.map(::sequenceOf))
+    }
+
+    @Test fun holdCountsShowOnlyForMusicWhoseLostPacketsAreRequested() {
+        fun statsLine(format: AudioFormat): String {
+            val lines = mutableListOf<String>()
+            val music = type.declaredConstructors.single { it.parameterCount == 13 }.apply { isAccessible = true }
+                .newInstance(format, false, false, 0, 0, AudioFocusCoordinator(null, false, false),
+                    0, 1000, { message: String -> lines.add(message) }, 0L, false, null, false)
+            type.getDeclaredMethod("logStatsIfDue", Boolean::class.javaPrimitiveType).apply { isAccessible = true }
+                .invoke(music, true)
+            return lines.first { it.startsWith("audio stats") }
+        }
+        val format = AudioFormat(AudioCodecKind.AAC_LC, 48_000, 2, 102, "media")
+        assertFalse(statsLine(format), statsLine(format).contains("hold"))
+        val requested = statsLine(format.copy(requestsLostPackets = true))
+        assertTrue(requested, requested.contains(" rebuffers=0 holds=0 holdFilled=0 holdGaveUp=0 holdAbandoned=0 holdNoRoom=0 holdMaxMs=0 playbackRate=-1 "))
     }
 }
