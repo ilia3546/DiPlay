@@ -4,7 +4,10 @@ import com.shilapi.xcertplay.airplay.VideoInCar
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 class VideoInCarGateTest {
     @After
@@ -49,5 +52,28 @@ class VideoInCarGateTest {
         gate.update(true)
 
         assertEquals(listOf(null, false, true), observations)
+    }
+
+    @Test
+    fun theGateStartsItsReadingAndStopsItWhenClosed() {
+        val readingThreads = mutableListOf<Thread>()
+        val read = CountDownLatch(1)
+        val stopped = CountDownLatch(1)
+        val gate = VideoInCarGate(
+            readParked = { read.countDown(); false },
+            onChanged = {},
+            startReading = {
+                readingThreads += Thread.currentThread()
+                ({ readingThreads += Thread.currentThread(); stopped.countDown() })
+            },
+        )
+
+        gate.start()
+        assertTrue(read.await(2, TimeUnit.SECONDS))
+        gate.close()
+
+        assertTrue(stopped.await(3, TimeUnit.SECONDS))
+        assertEquals(2, readingThreads.size)
+        assertTrue("started and stopped on the gate's own thread", readingThreads[0] === readingThreads[1])
     }
 }

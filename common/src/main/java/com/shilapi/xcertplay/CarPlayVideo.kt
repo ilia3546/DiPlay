@@ -54,7 +54,16 @@ internal object CarPlayVideo : CarPlayVideoListener {
         next.videoListener = this
     }
 
-    override fun readParked(): Boolean? = appContext?.let(BydNavigationOutputs::parked)
+    /** ECARX head units report the gear through their car SDK; elsewhere it is BYD's, through ADB. */
+    override fun readParked(): Boolean? {
+        val app = appContext ?: return null
+        return if (EcarxWheelSpeed.present()) EcarxWheelSpeed.parked() else BydNavigationOutputs.parked(app)
+    }
+
+    override fun startReadingParked(): () -> Unit {
+        val app = appContext ?: return {}
+        return if (EcarxWheelSpeed.present()) EcarxWheelSpeed.follow(app) else ({})
+    }
 
     override fun onVideoAllowedChanged(allowed: Boolean) {
         if (!allowed) main.post { closePlayer("the car left P") }

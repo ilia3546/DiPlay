@@ -23,6 +23,17 @@ class EcarxWheelSpeedTest {
         assertNull(EcarxWheelSpeed.gear(2097664))
     }
 
+    @Test fun onlyARecentPollTellsWhetherTheCarIsInPark() {
+        fun motion(gear: VehicleGear?) = EcarxWheelSpeed.Motion(elapsedMillis = 10_000, metersPerSecond = 0.0, gear = gear)
+
+        assertEquals(true, EcarxWheelSpeed.parked(motion(VehicleGear.PARK), nowMillis = 11_000))
+        assertEquals(false, EcarxWheelSpeed.parked(motion(VehicleGear.DRIVE), nowMillis = 11_000))
+        assertEquals(false, EcarxWheelSpeed.parked(motion(VehicleGear.NEUTRAL), nowMillis = 11_000))
+        assertNull(EcarxWheelSpeed.parked(motion(null), nowMillis = 11_000))
+        assertNull(EcarxWheelSpeed.parked(motion(VehicleGear.PARK), nowMillis = 12_500)) // the polling stalled
+        assertNull(EcarxWheelSpeed.parked(null, nowMillis = 11_000))
+    }
+
     @Test fun theRawSpeedIsTakenAsMetersPerSecond() {
         assertEquals(0.0, EcarxWheelSpeed.metersPerSecond(0f)!!, 0.0)
         assertEquals(16.5, EcarxWheelSpeed.metersPerSecond(16.5f)!!, 1e-6)

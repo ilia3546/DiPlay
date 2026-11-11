@@ -8,6 +8,9 @@ interface CarPlayVideoListener {
     /** Whether the car is in P, or null when it cannot tell. Blocking; read once a second while CarPlay runs. */
     fun readParked(): Boolean?
 
+    /** Starts what [readParked] reads from; the returned function stops it. Called on the reading thread. */
+    fun startReadingParked(): () -> Unit = {}
+
     /** Video became allowed or not; when not, the player must close. Any thread. */
     fun onVideoAllowedChanged(allowed: Boolean)
 
@@ -29,6 +32,7 @@ internal class VideoInCarGate(
     private val readParked: () -> Boolean?,
     private val onChanged: (Boolean) -> Unit,
     private val onObserved: (Boolean?) -> Unit = {},
+    private val startReading: () -> () -> Unit = { {} },
 ) : Closeable {
     @Volatile private var closed = false
     private var observed = false
@@ -36,13 +40,18 @@ internal class VideoInCarGate(
 
     fun start() {
         Thread({
-            while (!closed) {
-                update(runCatching(readParked).getOrNull())
-                try {
-                    Thread.sleep(POLL_MILLIS)
-                } catch (_: InterruptedException) {
-                    return@Thread
+            val stopReading = runCatching(startReading).getOrDefault {}
+            try {
+                while (!closed) {
+                    update(runCatching(readParked).getOrNull())
+                    try {
+                        Thread.sleep(POLL_MILLIS)
+                    } catch (_: InterruptedException) {
+                        return@Thread
+                    }
                 }
+            } finally {
+                runCatching(stopReading)
             }
         }, "diplay-video-gate").apply { isDaemon = true }.start()
     }

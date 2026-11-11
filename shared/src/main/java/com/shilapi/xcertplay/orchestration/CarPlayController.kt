@@ -546,6 +546,7 @@ class CarPlayController(
                 onObserved = { parked ->
                     debugLog("video in car gear=${when (parked) { true -> "P"; false -> "not-P"; null -> "unknown" }}")
                 },
+                startReading = listener::startReadingParked,
             ).also { it.start() }
         }
         if (config.transport == CarPlayTransport.WIRED) {

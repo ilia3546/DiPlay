@@ -41,6 +41,7 @@ internal object EcarxWheelSpeed : VehicleSpeedSource {
     private const val READ_MILLIS = 250L
     private const val GEAR_EVERY_READS = 4
     private const val MAX_SAMPLES = 40
+    private const val MAX_GEAR_AGE_MILLIS = 2_000L
 
     /** One poll's speed and gear, null where unread; [elapsedMillis] is on the monotonic clock since boot. */
     data class Motion(val elapsedMillis: Long, val metersPerSecond: Double?, val gear: VehicleGear?)
@@ -130,6 +131,21 @@ internal object EcarxWheelSpeed : VehicleSpeedSource {
 
     /** The latest poll while [follow] or [start] keeps polling. */
     fun motion(): Motion? = latest
+
+    /**
+     * Whether the latest poll read P, or null when no poll is recent or `car_signal` is not subscribed:
+     * its gear only arrives on a change, so one missed while reconnecting would stay stale.
+     */
+    fun parked(nowMillis: Long = SystemClock.elapsedRealtime()): Boolean? {
+        val run = polling ?: return null
+        if (source == Source.CAR_SIGNAL && run.signal?.subscribed() != true) return null
+        return parked(latest, nowMillis)
+    }
+
+    internal fun parked(motion: Motion?, nowMillis: Long): Boolean? {
+        if (motion == null || nowMillis - motion.elapsedMillis !in 0..MAX_GEAR_AGE_MILLIS) return null
+        return motion.gear?.let { it == VehicleGear.PARK }
+    }
 
     @Synchronized
     private fun startPolling() {

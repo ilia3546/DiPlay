@@ -160,6 +160,9 @@ internal class EcarxSignalLink {
     }
 
     @Synchronized
+    fun isSubscribed(): Boolean = state == State.SUBSCRIBED
+
+    @Synchronized
     fun lost(generation: Int, reason: String, nowMillis: Long) {
         if (generation != this.generation || state == State.LOST) return
         state = State.LOST
@@ -202,6 +205,9 @@ internal class EcarxCarSignal(private val app: Context, private val readings: Ec
 
     /** connecting, connected, subscribed, or what was lost and that it reconnects. */
     fun status(): String = link.describe()
+
+    /** Whether the speed and gear callbacks are registered on the current car. */
+    fun subscribed(): Boolean = link.isSubscribed()
 
     /** Opens a new car after a loss and subscribes once its service is connected. */
     fun poll(nowMillis: Long) {
