@@ -4,7 +4,7 @@ public final class HudDrawing {
     public static final int WIDTH=800,HEIGHT=480;
     private static final int CYAN=0xff54d5ff,WHITE=0xfff4fbff,MUTED=0xffc8e2ec,INACTIVE=0xff7a97a3,CALL_GREEN=0xff30d158,CALL_MUTED=0xffff9f0a;
     static final int OTHER_LANE_COLOR=0xffaec6d0;
-    static final double OTHER_LANE_OPACITY=1,OTHER_LANE_STROKE=2.2;
+    static final double OTHER_LANE_OPACITY=1,OTHER_LANE_STROKE=2.8,PREFERRED_LANE_STROKE=3.2;
     // The firmware speed is fixed in window pixels, digits around x 400..430 and y 331..371, with no regard to the
     // height and scale settings, so the call is placed in window pixels too, right of a three-digit speed.
     static final double CALL_LEFT=510,CALL_RIGHT=780,CALL_Y=351;
@@ -17,9 +17,9 @@ public final class HudDrawing {
     public static void draw(HudCanvas canvas,HudFrame frame,HudCall call,HudSettings settings) {
         float icon,numberFont,unitFont,roadFont,stroke,lane,trip;
         switch (settings.variant) {
-            case COMPACT:icon=46;numberFont=48;unitFont=21;roadFont=24;stroke=5;lane=24;trip=20;break;
-            case BOLD:icon=66;numberFont=68;unitFont=29;roadFont=32;stroke=7.5f;lane=32;trip=25;break;
-            default:icon=56;numberFont=58;unitFont=25;roadFont=28;stroke=6;lane=28;trip=22;break;
+            case COMPACT:icon=46;numberFont=48;unitFont=21;roadFont=24;stroke=5;lane=34;trip=20;break;
+            case BOLD:icon=66;numberFont=68;unitFont=29;roadFont=32;stroke=7.5f;lane=50;trip=25;break;
+            default:icon=56;numberFont=58;unitFont=25;roadFont=28;stroke=6;lane=42;trip=22;break;
         }
         double k=icon/56.0;
         if(call!=null)call(canvas,call,CALL_LEFT,CALL_RIGHT,CALL_Y,28*k,(float)(21*k),(float)(16*k),k);
@@ -46,7 +46,7 @@ public final class HudDrawing {
     }
     public static void lane(HudCanvas canvas,HudLane lane,double x,double y,double size){
         HudLaneDirection highlight=lane.preferred ? lane.highlighted : null;
-        double width=lane.preferred ? 2.6 : OTHER_LANE_STROKE;
+        double width=lane.preferred ? PREFERRED_LANE_STROKE : OTHER_LANE_STROKE;
         canvas.beginOpacity(lane.preferred ? 1 : OTHER_LANE_OPACITY);
         for(HudLaneDirection direction:lane.directions)if(direction!=highlight)ManeuverIcon.laneAt(canvas,direction,x,y,size,width,lane.preferred ? MUTED : OTHER_LANE_COLOR);
         if(highlight!=null)ManeuverIcon.laneAt(canvas,highlight,x,y,size,width,CYAN);

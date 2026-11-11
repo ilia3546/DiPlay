@@ -43,7 +43,7 @@ data class HudFrame(
             val trip = glance.remainingMeters?.let { distance(it, units) }
             return HudFrame(
                 kind = sign(type),
-                exitNumber = if (type in 28..46) type - 27 else 0,
+                exitNumber = exitNumber(type),
                 number = number,
                 unit = unit,
                 instructionLabel = glance.road,
@@ -54,6 +54,9 @@ data class HudFrame(
                 tripUnit = trip?.second.orEmpty(),
             )
         }
+
+        /** The roundabout exit Apple's [type] names, 1 to 19, or 0 for none. */
+        fun exitNumber(type: Int): Int = if (type in 28..46) type - 27 else 0
 
         /**
          * Apple's iAP2 RouteGuidanceManeuverType, as the BYD cluster table and the MIB3 CarPlay RGI notes read it.

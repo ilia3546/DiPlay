@@ -14,8 +14,8 @@ import kotlin.math.abs
 
 /**
  * The designer's reference for the HUD line (`hud/design-reference.json`): every sign's source paths and dots, every
- * lane arrow in its three roles, the numbered roundabout exits, and the layout of one line. The reference differs
- * from the HUD Renderer original only by `otherLane`, the style of lanes the driver should not take.
+ * lane arrow in its three roles, the numbered roundabout exits, and the layout of one line. Arrows end in filled
+ * heads (`fill`), so the same signs read on the dashboard card and at the head-up display's small sizes.
  */
 @RunWith(RobolectricTestRunner::class) // org.json
 @Config(sdk = [29], manifest = Config.NONE)
@@ -58,7 +58,11 @@ class HudDrawingReferenceTest {
                 it.width = width.toFloat(); it.color = color; it.opacity = opacity.toFloat()
             }
         }
-        override fun fill(path: HudPath, x: Double, y: Double, scale: Double, color: Int) = throw AssertionError("unexpected fill")
+        override fun fill(path: HudPath, x: Double, y: Double, scale: Double, color: Int) {
+            op("fill").also {
+                it.data = path.data; it.x = x.toFloat(); it.y = y.toFloat(); it.size = scale.toFloat(); it.color = color
+            }
+        }
         override fun rule(x: Double, top: Double, bottom: Double, width: Double, color: Int, opacity: Double, dash: Double, gap: Double) {
             op("rule").also {
                 it.x = x.toFloat(); it.y = top.toFloat(); it.size = bottom.toFloat(); it.width = width.toFloat()
@@ -89,7 +93,12 @@ class HudDrawingReferenceTest {
         for (i in 0 until expected.length()) {
             val part = expected.getJSONObject(i)
             val op = actual.ops[i]
-            if (part.has("d")) {
+            if (part.has("fill")) {
+                assertEquals("filled head", "fill" to part.getString("d"), op.type to op.data)
+                close(op.x, 400.0 - size / 2, "icon left")
+                close(op.y, 215.0 - size / 2, "icon top")
+                close(op.size, scale.toDouble(), "source grid scale")
+            } else if (part.has("d")) {
                 assertEquals("source path", "path" to part.getString("d"), op.type to op.data)
                 close(op.x, 400.0 - size / 2, "icon left")
                 close(op.y, 215.0 - size / 2, "icon top")
@@ -119,6 +128,7 @@ class HudDrawingReferenceTest {
         val icons = reference.getJSONObject("icons")
         val lanes = reference.getJSONObject("lanes")
         val other = reference.getJSONObject("otherLane")
+        val preferred = reference.getJSONObject("preferredLane")
         val cyan = color(reference.getJSONObject("colors").getString("pri"))
         val muted = color(reference.getJSONObject("colors").getString("sec"))
         val variants = reference.getJSONObject("variants")
@@ -153,9 +163,10 @@ class HudDrawingReferenceTest {
                 close(r.ops[0].opacity, if (role == 0) other.getDouble("opacity") else 1.0, "group opacity")
                 for (i in 0 until source.length()) {
                     val op = r.ops[i + 1]
-                    assertEquals("lane source path", source.getJSONObject(i).getString("d"), op.data)
+                    val part = source.getJSONObject(i)
+                    assertEquals("lane source path", (if (part.has("fill")) "fill" else "path") to part.getString("d"), op.type to op.data)
                     close(op.size, (laneSize / 24).toDouble(), "lane scale")
-                    close(op.width, if (role == 0) other.getDouble("stroke") else 2.6, "lane stroke")
+                    if (!part.has("fill")) close(op.width, (if (role == 0) other else preferred).getDouble("stroke"), "lane stroke")
                     assertEquals("lane role color", when (role) {
                         2 -> cyan
                         1 -> muted
@@ -226,8 +237,8 @@ class HudDrawingReferenceTest {
         close(text[1].y, text[0].y.toDouble(), "unit shared baseline")
         close(text[2].y, text[0].y.toDouble(), "instruction shared baseline")
         assertEquals(listOf(500, 400, 400), text.take(3).map { it.weight })
-        close(text[3].x, 196.0, "trip follows lane on same row")
-        close(text[3].y, 276.81, "trip baseline")
+        close(text[3].x, 217.0, "trip follows lane on same row")
+        close(text[3].y, 283.81, "trip baseline")
         assertEquals(listOf("12", "\u00a0мин", "\u00a0\u00a0·\u00a0\u00a0", "4,2", "\u00a0км"), text.drop(3).map { it.text })
         assertEquals(listOf(0xfff4fbff.toInt(), 0xffc8e2ec.toInt(), 0xfff4fbff.toInt()), listOf(text[3].color, text[4].color, text[6].color))
     }

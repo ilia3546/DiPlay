@@ -5,15 +5,18 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
+import android.view.View
 import android.widget.FrameLayout
-import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.core.content.ContextCompat
 import com.shilapi.xcertplay.MonjaroDashboardLayout as L
 import com.shilapi.xcertplay.glance.CarPlayGlance
 import com.shilapi.xcertplay.host.R
+import com.shilapi.xcertplay.hud.AndroidHudCanvas
 import com.shilapi.xcertplay.hud.ClusterTurnGuidance
+import com.shilapi.xcertplay.hud.HudFrame
+import com.shilapi.xcertplay.hud.HudManeuver
+import com.shilapi.xcertplay.hud.ManeuverIcon
 import java.util.TimeZone
 
 /** CarPlay's route as the map card shows it: the next turn and the arrival. */
@@ -22,6 +25,9 @@ internal data class DashboardRoute(
     val arrivalEpochSeconds: Long?,
     val remainingSeconds: Long?,
     val remainingMeters: Long?,
+    /** The sign the head-up display draws for the same maneuver, so both read alike. */
+    val sign: HudManeuver,
+    val exitNumber: Int,
 ) {
     companion object {
         /** Null without a route, including once the glance lets an instruction expire. */
@@ -32,6 +38,8 @@ internal data class DashboardRoute(
                 glance.arrivalEpochSeconds,
                 glance.remainingSeconds,
                 glance.remainingMeters,
+                HudFrame.sign(type),
+                HudFrame.exitNumber(type),
             )
         }
     }
@@ -41,10 +49,9 @@ internal data class DashboardRoute(
 internal class DashboardManeuverCard(context: Context) : LinearLayout(context) {
     private val shadow = DashboardShadow(L.MANEUVER_RADIUS, L.MANEUVER_SHADOW_DY, L.MANEUVER_SHADOW_BLUR,
         L.ROUTE_CARD_SHADOW)
-    private val glyph = ImageView(context)
+    private val glyph = DashboardManeuverGlyph(context)
     private val distance = routeCardText(context, L.MANEUVER_DISTANCE_TEXT, 700)
     private val road = routeCardText(context, L.MANEUVER_ROAD_TEXT, 400, L.SECONDARY)
-    private var glyphRes = 0
 
     init {
         orientation = HORIZONTAL
@@ -69,14 +76,9 @@ internal class DashboardManeuverCard(context: Context) : LinearLayout(context) {
         })
     }
 
-    fun show(turn: ClusterTurnGuidance) {
-        val res = if (turn.icon == 0) 0 else ClusterTurnCardView.glyphRes(turn.icon)
-        if (res != glyphRes) {
-            glyphRes = res
-            glyph.setImageDrawable(if (res == 0) null else {
-                ContextCompat.getDrawable(context, res)?.mutate()?.apply { setTint(Color.WHITE) }
-            })
-        }
+    fun show(route: DashboardRoute) {
+        val turn = route.turn
+        glyph.show(route.sign, route.exitNumber)
         distance.text = ClusterTurnCardView.distanceLabel(context, turn.distanceMeters)
         road.text = ClusterTurnCardView.roadLabel(context, turn)
         road.visibility = if (road.text.isEmpty()) GONE else VISIBLE
@@ -97,6 +99,33 @@ internal class DashboardManeuverCard(context: Context) : LinearLayout(context) {
     override fun draw(canvas: Canvas) {
         shadow.draw(canvas, width, height)
         super.draw(canvas)
+    }
+}
+
+/** The head-up display's maneuver sign, white, as large as the view. */
+internal class DashboardManeuverGlyph(context: Context) : View(context) {
+    var sign: HudManeuver? = null
+        private set
+    var exitNumber = 0
+        private set
+
+    fun show(sign: HudManeuver, exitNumber: Int) {
+        if (sign == this.sign && exitNumber == this.exitNumber) return
+        this.sign = sign
+        this.exitNumber = exitNumber
+        invalidate()
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        val sign = sign ?: return
+        val size = minOf(width, height).toDouble()
+        ManeuverIcon.draw(AndroidHudCanvas(canvas), sign, width / 2.0, height / 2.0, size, size * STROKE_PER_SIZE,
+            Color.WHITE, exitNumber)
+    }
+
+    private companion object {
+        /** The head-up display's balanced sign: a 6 px stroke on a 56 px sign. */
+        const val STROKE_PER_SIZE = 6.0 / 56
     }
 }
 

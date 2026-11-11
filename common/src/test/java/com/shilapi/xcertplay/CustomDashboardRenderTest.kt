@@ -18,6 +18,7 @@ import android.widget.TextView
 import com.shilapi.xcertplay.hud.CarPlayCallCard
 import com.shilapi.xcertplay.hud.CarPlayCallOutcome
 import com.shilapi.xcertplay.hud.ClusterTurnGuidance
+import com.shilapi.xcertplay.hud.HudManeuver
 import java.io.File
 import java.time.Duration
 import java.util.TimeZone
@@ -402,7 +403,7 @@ class CustomDashboardRenderTest {
             showBackground(DashboardBackground.OCEAN, 0) { null }
             showTemperature(6.4f)
             map.showRoute(DashboardRoute(ClusterTurnGuidance.fromApple(2, 0, 350, "Садовое кольцо"),
-                arrivalEpochSeconds = evening / 1000 + 18 * 60, remainingSeconds = 1_080, remainingMeters = 9_400),
+                arrivalEpochSeconds = evening / 1000 + 18 * 60, remainingSeconds = 1_080, remainingMeters = 9_400, sign = HudManeuver.RIGHT, exitNumber = 0),
                 is24Hour = true, zone = moscow)
         }
         assertEquals("the maneuver tile", Color.rgb(0x2f, 0x7b, 0xff), frame.getPixel(MonjaroDashboardLayout.defaultMap.maneuverCard.left + 16, MonjaroDashboardLayout.defaultMap.maneuverCard.top + 30))
@@ -416,7 +417,7 @@ class CustomDashboardRenderTest {
                 showBackground(DashboardBackground.OCEAN, 0) { null }
                 map.resize(MonjaroDashboardLayout.MapGeometry(MonjaroDashboardLayout.mapWidths.first(), 304))
                 map.showRoute(DashboardRoute(ClusterTurnGuidance.fromApple(2, 0, meters, "Расторопово"),
-                    arrivalEpochSeconds = evening / 1000 + 18 * 60, remainingSeconds = 1_080, remainingMeters = 9_400),
+                    arrivalEpochSeconds = evening / 1000 + 18 * 60, remainingSeconds = 1_080, remainingMeters = 9_400, sign = HudManeuver.RIGHT, exitNumber = 0),
                     is24Hour = true, zone = moscow)
                 card = map.descendants<DashboardManeuverCard>().single()
             }
@@ -434,7 +435,7 @@ class CustomDashboardRenderTest {
             view.map.arrivalShown = arrival
             fun route(meters: Int, road: String) = DashboardRoute(
                 ClusterTurnGuidance.fromApple(2, 0, meters, road),
-                arrivalEpochSeconds = evening / 1000 + 300, remainingSeconds = 300, remainingMeters = 9_400)
+                arrivalEpochSeconds = evening / 1000 + 300, remainingSeconds = 300, remainingMeters = 9_400, sign = HudManeuver.RIGHT, exitNumber = 0)
             // A window lays its views out again only when one of them asks for it, as here.
             fun frame() {
                 if (view.isLayoutRequested || view.width == 0) {
@@ -465,7 +466,7 @@ class CustomDashboardRenderTest {
             showBackground(DashboardBackground.OCEAN, 0) { null }
             map.arrivalShown = false
             map.showRoute(DashboardRoute(ClusterTurnGuidance.fromApple(2, 0, 530, "Улица Сергея Эйзенштейна"),
-                arrivalEpochSeconds = null, remainingSeconds = null, remainingMeters = null),
+                arrivalEpochSeconds = null, remainingSeconds = null, remainingMeters = null, sign = HudManeuver.RIGHT, exitNumber = 0),
                 is24Hour = true, zone = moscow)
             card = map.descendants<DashboardManeuverCard>().single()
         }
@@ -500,7 +501,7 @@ class CustomDashboardRenderTest {
             showBackground(DashboardBackground.OCEAN, 0) { null }
             showTemperature(null)
             trip.show(DashboardTrip())
-            map.showRoute(DashboardRoute(ClusterTurnGuidance.fromApple(1, 0, 1_250, ""), null, null, null),
+            map.showRoute(DashboardRoute(ClusterTurnGuidance.fromApple(1, 0, 1_250, ""), null, null, null, HudManeuver.LEFT, 0),
                 is24Hour = true, zone = moscow)
         }
     }

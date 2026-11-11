@@ -85,7 +85,7 @@ internal class DashboardMapCard(context: Context) : FrameLayout(context) {
         arrival.visibility = if (route != null && arrivalShown) VISIBLE else GONE
         fitManeuver()
         if (route == null) return
-        maneuver.show(route.turn)
+        maneuver.show(route)
         arrival.show(route, is24Hour, zone)
     }
 
