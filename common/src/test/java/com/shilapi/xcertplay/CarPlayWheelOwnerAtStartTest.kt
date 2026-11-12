@@ -12,7 +12,6 @@ import com.shilapi.xcertplay.airplay.CarPlayMediaButton
 import com.shilapi.xcertplay.compat.AudioFocusRequestCompat
 import com.shilapi.xcertplay.media.CarPlayNowPlaying
 import com.shilapi.xcertplay.media.RendererAudioFocus
-import com.shilapi.xcertplay.network.GeelyHeadUnit
 import com.shilapi.xcertplay.orchestration.CarPlayController
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -61,11 +60,13 @@ class CarPlayWheelOwnerAtStartTest {
         carPlayTrack = true, radioPlaying = true, radioServicePlaying = true, carSource = carSource))
 
     @Before fun monjaroA3WithTheRadioPlayingAndASilentIphone() {
-        // Fixed on first use; read before the build changes so the wheel-key service stays unbound.
-        GeelyHeadUnit.detected
         ShadowBuild.setProduct("geely_fx11")
         ShadowBuild.setModel("KX11-A3-L1")
         Settings.Global.putInt(app.contentResolver, "radio_is_playing", 1)
+        // GeelyHeadUnit.detected is fixed by the first test class in this Robolectric sandbox that reads it, so the
+        // wheel keys may bind their input service here; Robolectric would connect them with a null binder.
+        val input = ComponentName("com.geely.inputservice", "com.geely.inputservice.InputService")
+        shadowOf(app).setComponentNameAndServiceForBindServiceForIntent(Intent().setComponent(input), input, AcceptingService())
         shadowOf(app).setComponentNameAndServiceForBindServiceForIntent(
             Intent("android.intent.action.GEELY_MEDIACENTER_SERVICE").setPackage("com.geely.mediacenterservice"),
             ComponentName("com.geely.mediacenterservice", "MediaCenterService"), mediaCentre)
@@ -149,6 +150,13 @@ class CarPlayWheelOwnerAtStartTest {
         assertFalse(carAudioOwnsWheel())
         assertNull(published().carSource)
         assertFalse("the media centre is left alone", mediaCentre.requested.await(300, TimeUnit.MILLISECONDS))
+    }
+
+    private class AcceptingService : Binder() {
+        override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
+            reply?.writeNoException()
+            return true
+        }
     }
 
     private class RecordingMediaCentre : Binder() {

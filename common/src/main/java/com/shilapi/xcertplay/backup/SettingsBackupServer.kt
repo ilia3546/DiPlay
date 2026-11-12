@@ -68,7 +68,10 @@ class SettingsBackupServer(
         val socket = ServerSocket()
         return try {
             socket.apply {
-                reuseAddress = true
+                // Only the fixed typed port needs it, to come back after a restart. With it on, a port picked by
+                // the system can be one another process listens on at 127.0.0.1 on BSD/macOS, and local
+                // connections then reach that process.
+                reuseAddress = port != 0
                 // accept() wakes up regularly: closing a socket that another thread waits in accept() on
                 // waits for that accept() on some JVMs (a test hung for its whole idle timeout on macOS).
                 soTimeout = minOf(idleTimeoutMillis, ACCEPT_POLL_MILLIS)
