@@ -21,6 +21,7 @@ import org.mockito.Mockito.*
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.android.util.concurrent.PausedExecutorService
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 import org.robolectric.shadows.ShadowBuild
@@ -38,6 +39,10 @@ class CarPlayHostClusterStartupTest {
 
     @Before fun setUp() {
         activity = Robolectric.buildActivity(CarPlayHostActivity::class.java).get()
+        // onSessionActive sends dark mode to the session mock from this executor. Mockito stubbing is not
+        // thread-safe: a call that lands inside `when(session.hasRenderedMainFrame)` takes the stub.
+        (get("airPlayCommandExecutor") as ExecutorService).shutdownNow()
+        set("airPlayCommandExecutor", PausedExecutorService())
         AirPlayPersistence.saveClusterMapEnabled(activity, true)
         controller = mock(CarPlayController::class.java)
         sink = mock(AndroidMediaSink::class.java)

@@ -406,7 +406,8 @@ class SettingsBackupServerTest {
             val busy = SettingsBackupServer(page = ByteArray(0), export = { ByteArray(0) },
                 import = { SettingsImportOutcome(0, 0, invalid = false) })
             val started = busy.start()!!
-            val sockets = List(3) { Socket("127.0.0.1", started.port) }
+            // Closed with a reset: 3,000 closes in TIME_WAIT would use up the ephemeral ports for the tests after it.
+            val sockets = List(3) { Socket("127.0.0.1", started.port).apply { setSoLinger(true, 0) } }
             sockets.forEach { it.close() }
             busy.stop()
         }

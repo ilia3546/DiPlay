@@ -229,7 +229,8 @@ class BufferedAudioStreamTest {
         try {
             stream.start()
             Socket(InetAddress.getLoopbackAddress(), stream.port).use { socket ->
-                socket.soTimeout = 3000
+                // Only a guard against a hang: 3 s ran out under a loaded CI run.
+                socket.soTimeout = 10_000
                 DataOutputStream(socket.getOutputStream()).apply { writeShort(1); flush() }
                 assertEquals(-1, socket.getInputStream().read())
                 assertNull(stream.setRate(0L, 1, BigInteger.ZERO))
