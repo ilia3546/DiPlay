@@ -153,10 +153,7 @@ object AirPlayPersistence {
     private const val KEY_DASHBOARD_MANEUVER = "monjaro_dashboard_maneuver"
     private const val KEY_DASHBOARD_BOTTOM_LINE = "monjaro_dashboard_bottom_line"
     private const val KEY_DASHBOARD_ARRIVAL = "monjaro_dashboard_arrival"
-    private const val KEY_DASHBOARD_MAP_HEIGHT = "monjaro_dashboard_map_height"
-    private const val KEY_DASHBOARD_ICON_BACKDROP = "monjaro_dashboard_icon_backdrop"
     private const val KEY_HUD_MANEUVERS = "monjaro_hud_maneuvers"
-    private const val KEY_HUD_DENSITY = "monjaro_hud_density"
     private const val KEY_HUD_HEIGHT = "monjaro_hud_height"
     private const val KEY_HUD_SCALE = "monjaro_hud_scale_percent"
     private const val KEY_HUD_LANES = "monjaro_hud_lanes"
@@ -708,21 +705,9 @@ object AirPlayPersistence {
     }
 
     internal fun loadDashboardMap(context: Context): MonjaroDashboardLayout.MapGeometry {
-        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val default = MonjaroDashboardLayout.defaultMap
-        val width = prefs.getInt(KEY_DASHBOARD_MAP_WIDTH, default.width)
-            .takeIf { it in MonjaroDashboardLayout.mapWidths } ?: default.width
-        val height = prefs.getInt(KEY_DASHBOARD_MAP_HEIGHT, default.height)
-            .takeIf { it in MonjaroDashboardLayout.mapHeights } ?: default.height
-        return MonjaroDashboardLayout.MapGeometry(width, height)
-    }
-
-    fun loadDashboardIconBackdrop(context: Context): Boolean =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_DASHBOARD_ICON_BACKDROP, false)
-
-    fun saveDashboardIconBackdrop(context: Context, shown: Boolean) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putBoolean(KEY_DASHBOARD_ICON_BACKDROP, shown).apply()
+        val width = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(KEY_DASHBOARD_MAP_WIDTH, default.width)
+        return default.copy(width = MonjaroDashboardLayout.nearestMapWidth(width))
     }
 
     fun loadDashboardManeuver(context: Context): Boolean =
@@ -746,10 +731,9 @@ object AirPlayPersistence {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_DASHBOARD_ARRIVAL, shown).apply()
     }
 
-    internal fun saveDashboardMap(context: Context, map: MonjaroDashboardLayout.MapGeometry) {
+    fun saveDashboardMapWidth(context: Context, width: Int) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putInt(KEY_DASHBOARD_MAP_WIDTH, map.width)
-            .putInt(KEY_DASHBOARD_MAP_HEIGHT, map.height).apply()
+            .putInt(KEY_DASHBOARD_MAP_WIDTH, width).apply()
     }
 
     fun loadHudManeuvers(context: Context): Boolean =
@@ -758,16 +742,6 @@ object AirPlayPersistence {
     fun saveHudManeuvers(context: Context, enabled: Boolean) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putBoolean(KEY_HUD_MANEUVERS, enabled).apply()
-    }
-
-    fun loadHudDensity(context: Context): HudSettings.Variant {
-        val name = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_HUD_DENSITY, null)
-        return HudSettings.Variant.entries.firstOrNull { it.name == name } ?: HudSettings.Variant.BALANCED
-    }
-
-    fun saveHudDensity(context: Context, density: HudSettings.Variant) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putString(KEY_HUD_DENSITY, density.name).apply()
     }
 
     fun loadHudHeight(context: Context): Int =

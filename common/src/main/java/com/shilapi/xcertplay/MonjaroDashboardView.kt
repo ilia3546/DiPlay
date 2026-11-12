@@ -53,7 +53,7 @@ internal class MonjaroDashboardView(context: Context) : FrameLayout(context) {
     private val rightGroup = group(context)
     val trip = DashboardTripBlock(context)
     val map = DashboardMapCard(context)
-    private val iconBackdrop = DashboardIconBackdrop(context, wallpaper, map).apply { visibility = View.GONE }
+    private val iconBackdrop = DashboardIconBackdrop(context, wallpaper, map)
     val media = DashboardMediaBlock(context)
     val call = DashboardCallBlock(context).apply { visibility = View.GONE }
     private val boot = ValueAnimator.ofFloat(0f, 1f).apply {
@@ -188,10 +188,6 @@ internal class MonjaroDashboardView(context: Context) : FrameLayout(context) {
         val (drawn, picture) = background.drawn(photo)
         wallpaper.background = DashboardWallpaperDrawable(drawn, picture, dimmingPercent)
         iconBackdrop.changed()
-    }
-
-    fun showIconBackdrop(shown: Boolean) {
-        iconBackdrop.visibility = if (shown) View.VISIBLE else View.GONE
     }
 
     /** Moves and sizes the map card; the iPhone keeps the stream's size until it connects again. */

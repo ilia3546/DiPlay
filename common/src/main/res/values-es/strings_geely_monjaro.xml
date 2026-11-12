@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_geely_monjaro_a3_support">Soporte para Geely Monjaro A3</string>
+    <string name="settings_geely_monjaro_a3_connection">Conexión</string>
+    <string name="settings_geely_monjaro_a3_sound">Sonido y volante</string>
+    <string name="settings_geely_monjaro_a3_car_dashboard">Cuadro del coche</string>
+    <string name="settings_geely_monjaro_a3_custom_dashboard">Panel de instrumentos propio</string>
+    <string name="settings_geely_monjaro_a3_hud">Pantalla frontal (HUD)</string>
     <string name="settings_root_hotspot_details">Datos exactos del punto de acceso del coche (experimental)</string>
     <string name="settings_root_hotspot_details_description">Cuando Android oculta el canal del punto de acceso del coche, lo lee de la configuración del punto de acceso del firmware y además comunica al iPhone el BSSID del punto de acceso. Requiere root (Magisk). Se aplica en la próxima conexión.</string>
     <string name="settings_root_hotspot_start">Activar el punto de acceso del coche con root (experimental)</string>
@@ -45,11 +50,10 @@
     <string name="settings_custom_dashboard_change_photo">Cambiar foto</string>
     <string name="settings_custom_dashboard_dimming">Oscurecimiento del fondo</string>
     <string name="settings_custom_dashboard_map_width">Ancho del mapa</string>
-    <string name="settings_custom_dashboard_map_height">Alto del mapa</string>
-    <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
+    <string name="settings_custom_dashboard_map_width_narrow">Estrecho</string>
+    <string name="settings_custom_dashboard_map_width_medium">Medio</string>
+    <string name="settings_custom_dashboard_map_width_wide">Ancho</string>
     <string name="settings_custom_dashboard_map_size_note">La tarjeta cambia al instante; el iPhone envía el mapa con el nuevo tamaño tras volver a conectar.</string>
-    <string name="settings_custom_dashboard_icon_backdrop">Fondo bajo el icono de asistencia</string>
-    <string name="settings_custom_dashboard_icon_backdrop_description">El firmware dibuja su icono de asistencia a la conducción sobre el panel en un mismo lugar a la izquierda del mapa, y un mapa ancho pasa por debajo. Un fondo esmerilado separa el icono del mapa. Se aplica al instante.</string>
     <string name="settings_custom_dashboard_maneuver">Próxima maniobra sobre el mapa</string>
     <string name="settings_custom_dashboard_maneuver_description">Mientras CarPlay te guía, el próximo giro, su distancia y la calle aparecen en la esquina superior izquierda del mapa. Se aplica al instante.</string>
     <string name="settings_custom_dashboard_arrival">Llegada sobre el mapa</string>
@@ -66,10 +70,6 @@
     <string name="settings_custom_dashboard_bottom_line_description">Con el cuadro en el modo de ingeniería del firmware, DiPlay vuelve a activar, mediante el inicio de sesión en QNX de los datos del viaje, el indicador que muestra las rpm, el odómetro, el combustible, el refrigerante, ECO y la marcha originales si otra app lo ha borrado. Solo escribe ese indicador, solo en el modo de ingeniería y como máximo cinco veces mientras se muestra el cuadro. Necesita la contraseña de QNX. Se aplica al instante.</string>
     <string name="settings_hud_maneuvers">Navegación en el HUD (experimental)</string>
     <string name="settings_hud_maneuvers_description">Mientras CarPlay te guía por una ruta, DiPlay dibuja la siguiente maniobra en el head-up display: la señal con la salida de la rotonda, la distancia y la calle, y debajo los carriles y el tiempo y la distancia restantes. Sin ruta, el head-up display queda vacío. Para firmware que muestra una pantalla de Android en el head-up display. Si tienes instalada la app HUD Renderer (org.monjaro.hudrenderer), desactiva antes su salida o ambas dibujarán a la vez. Requiere \"Mostrar sobre otras aplicaciones\". Se aplica de inmediato.</string>
-    <string name="settings_hud_density">Diseño del HUD</string>
-    <string name="settings_hud_density_compact">Compacto</string>
-    <string name="settings_hud_density_balanced">Equilibrado</string>
-    <string name="settings_hud_density_large">Grande</string>
     <string name="settings_hud_height">Posición de la línea del HUD</string>
     <string name="settings_hud_height_highest">Lo más arriba</string>
     <string name="settings_hud_height_high">Arriba</string>

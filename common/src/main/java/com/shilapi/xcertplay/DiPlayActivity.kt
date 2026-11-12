@@ -66,7 +66,6 @@ import com.shilapi.xcertplay.telecom.PhoneAudioRoute
 import com.shilapi.xcertplay.hud.BydVehicleField
 import com.shilapi.xcertplay.hud.BydVehicleFieldStore
 import com.shilapi.xcertplay.hud.BydVehicleProbeOutcome
-import com.shilapi.xcertplay.hud.HudSettings
 import com.shilapi.xcertplay.host.R
 import com.shilapi.xcertplay.media.AmbientColorMode
 import com.shilapi.xcertplay.media.AmbientColorSpeed
@@ -2157,6 +2156,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         }
         if (GeelyHeadUnit.monjaroA3) filteredSection(content, SettingsSection.GEELY_MONJARO_A3,
             getString(R.string.settings_geely_monjaro_a3_support), R.drawable.ic_dp_car) { card ->
+            card.addView(groupTitle(getString(R.string.settings_geely_monjaro_a3_connection)))
             toggle(card, getString(R.string.settings_root_hotspot_details),
                 getString(R.string.settings_root_hotspot_details_description),
                 AirPlayPersistence.loadRootHotspotDetails(this)) {
@@ -2187,29 +2187,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 AirPlayPersistence.saveRequestLostAudio(this, it)
                 markReconnectNeeded()
             }
-            toggle(card, getString(R.string.settings_dashboard_music),
-                getString(R.string.settings_dashboard_music_description),
-                AirPlayPersistence.loadDashboardMusic(this)) {
-                AirPlayPersistence.saveDashboardMusic(this, it)
-                MonjaroDashboardMusic.settingChanged(this)
-            }
-            toggle(card, getString(R.string.settings_dashboard_calls),
-                getString(R.string.settings_dashboard_calls_description),
-                AirPlayPersistence.loadDashboardCalls(this)) {
-                AirPlayPersistence.saveDashboardCalls(this, it)
-                MonjaroDashboardCall.settingChanged(this)
-            }
-            toggle(card, getString(R.string.settings_pause_carplay_for_car_audio),
-                getString(R.string.settings_pause_carplay_for_car_audio_description),
-                AirPlayPersistence.loadPauseCarPlayForCarAudio(this)) {
-                AirPlayPersistence.savePauseCarPlayForCarAudio(this, it)
-            }
-            toggle(card, getString(R.string.settings_wheel_seek),
-                getString(R.string.settings_wheel_seek_description),
-                AirPlayPersistence.loadWheelSeek(this)) {
-                AirPlayPersistence.saveWheelSeek(this, it)
-                markReconnectNeeded()
-            }
+            card.addView(groupTitle(getString(R.string.settings_geely_monjaro_a3_sound)))
             val microphoneInputs = MicrophoneInput.entries
             choice(card, getString(R.string.settings_microphone_input), microphoneInputs.map { input ->
                 when (input) {
@@ -2222,6 +2200,31 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 AirPlayPersistence.saveMicrophoneInput(this, microphoneInputs[it])
             }
             card.addView(label(getString(R.string.settings_microphone_input_description), 14, MUTED))
+            toggle(card, getString(R.string.settings_pause_carplay_for_car_audio),
+                getString(R.string.settings_pause_carplay_for_car_audio_description),
+                AirPlayPersistence.loadPauseCarPlayForCarAudio(this)) {
+                AirPlayPersistence.savePauseCarPlayForCarAudio(this, it)
+            }
+            toggle(card, getString(R.string.settings_wheel_seek),
+                getString(R.string.settings_wheel_seek_description),
+                AirPlayPersistence.loadWheelSeek(this)) {
+                AirPlayPersistence.saveWheelSeek(this, it)
+                markReconnectNeeded()
+            }
+            card.addView(groupTitle(getString(R.string.settings_geely_monjaro_a3_car_dashboard)))
+            toggle(card, getString(R.string.settings_dashboard_music),
+                getString(R.string.settings_dashboard_music_description),
+                AirPlayPersistence.loadDashboardMusic(this)) {
+                AirPlayPersistence.saveDashboardMusic(this, it)
+                MonjaroDashboardMusic.settingChanged(this)
+            }
+            toggle(card, getString(R.string.settings_dashboard_calls),
+                getString(R.string.settings_dashboard_calls_description),
+                AirPlayPersistence.loadDashboardCalls(this)) {
+                AirPlayPersistence.saveDashboardCalls(this, it)
+                MonjaroDashboardCall.settingChanged(this)
+            }
+            card.addView(groupTitle(getString(R.string.settings_geely_monjaro_a3_custom_dashboard)))
             val customDashboard = AirPlayPersistence.loadCustomDashboard(this)
             toggle(card, getString(R.string.settings_custom_dashboard),
                 getString(R.string.settings_custom_dashboard_description), customDashboard) {
@@ -2235,6 +2238,28 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 render()
             }
             if (customDashboard) {
+                val mapWidths = MonjaroDashboardLayout.mapWidths
+                choice(card, getString(R.string.settings_custom_dashboard_map_width), listOf(
+                    R.string.settings_custom_dashboard_map_width_narrow, R.string.settings_custom_dashboard_map_width_medium,
+                    R.string.settings_custom_dashboard_map_width_wide).map(::getString),
+                    mapWidths.indexOf(AirPlayPersistence.loadDashboardMap(this).width), reconnects = false) {
+                    AirPlayPersistence.saveDashboardMapWidth(this, mapWidths[it])
+                    MonjaroCustomDashboard.settingChanged()
+                    markReconnectNeeded()
+                }
+                card.addView(choiceNote(getString(R.string.settings_custom_dashboard_map_size_note)))
+                toggle(card, getString(R.string.settings_custom_dashboard_maneuver),
+                    getString(R.string.settings_custom_dashboard_maneuver_description),
+                    AirPlayPersistence.loadDashboardManeuver(this)) {
+                    AirPlayPersistence.saveDashboardManeuver(this, it)
+                    MonjaroCustomDashboard.settingChanged()
+                }
+                toggle(card, getString(R.string.settings_custom_dashboard_arrival),
+                    getString(R.string.settings_custom_dashboard_arrival_description),
+                    AirPlayPersistence.loadDashboardArrival(this)) {
+                    AirPlayPersistence.saveDashboardArrival(this, it)
+                    MonjaroCustomDashboard.settingChanged()
+                }
                 val pickPhoto = {
                     launchCarButtonImagePicker(
                         openDocument = { dashboardPhotoDocumentPicker.launch(arrayOf("image/*")) },
@@ -2285,40 +2310,6 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     AirPlayPersistence.saveDashboardDimmingPercent(this, dimmings[it])
                     MonjaroCustomDashboard.settingChanged()
                 }
-                val map = AirPlayPersistence.loadDashboardMap(this)
-                card.addView(overlaySliderRow(getString(R.string.settings_custom_dashboard_map_width),
-                    MonjaroDashboardLayout.mapWidths, map.width,
-                ) { getString(R.string.settings_custom_dashboard_map_size_value, it) }.also { row ->
-                    row.onSave = { width ->
-                        AirPlayPersistence.saveDashboardMap(this,
-                            AirPlayPersistence.loadDashboardMap(this).copy(width = width))
-                        MonjaroCustomDashboard.settingChanged()
-                    }
-                    row.onCommit = { markReconnectNeeded() }
-                })
-                card.addView(overlaySliderRow(getString(R.string.settings_custom_dashboard_map_height),
-                    MonjaroDashboardLayout.mapHeights, map.height,
-                ) { getString(R.string.settings_custom_dashboard_map_size_value, it) }.also { row ->
-                    row.onSave = { height ->
-                        AirPlayPersistence.saveDashboardMap(this,
-                            AirPlayPersistence.loadDashboardMap(this).copy(height = height))
-                        MonjaroCustomDashboard.settingChanged()
-                    }
-                    row.onCommit = { markReconnectNeeded() }
-                })
-                card.addView(choiceNote(getString(R.string.settings_custom_dashboard_map_size_note)))
-                toggle(card, getString(R.string.settings_custom_dashboard_icon_backdrop),
-                    getString(R.string.settings_custom_dashboard_icon_backdrop_description),
-                    AirPlayPersistence.loadDashboardIconBackdrop(this)) {
-                    AirPlayPersistence.saveDashboardIconBackdrop(this, it)
-                    MonjaroCustomDashboard.settingChanged()
-                }
-                toggle(card, getString(R.string.settings_custom_dashboard_maneuver),
-                    getString(R.string.settings_custom_dashboard_maneuver_description),
-                    AirPlayPersistence.loadDashboardManeuver(this)) {
-                    AirPlayPersistence.saveDashboardManeuver(this, it)
-                    MonjaroCustomDashboard.settingChanged()
-                }
                 val tripPassword = QnxTripCredentials.load(this) != null
                 card.addView(button(getString(R.string.settings_custom_dashboard_trip_qnx), false) { askQnxTripPassword() },
                     matchButton(0, 60))
@@ -2329,12 +2320,6 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     AirPlayPersistence.loadDashboardBottomLine(this), enabled = tripPassword) {
                     AirPlayPersistence.saveDashboardBottomLine(this, it)
                 }
-                toggle(card, getString(R.string.settings_custom_dashboard_arrival),
-                    getString(R.string.settings_custom_dashboard_arrival_description),
-                    AirPlayPersistence.loadDashboardArrival(this)) {
-                    AirPlayPersistence.saveDashboardArrival(this, it)
-                    MonjaroCustomDashboard.settingChanged()
-                }
                 toggle(card, getString(R.string.settings_custom_dashboard_wheel_toggle),
                     getString(R.string.settings_custom_dashboard_wheel_toggle_description),
                     AirPlayPersistence.loadDashboardWheelToggle(this)) {
@@ -2343,6 +2328,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     if (!it) MonjaroCustomDashboard.wheelToggleTurnedOff()
                 }
             }
+            card.addView(groupTitle(getString(R.string.settings_geely_monjaro_a3_hud)))
             val hudManeuvers = AirPlayPersistence.loadHudManeuvers(this)
             toggle(card, getString(R.string.settings_hud_maneuvers),
                 getString(R.string.settings_hud_maneuvers_description), hudManeuvers) {
@@ -2352,17 +2338,6 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 render()
             }
             if (hudManeuvers) {
-                val densities = HudSettings.Variant.entries
-                choice(card, getString(R.string.settings_hud_density), densities.map { density ->
-                    when (density) {
-                        HudSettings.Variant.COMPACT -> getString(R.string.settings_hud_density_compact)
-                        HudSettings.Variant.BALANCED -> getString(R.string.settings_hud_density_balanced)
-                        HudSettings.Variant.BOLD -> getString(R.string.settings_hud_density_large)
-                    }
-                }, densities.indexOf(AirPlayPersistence.loadHudDensity(this)), reconnects = false) {
-                    AirPlayPersistence.saveHudDensity(this, densities[it])
-                    MonjaroHud.settingChanged()
-                }
                 val heights = MonjaroA3Options.hudHeights
                 choice(card, getString(R.string.settings_hud_height), listOf(R.string.settings_hud_height_highest,
                     R.string.settings_hud_height_high, R.string.settings_hud_height_middle, R.string.settings_hud_height_low,
@@ -7062,6 +7037,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         )
     }
 
+    private fun groupTitle(value: String) = label(value, 14, ACCENT, true).apply { tag = GROUP_TITLE }
+
     /**
      * One vertical rhythm for every card, whatever margins each control builder chose:
      * buttons are one height with one gap, a note under a button closes its group with a larger gap,
@@ -7072,7 +7049,8 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         for (i in container.childCount - 1 downTo 0) {
             if (container.getChildAt(i).tag == SPACER) container.removeViewAt(i)
         }
-        fun isNote(view: View?) = view is TextView && view !is Button
+        fun isGroupTitle(view: View?) = view?.tag == GROUP_TITLE
+        fun isNote(view: View?) = view is TextView && view !is Button && !isGroupTitle(view)
         fun isToggleRow(view: View?) = view is LinearLayout && view.orientation == LinearLayout.HORIZONTAL &&
             (0 until view.childCount).any { view.getChildAt(it) is Switch }
         fun isControl(view: View?) = view is Button || isToggleRow(view)
@@ -7093,6 +7071,15 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     child.setPadding(child.paddingLeft, 0, child.paddingRight, 0)
                     lp.topMargin = 0
                     lp.bottomMargin = dp(if (isNote(next)) NOTE_ATTACH_GAP_DP else CONTROL_GAP_DP)
+                }
+                // A title opens its group one group gap below whatever ends the group before it (the gap left under
+                // that row counts), and right under the card heading.
+                isGroupTitle(child) -> {
+                    child.setPadding(child.paddingLeft, 0, child.paddingRight, 0)
+                    val closesGroup = isControl(previous) || isNote(previous) ||
+                        previous is LinearLayout && previous.orientation == LinearLayout.VERTICAL
+                    lp.topMargin = if (closesGroup) (dp(GROUP_GAP_DP) - trailingGap(previous)).coerceAtLeast(0) else 0
+                    lp.bottomMargin = dp(CONTROL_GAP_DP)
                 }
                 child is TextView -> {
                     if (!isNote(previous)) noteFollowsButton = isControl(previous)
@@ -7121,6 +7108,14 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             (last?.layoutParams as? LinearLayout.LayoutParams)?.let { it.bottomMargin = 0; last.layoutParams = it }
         }
     }
+    /** The gap a row already leaves under itself: its bottom margin, or for a nested group its last row's. */
+    private fun trailingGap(view: View?): Int {
+        val own = (view?.layoutParams as? LinearLayout.LayoutParams)?.bottomMargin ?: 0
+        if (view !is LinearLayout || view.orientation != LinearLayout.VERTICAL) return own
+        val last = (view.childCount - 1 downTo 0).map(view::getChildAt).firstOrNull { it.visibility != View.GONE }
+        return own + trailingGap(last)
+    }
+
     // Rounded, not truncated: below 160 dpi dp(1) became 0 and every border vanished.
     private fun dp(value: Int) = (value * resources.displayMetrics.density).roundToInt()
 
@@ -7282,6 +7277,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         private const val VALUE_SEPARATOR = " · "
         private const val SEARCH_HIGHLIGHT_MILLIS = 900L
         private const val SPACER = "spacer"
+        private const val GROUP_TITLE = "group_title"
         private const val CONTROL_HEIGHT_DP = 60
         private const val CONTROL_GAP_DP = 12
         private const val GROUP_GAP_DP = 20

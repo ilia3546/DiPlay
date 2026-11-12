@@ -20,7 +20,7 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class HudRenderTest {
     private val route = CarPlayGlance.Snapshot(connected = true, maneuverIndex = 0)
-    private val full = HudSettings(HudSettings.Variant.BALANCED, HudSettings.DEFAULT_Y, 100, true, true)
+    private val full = HudSettings(HudSettings.DEFAULT_Y, 100, true, true)
 
     private fun lanes(vararg lanes: LaneGuidanceLane) = CarPlayGlance.LaneStrip(0, lanes.toList())
 
@@ -30,7 +30,7 @@ class HudRenderTest {
                 remainingSeconds = 720, remainingMeters = 4200), full),
             Triple("right-350m-default", route.copy(maneuverType = 2, distanceMeters = 350, road = "Садовое кольцо",
                 remainingSeconds = 720, remainingMeters = 4200),
-                HudSettings(HudSettings.Variant.BALANCED, HudSettings.DEFAULT_Y, HudSettings.DEFAULT_SCALE, true, true)),
+                HudSettings(HudSettings.DEFAULT_Y, HudSettings.DEFAULT_SCALE, true, true)),
             Triple("roundabout-exit-3", route.copy(maneuverType = 30, distanceMeters = 1200,
                 road = "Ленинградский проспект", remainingSeconds = 1500, remainingMeters = 18_400), full),
             Triple("lanes-highlighted", route.copy(maneuverType = 2, distanceMeters = 600, road = "МКАД",
@@ -43,8 +43,7 @@ class HudRenderTest {
                 remainingMeters = 27_000), full),
             Triple("trip-does-not-fit", route.copy(maneuverType = 1, distanceMeters = 12_500, road = "Дмитровское шоссе",
                 remainingSeconds = 7500, remainingMeters = 148_000,
-                lanes = lanes(*Array(8) { LaneGuidanceLane(it, if (it < 2) 2 else 0, listOf(if (it < 2) -90 else 0), null) })),
-                HudSettings(HudSettings.Variant.BOLD, HudSettings.DEFAULT_Y, 100, true, true)),
+                lanes = lanes(*Array(8) { LaneGuidanceLane(it, if (it < 2) 2 else 0, listOf(if (it < 2) -90 else 0), null) })), full),
             Triple("neutral-sign", route.copy(maneuverType = 8, distanceMeters = 500, road = "Тверская улица"), full),
             Triple("ferry", route.copy(maneuverType = 15, distanceMeters = 2500, road = "Паромная переправа",
                 remainingSeconds = 3600, remainingMeters = 41_000), full),
@@ -67,15 +66,12 @@ class HudRenderTest {
         val examples = listOf(
             Triple("call-ringing", null to ringing, full),
             Triple("call-incoming-default", null to HudCall(words.incoming, ""),
-                HudSettings(HudSettings.Variant.BALANCED, HudSettings.DEFAULT_Y, HudSettings.DEFAULT_SCALE, true, true)),
+                HudSettings(HudSettings.DEFAULT_Y, HudSettings.DEFAULT_SCALE, true, true)),
             Triple("call-talking-muted", null to talkingMuted, full),
             Triple("call-long-name", null to long, full),
             Triple("call-route", turn to talkingMuted, full),
             Triple("call-route-long-name", turn to long, full),
-            Triple("call-route-compact", turn to ringing, HudSettings(HudSettings.Variant.COMPACT, HudSettings.DEFAULT_Y, 100, true, true)),
-            Triple("call-route-bold", turn to talkingMuted, HudSettings(HudSettings.Variant.BOLD, HudSettings.DEFAULT_Y, 100, true, true)),
-            Triple("call-bold", null to talkingMuted, HudSettings(HudSettings.Variant.BOLD, HudSettings.DEFAULT_Y, 100, true, true)),
-            Triple("call-route-small", turn to talkingMuted, HudSettings(HudSettings.Variant.BALANCED, 260, 50, true, true)),
+            Triple("call-route-small", turn to talkingMuted, HudSettings(260, 50, true, true)),
         )
         for ((name, shown, settings) in examples) render(name, shown.first, shown.second, settings)
     }

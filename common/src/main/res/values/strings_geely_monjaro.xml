@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_geely_monjaro_a3_support">Geely Monjaro A3 Support</string>
+    <string name="settings_geely_monjaro_a3_connection">Connection</string>
+    <string name="settings_geely_monjaro_a3_sound">Sound and steering wheel</string>
+    <string name="settings_geely_monjaro_a3_car_dashboard">Car\'s own dashboard</string>
+    <string name="settings_geely_monjaro_a3_custom_dashboard">Custom dashboard</string>
+    <string name="settings_geely_monjaro_a3_hud">Head-up display</string>
     <string name="settings_root_hotspot_details">Exact car hotspot details (experimental)</string>
     <string name="settings_root_hotspot_details_description">When Android hides the channel of the car hotspot, reads it from the firmware\'s hotspot configuration and also tells the iPhone the BSSID of the hotspot. Requires root (Magisk). Applies at the next connection.</string>
     <string name="settings_root_hotspot_start">Turn the car hotspot on with root (experimental)</string>
@@ -45,11 +50,10 @@
     <string name="settings_custom_dashboard_change_photo">Change photo</string>
     <string name="settings_custom_dashboard_dimming">Background dimming</string>
     <string name="settings_custom_dashboard_map_width">Map width</string>
-    <string name="settings_custom_dashboard_map_height">Map height</string>
-    <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
+    <string name="settings_custom_dashboard_map_width_narrow">Narrow</string>
+    <string name="settings_custom_dashboard_map_width_medium">Medium</string>
+    <string name="settings_custom_dashboard_map_width_wide">Wide</string>
     <string name="settings_custom_dashboard_map_size_note">The card changes at once; the iPhone sends the map in the new size after you reconnect.</string>
-    <string name="settings_custom_dashboard_icon_backdrop">Backdrop under the driver assist icon</string>
-    <string name="settings_custom_dashboard_icon_backdrop_description">The firmware draws its driver assistance icon over the dashboard at one place left of the map, and a wide map runs under it. A frosted backdrop sets the icon apart from the map. Applies at once.</string>
     <string name="settings_custom_dashboard_maneuver">Next maneuver over the map</string>
     <string name="settings_custom_dashboard_maneuver_description">While CarPlay guides you, the next turn, its distance and the street are in the map\'s top left corner. Applies at once.</string>
     <string name="settings_custom_dashboard_arrival">Arrival over the map</string>
@@ -66,10 +70,6 @@
     <string name="settings_custom_dashboard_bottom_line_description">With the dashboard in the firmware\'s engineering mode, DiPlay sets the cluster flag that shows the stock RPM, odometer, fuel, coolant, ECO and gear line whenever something else has cleared it, through the QNX login of the trip data. It only writes that one flag while the engineering mode is on, at most five times while the dashboard shows. Needs the QNX password. Applies at once.</string>
     <string name="settings_hud_maneuvers">Navigation on the HUD (experimental)</string>
     <string name="settings_hud_maneuvers_description">While CarPlay guides you along a route, DiPlay draws the next maneuver on the head-up display: the sign with the roundabout exit, the distance and the street, and below them the lanes and the time and distance left. Without a route the head-up display stays empty. For firmware that shows an Android display on the head-up display. If the HUD Renderer app (org.monjaro.hudrenderer) is installed, turn its output off first, or both draw at once. Needs \"Draw over other apps\". Applies at once.</string>
-    <string name="settings_hud_density">HUD layout</string>
-    <string name="settings_hud_density_compact">Compact</string>
-    <string name="settings_hud_density_balanced">Balanced</string>
-    <string name="settings_hud_density_large">Large</string>
     <string name="settings_hud_height">HUD line position</string>
     <string name="settings_hud_height_highest">Highest</string>
     <string name="settings_hud_height_high">High</string>

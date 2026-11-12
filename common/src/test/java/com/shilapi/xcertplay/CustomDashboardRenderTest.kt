@@ -439,7 +439,7 @@ class CustomDashboardRenderTest {
             var card: DashboardManeuverCard? = null
             render(if (meters == 530) "map-route-small" else null, playing = true) {
                 showBackground(DashboardBackground.OCEAN, 0) { null }
-                map.resize(MonjaroDashboardLayout.MapGeometry(MonjaroDashboardLayout.mapWidths.first(), 304))
+                map.resize(MonjaroDashboardLayout.defaultMap)
                 map.showRoute(DashboardRoute(ClusterTurnGuidance.fromApple(2, 0, meters, "Расторопово"),
                     arrivalEpochSeconds = evening / 1000 + 18 * 60, remainingSeconds = 1_080, remainingMeters = 9_400, sign = HudManeuver.RIGHT, exitNumber = 0),
                     is24Hour = true, zone = moscow)
@@ -531,14 +531,13 @@ class CustomDashboardRenderTest {
     }
 
     @Test fun withoutAPictureTheMapAndTheIconBackdropAreNotDrawn() {
-        val bare = render(null, attached = true) { map.visibility = View.GONE }
-        val stopped = render("map-hidden", attached = true) {
-            showIconBackdrop(true)
-            idle()
+        val bare = render(null, attached = true) {
+            map.visibility = View.GONE
+            descendants<DashboardIconBackdrop>().single().visibility = View.GONE
         }
+        val stopped = render("map-hidden", attached = true) { idle() }
         assertTrue("no stream", stopped.sameAs(bare))
         val flat = render(null, attached = true) {
-            showIconBackdrop(true)
             map.video.readFrame = { paintFlat(it) }
             map.video.onSurfaceTextureUpdated(SurfaceTexture(0))
             idleFor(MonjaroDashboardLayout.MAP_BLANK_CHECK_MILLIS * 3)
@@ -552,7 +551,6 @@ class CustomDashboardRenderTest {
         lateinit var reveal: View
         lateinit var backdrop: View
         val shown = render("map-playing", playing = true) {
-            showIconBackdrop(true)
             idle()
             reveal = map.parent as View
             backdrop = descendants<DashboardIconBackdrop>().single()
@@ -563,14 +561,13 @@ class CustomDashboardRenderTest {
         }
         val box = MonjaroDashboardLayout.defaultMap.map
         assertEquals(MAP_PICTURE, shown.getPixel(box.left + box.width / 2, box.top + (box.height ?: 0) / 2))
-        val without = render(null, playing = true) {}
+        val without = render(null, playing = true) { descendants<DashboardIconBackdrop>().single().visibility = View.GONE }
         val pad = MonjaroDashboardLayout.iconBackdrop.let { it.left + it.width / 2 to it.top + (it.height ?: 0) / 2 }
         assertNotEquals("the backdrop", without.getPixel(pad.first, pad.second), shown.getPixel(pad.first, pad.second))
     }
 
     @Test fun theMapAppearsAndHidesFromWhereItIs() {
         val view = attached()
-        view.showIconBackdrop(true)
         val reveal = view.map.parent as View
         val backdrop = view.descendants<DashboardIconBackdrop>().single()
         assertEquals(0f, reveal.alpha)
@@ -669,13 +666,13 @@ class CustomDashboardRenderTest {
             // The backdrop copies what is under it in a task of its own, outside drawing.
             val frame = render("icon-backdrop-neon-$width", playing = true) {
                 showBackground(DashboardBackground.NEON, 0) { null }
-                showMap(MonjaroDashboardLayout.MapGeometry(width, 304))
-                showIconBackdrop(true)
+                showMap(MonjaroDashboardLayout.MapGeometry(width, MonjaroDashboardLayout.MAP_HEIGHT))
                 idle()
             }
             val off = render(null) {
                 showBackground(DashboardBackground.NEON, 0) { null }
-                showMap(MonjaroDashboardLayout.MapGeometry(width, 304))
+                showMap(MonjaroDashboardLayout.MapGeometry(width, MonjaroDashboardLayout.MAP_HEIGHT))
+                descendants<DashboardIconBackdrop>().single().visibility = View.GONE
             }
             val pink = frame.getPixel(left, y)
             assertTrue("$width: the neon's pink shows through, ${Integer.toHexString(pink)}", Color.red(pink) > Color.green(pink))
@@ -693,7 +690,6 @@ class CustomDashboardRenderTest {
 
     @Test fun theIconBackdropFadesInWithTheMapAtTheStartUpButDoesNotGrow() {
         val view = attached()
-        view.showIconBackdrop(true)
         view.map.video.readFrame = { paintMap(it) }
         view.map.video.onSurfaceTextureUpdated(SurfaceTexture(0))
         idle()

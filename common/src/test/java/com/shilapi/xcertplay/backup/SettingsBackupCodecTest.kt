@@ -4,7 +4,6 @@ import android.content.Context
 import com.shilapi.xcertplay.AirPlayPersistence
 import com.shilapi.xcertplay.CarPlayPicture
 import com.shilapi.xcertplay.DashboardBackground
-import com.shilapi.xcertplay.hud.HudSettings
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -52,7 +51,6 @@ class SettingsBackupCodecTest {
         AirPlayPersistence.saveDashboardBackground(context, DashboardBackground.AURORA)
         AirPlayPersistence.saveDashboardDimmingPercent(context, 40)
         AirPlayPersistence.saveHudManeuvers(context, true)
-        AirPlayPersistence.saveHudDensity(context, HudSettings.Variant.BOLD)
         AirPlayPersistence.saveHudHeight(context, 260)
         AirPlayPersistence.saveHudScalePercent(context, 80)
         AirPlayPersistence.saveHudLanes(context, false)
@@ -61,7 +59,7 @@ class SettingsBackupCodecTest {
         val airplay = document.getJSONObject("settings").optJSONObject("xcertplay_airplay") ?: JSONObject()
         for (key in listOf("root_hotspot_details", "disconnect_phone_bluetooth_wireless", "hotspot_audio_firewall",
             "monjaro_dashboard_music", "monjaro_dashboard_calls", "monjaro_custom_dashboard", "monjaro_dashboard_background",
-            "monjaro_dashboard_dimming_percent", "monjaro_hud_maneuvers", "monjaro_hud_density", "monjaro_hud_height",
+            "monjaro_dashboard_dimming_percent", "monjaro_hud_maneuvers", "monjaro_hud_height",
             "monjaro_hud_scale_percent", "monjaro_hud_lanes", "monjaro_hud_trip")) {
             assertFalse(key, airplay.has(key))
         }

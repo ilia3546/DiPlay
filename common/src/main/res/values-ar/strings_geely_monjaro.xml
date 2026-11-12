@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_geely_monjaro_a3_support">دعم Geely Monjaro A3</string>
+    <string name="settings_geely_monjaro_a3_connection">الاتصال</string>
+    <string name="settings_geely_monjaro_a3_sound">الصوت والمقود</string>
+    <string name="settings_geely_monjaro_a3_car_dashboard">لوحة عدادات السيارة</string>
+    <string name="settings_geely_monjaro_a3_custom_dashboard">لوحة عدادات مخصصة</string>
+    <string name="settings_geely_monjaro_a3_hud">شاشة العرض الأمامية (HUD)</string>
     <string name="settings_root_hotspot_details">بيانات دقيقة لنقطة اتصال السيارة (تجريبي)</string>
     <string name="settings_root_hotspot_details_description">عندما يخفي Android قناة نقطة اتصال السيارة، يقرأها من إعدادات نقطة الاتصال في البرنامج الثابت ويُبلغ iPhone أيضًا بمعرّف BSSID لنقطة الاتصال. يتطلب صلاحيات root (Magisk). يُطبَّق عند الاتصال التالي.</string>
     <string name="settings_root_hotspot_start">تشغيل نقطة اتصال السيارة عبر root (تجريبي)</string>
@@ -45,11 +50,10 @@
     <string name="settings_custom_dashboard_change_photo">تغيير الصورة</string>
     <string name="settings_custom_dashboard_dimming">تعتيم الخلفية</string>
     <string name="settings_custom_dashboard_map_width">عرض الخريطة</string>
-    <string name="settings_custom_dashboard_map_height">ارتفاع الخريطة</string>
-    <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
+    <string name="settings_custom_dashboard_map_width_narrow">ضيقة</string>
+    <string name="settings_custom_dashboard_map_width_medium">متوسطة</string>
+    <string name="settings_custom_dashboard_map_width_wide">عريضة</string>
     <string name="settings_custom_dashboard_map_size_note">تتغير البطاقة فورًا؛ يرسل iPhone الخريطة بالحجم الجديد بعد إعادة الاتصال.</string>
-    <string name="settings_custom_dashboard_icon_backdrop">خلفية تحت أيقونة مساعد القيادة</string>
-    <string name="settings_custom_dashboard_icon_backdrop_description">ترسم البرامج الثابتة أيقونة مساعد القيادة فوق لوحة العدادات في مكان ثابت يسار الخريطة، وتمتد الخريطة العريضة تحتها. تفصل خلفية ضبابية الأيقونة عن الخريطة. يُطبّق فورًا.</string>
     <string name="settings_custom_dashboard_maneuver">المناورة التالية على الخريطة</string>
     <string name="settings_custom_dashboard_maneuver_description">أثناء توجيه CarPlay، يظهر المنعطف التالي ومسافته والشارع في الزاوية العلوية اليسرى من الخريطة. يُطبّق فورًا.</string>
     <string name="settings_custom_dashboard_arrival">الوصول على الخريطة</string>
@@ -66,10 +70,6 @@
     <string name="settings_custom_dashboard_bottom_line_description">أثناء وجود لوحة العدادات في وضع الهندسة للبرنامج الثابت، يعيد DiPlay عبر تسجيل دخول QNX الخاص ببيانات الرحلة ضبط علامة اللوحة التي تعرض الدورات والعداد والوقود وسائل التبريد وECO وناقل الحركة الأصلية إذا مسحها تطبيق آخر. يكتب هذه العلامة فقط، وفي وضع الهندسة فقط، وبحد أقصى خمس مرات أثناء عرض اللوحة. يتطلب كلمة مرور QNX. يُطبّق فورًا.</string>
     <string name="settings_hud_maneuvers">الملاحة على شاشة HUD (تجريبي)</string>
     <string name="settings_hud_maneuvers_description">أثناء توجيه CarPlay على مسار، يرسم DiPlay المناورة التالية على شاشة العرض الأمامية: الإشارة مع مخرج الدوار والمسافة والشارع، وتحتها الحارات والوقت والمسافة المتبقيان. بدون مسار تبقى شاشة العرض الأمامية فارغة. للبرامج الثابتة التي تعرض شاشة Android على شاشة العرض الأمامية. إذا كان تطبيق HUD Renderer (org.monjaro.hudrenderer) مثبتاً فأوقف إخراجه أولاً، وإلا فسيرسم الاثنان معاً. يتطلب إذن \"الظهور فوق التطبيقات الأخرى\". يُطبَّق فوراً.</string>
-    <string name="settings_hud_density">تخطيط HUD</string>
-    <string name="settings_hud_density_compact">مضغوط</string>
-    <string name="settings_hud_density_balanced">متوازن</string>
-    <string name="settings_hud_density_large">كبير</string>
     <string name="settings_hud_height">موضع سطر HUD</string>
     <string name="settings_hud_height_highest">الأعلى</string>
     <string name="settings_hud_height_high">أعلى</string>

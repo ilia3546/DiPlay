@@ -21,19 +21,17 @@ internal data class MonjaroA3Options(
     val dashboardBackground: DashboardBackground = DashboardBackground.OCEAN,
     val dashboardDimmingPercent: Int = 0,
     val dashboardMap: MonjaroDashboardLayout.MapGeometry = MonjaroDashboardLayout.defaultMap,
-    val dashboardIconBackdrop: Boolean = false,
     val dashboardManeuver: Boolean = true,
     val dashboardArrival: Boolean = true,
     val dashboardBottomLine: Boolean = false,
     val hudManeuvers: Boolean = false,
-    val hudDensity: HudSettings.Variant = HudSettings.Variant.BALANCED,
     val hudHeight: Int = HudSettings.DEFAULT_Y,
     val hudScalePercent: Int = HudSettings.DEFAULT_SCALE,
     val hudLanes: Boolean = true,
     val hudTrip: Boolean = true,
 ) {
     /** The HUD line's drawing settings. */
-    val hudSettings: HudSettings get() = HudSettings(hudDensity, hudHeight, hudScalePercent, hudLanes, hudTrip)
+    val hudSettings: HudSettings get() = HudSettings(hudHeight, hudScalePercent, hudLanes, hudTrip)
 
     companion object {
         /** The rows the HUD line may sit on, top to bottom, in the HUD's 800x480 pixels. */
@@ -57,12 +55,10 @@ internal data class MonjaroA3Options(
                 dashboardBackground = AirPlayPersistence.loadDashboardBackground(context),
                 dashboardDimmingPercent = AirPlayPersistence.loadDashboardDimmingPercent(context),
                 dashboardMap = AirPlayPersistence.loadDashboardMap(context),
-                dashboardIconBackdrop = AirPlayPersistence.loadDashboardIconBackdrop(context),
                 dashboardManeuver = AirPlayPersistence.loadDashboardManeuver(context),
                 dashboardArrival = AirPlayPersistence.loadDashboardArrival(context),
                 dashboardBottomLine = AirPlayPersistence.loadDashboardBottomLine(context),
                 hudManeuvers = AirPlayPersistence.loadHudManeuvers(context),
-                hudDensity = AirPlayPersistence.loadHudDensity(context),
                 hudHeight = AirPlayPersistence.loadHudHeight(context),
                 hudScalePercent = AirPlayPersistence.loadHudScalePercent(context),
                 hudLanes = AirPlayPersistence.loadHudLanes(context),

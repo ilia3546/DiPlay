@@ -59,7 +59,7 @@ class HudSettingsScreenshotsTest {
                 }
                 ReflectionHelpers.callInstanceMethod<Unit>(activity, "allSettingsSections",
                     ReflectionHelpers.ClassParameter.from(LinearLayout::class.java, content))
-                for (title in listOf(R.string.settings_hud_density, R.string.settings_hud_height, R.string.settings_hud_scale,
+                for (title in listOf(R.string.settings_geely_monjaro_a3_hud, R.string.settings_hud_height, R.string.settings_hud_scale,
                     R.string.settings_hud_lanes, R.string.settings_hud_trip)) {
                     assertTrue(allViews(content).filterIsInstance<TextView>().any {
                         it.text.startsWith(activity.getString(title))

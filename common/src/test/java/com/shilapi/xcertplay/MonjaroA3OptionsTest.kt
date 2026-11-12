@@ -31,9 +31,8 @@ class MonjaroA3OptionsTest {
         AirPlayPersistence.saveDashboardWheelToggle(context, true)
         AirPlayPersistence.saveDashboardBackground(context, DashboardBackground.NEON)
         AirPlayPersistence.saveDashboardDimmingPercent(context, 40)
-        AirPlayPersistence.saveDashboardIconBackdrop(context, true)
+        AirPlayPersistence.saveDashboardMapWidth(context, 528)
         AirPlayPersistence.saveHudManeuvers(context, true)
-        AirPlayPersistence.saveHudDensity(context, HudSettings.Variant.BOLD)
         AirPlayPersistence.saveHudHeight(context, 260)
         AirPlayPersistence.saveHudScalePercent(context, 80)
         AirPlayPersistence.saveHudLanes(context, false)
@@ -57,8 +56,7 @@ class MonjaroA3OptionsTest {
         assertEquals(MonjaroA3Options(rootHotspotDetails = true, disconnectPhoneBluetooth = true, hotspotAudioFirewall = true,
             requestLostAudio = true, microphoneInput = MicrophoneInput.ALL_CABIN_MICROPHONES, dashboardMusic = true, dashboardCalls = true, wheelSeek = true, customDashboard = true,
             dashboardWheelToggle = true, dashboardBackground = DashboardBackground.NEON, dashboardDimmingPercent = 40,
-            dashboardIconBackdrop = true, hudManeuvers = true,
-            hudDensity = HudSettings.Variant.BOLD, hudHeight = 260, hudScalePercent = 80, hudLanes = false, hudTrip = false),
+            dashboardMap = MonjaroDashboardLayout.MapGeometry(528, 304), hudManeuvers = true, hudHeight = 260, hudScalePercent = 80, hudLanes = false, hudTrip = false),
             MonjaroA3Options.load(context))
     }
 
@@ -76,18 +74,24 @@ class MonjaroA3OptionsTest {
         assertFalse(MonjaroA3Options.load(context, monjaroA3 = false).requestLostAudio)
     }
 
-    @Test fun theIconBackdropIsOffByDefaultAndOffOnAnyOtherHeadUnit() {
-        assertFalse(MonjaroA3Options.load(context, monjaroA3 = true).dashboardIconBackdrop)
-        AirPlayPersistence.saveDashboardIconBackdrop(context, true)
-        assertTrue(MonjaroA3Options.load(context, monjaroA3 = true).dashboardIconBackdrop)
-        assertFalse(MonjaroA3Options.load(context, monjaroA3 = false).dashboardIconBackdrop)
+    @Test fun theMapIsTheNarrowPresetAt304PxByDefault() {
+        assertEquals(MonjaroDashboardLayout.MapGeometry(456, 304), MonjaroA3Options.load(context, monjaroA3 = true).dashboardMap)
     }
 
-    @Test fun theHudIsOffAndDrawsTheBalancedLineAt215And65PercentWithLanesAndTripByDefault() {
+    @Test fun aSavedMapWidthBecomesTheNearestPresetAndASavedHeightIsIgnored() {
+        val prefs = context.getSharedPreferences("xcertplay_airplay", Context.MODE_PRIVATE)
+        for ((saved, preset) in listOf(448 to 456, 456 to 456, 491 to 456, 492 to 528, 500 to 528, 564 to 600, 600 to 600,
+            800 to 600)) {
+            prefs.edit().putInt("monjaro_dashboard_map_width", saved).putInt("monjaro_dashboard_map_height", 480).commit()
+            assertEquals("$saved px", MonjaroDashboardLayout.MapGeometry(preset, 304),
+                MonjaroA3Options.load(context, monjaroA3 = true).dashboardMap)
+        }
+    }
+
+    @Test fun theHudIsOffAndDrawsAt215And65PercentWithLanesAndTripByDefault() {
         val options = MonjaroA3Options.load(context, monjaroA3 = true)
         assertFalse(options.hudManeuvers)
         val settings = options.hudSettings
-        assertEquals(HudSettings.Variant.BALANCED, settings.variant)
         assertEquals(215, settings.centerY)
         assertEquals(65, settings.scalePercent)
         assertTrue(settings.showLanes)
@@ -98,7 +102,7 @@ class MonjaroA3OptionsTest {
         assertEquals(listOf(120, 170, 215, 260, 310), MonjaroA3Options.hudHeights)
         assertEquals(listOf(50, 65, 80, 100), MonjaroA3Options.hudScalePercents)
         for (height in MonjaroA3Options.hudHeights) for (scale in MonjaroA3Options.hudScalePercents) {
-            HudSettings(HudSettings.Variant.BOLD, height, scale, true, true)
+            HudSettings(height, scale, true, true)
         }
     }
 

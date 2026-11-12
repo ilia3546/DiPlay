@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_geely_monjaro_a3_support">Geely Monjaro A3 지원</string>
+    <string name="settings_geely_monjaro_a3_connection">연결</string>
+    <string name="settings_geely_monjaro_a3_sound">사운드 및 스티어링 휠</string>
+    <string name="settings_geely_monjaro_a3_car_dashboard">차량 기본 계기판</string>
+    <string name="settings_geely_monjaro_a3_custom_dashboard">사용자 계기판</string>
+    <string name="settings_geely_monjaro_a3_hud">헤드업 디스플레이</string>
     <string name="settings_root_hotspot_details">차량 핫스팟 정확한 정보 (실험 기능)</string>
     <string name="settings_root_hotspot_details_description">Android가 차량 핫스팟의 채널을 숨기면 펌웨어의 핫스팟 설정에서 채널을 읽고, 핫스팟의 BSSID도 iPhone에 알려 줍니다. 루트(Magisk)가 필요합니다. 다음 연결부터 적용됩니다.</string>
     <string name="settings_root_hotspot_start">root로 차량 핫스팟 켜기 (실험 기능)</string>
@@ -45,11 +50,10 @@
     <string name="settings_custom_dashboard_change_photo">사진 변경</string>
     <string name="settings_custom_dashboard_dimming">배경 어둡게</string>
     <string name="settings_custom_dashboard_map_width">지도 너비</string>
-    <string name="settings_custom_dashboard_map_height">지도 높이</string>
-    <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
+    <string name="settings_custom_dashboard_map_width_narrow">좁게</string>
+    <string name="settings_custom_dashboard_map_width_medium">보통</string>
+    <string name="settings_custom_dashboard_map_width_wide">넓게</string>
     <string name="settings_custom_dashboard_map_size_note">카드는 즉시 바뀌며, iPhone은 다시 연결한 후 새 크기로 지도를 보냅니다.</string>
-    <string name="settings_custom_dashboard_icon_backdrop">운전 보조 아이콘 아래 배경</string>
-    <string name="settings_custom_dashboard_icon_backdrop_description">펌웨어는 운전 보조 아이콘을 계기판 위 지도 왼쪽의 정해진 자리에 그리며, 넓은 지도는 그 아래로 들어갑니다. 반투명 유리 배경이 아이콘을 지도와 구분합니다. 즉시 적용됩니다.</string>
     <string name="settings_custom_dashboard_maneuver">지도 위 다음 안내</string>
     <string name="settings_custom_dashboard_maneuver_description">CarPlay가 경로를 안내하는 동안 다음 회전, 거리, 도로명을 지도 왼쪽 위에 표시합니다. 즉시 적용됩니다.</string>
     <string name="settings_custom_dashboard_arrival">지도 위 도착 정보</string>
@@ -66,10 +70,6 @@
     <string name="settings_custom_dashboard_bottom_line_description">계기판이 펌웨어 엔지니어링 모드인 동안 다른 앱이 플래그를 지우면 DiPlay가 주행 데이터용 QNX 로그인으로 순정 RPM, 주행거리, 연료, 냉각수, ECO, 기어 하단 표시 플래그를 되돌립니다. 이 플래그만, 엔지니어링 모드에서만, 계기판이 표시되는 동안 최대 5번 씁니다. QNX 비밀번호가 필요합니다. 즉시 적용됩니다.</string>
     <string name="settings_hud_maneuvers">HUD에 내비게이션 표시 (실험 기능)</string>
     <string name="settings_hud_maneuvers_description">CarPlay가 경로를 안내하는 동안 DiPlay가 헤드업 디스플레이에 다음 안내를 그립니다. 회전 교차로 출구 번호가 있는 표지, 거리, 도로 이름과 그 아래에 차로, 남은 시간과 거리를 표시합니다. 경로가 없으면 아무것도 표시하지 않습니다. 헤드업 디스플레이에 Android 디스플레이를 보여 주는 펌웨어용입니다. HUD Renderer 앱(org.monjaro.hudrenderer)이 설치되어 있으면 먼저 그 출력을 끄세요. 그렇지 않으면 둘이 동시에 그립니다. \'다른 앱 위에 표시\' 권한이 필요합니다. 바로 적용됩니다.</string>
-    <string name="settings_hud_density">HUD 레이아웃</string>
-    <string name="settings_hud_density_compact">작게</string>
-    <string name="settings_hud_density_balanced">보통</string>
-    <string name="settings_hud_density_large">크게</string>
     <string name="settings_hud_height">HUD 줄 위치</string>
     <string name="settings_hud_height_highest">맨 위</string>
     <string name="settings_hud_height_high">위</string>

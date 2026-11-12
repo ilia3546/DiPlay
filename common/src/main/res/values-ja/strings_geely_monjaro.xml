@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_geely_monjaro_a3_support">Geely Monjaro A3 サポート</string>
+    <string name="settings_geely_monjaro_a3_connection">接続</string>
+    <string name="settings_geely_monjaro_a3_sound">サウンドとステアリング</string>
+    <string name="settings_geely_monjaro_a3_car_dashboard">純正メーター</string>
+    <string name="settings_geely_monjaro_a3_custom_dashboard">カスタムメーター</string>
+    <string name="settings_geely_monjaro_a3_hud">ヘッドアップディスプレイ</string>
     <string name="settings_root_hotspot_details">車のホットスポットの正確な情報（実験的機能）</string>
     <string name="settings_root_hotspot_details_description">Android が車のホットスポットのチャンネルを公開しない場合、ファームウェアのホットスポット設定から読み取り、ホットスポットの BSSID も iPhone に伝えます。root（Magisk）が必要です。次回の接続から反映されます。</string>
     <string name="settings_root_hotspot_start">root で車のホットスポットをオンにする（実験的機能）</string>
@@ -45,11 +50,10 @@
     <string name="settings_custom_dashboard_change_photo">写真を変更</string>
     <string name="settings_custom_dashboard_dimming">背景の暗さ</string>
     <string name="settings_custom_dashboard_map_width">地図の幅</string>
-    <string name="settings_custom_dashboard_map_height">地図の高さ</string>
-    <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
+    <string name="settings_custom_dashboard_map_width_narrow">狭い</string>
+    <string name="settings_custom_dashboard_map_width_medium">標準</string>
+    <string name="settings_custom_dashboard_map_width_wide">広い</string>
     <string name="settings_custom_dashboard_map_size_note">カードはすぐに変わります。iPhone は再接続後に新しいサイズで地図を送ります。</string>
-    <string name="settings_custom_dashboard_icon_backdrop">運転支援アイコンの下地</string>
-    <string name="settings_custom_dashboard_icon_backdrop_description">ファームウェアは運転支援アイコンをメーター上の地図の左の決まった位置に表示し、幅の広い地図はその下に入り込みます。すりガラス風の下地でアイコンを地図から区別します。すぐに適用されます。</string>
     <string name="settings_custom_dashboard_maneuver">地図上に次の案内</string>
     <string name="settings_custom_dashboard_maneuver_description">CarPlay のルート案内中、次の曲がり角、その距離、通り名を地図の左上に表示します。すぐに適用されます。</string>
     <string name="settings_custom_dashboard_arrival">地図上に到着情報</string>
@@ -66,10 +70,6 @@
     <string name="settings_custom_dashboard_bottom_line_description">メーターがファームウェアのエンジニアリングモードの間、他のアプリがフラグを消した場合に、DiPlay が走行データ用の QNX ログインで純正の回転数・走行距離・燃料・冷却水・ECO・ギアの下段を表示するフラグを戻します。書き込むのはこのフラグだけで、エンジニアリングモード中のみ、メーター表示中に最大 5 回です。QNX パスワードが必要です。すぐに適用されます。</string>
     <string name="settings_hud_maneuvers">HUD にナビを表示（実験的機能）</string>
     <string name="settings_hud_maneuvers_description">CarPlay がルート案内している間、DiPlay はヘッドアップディスプレイに次の操作を表示します。ロータリーの出口番号付きの標識、距離、通りの名前と、その下に車線と残りの時間・距離です。ルートがないときは何も表示しません。ヘッドアップディスプレイに Android のディスプレイを表示するファームウェア向けです。HUD Renderer アプリ（org.monjaro.hudrenderer）がインストールされている場合は、先にその出力をオフにしてください。オフにしないと両方が同時に表示されます。「他のアプリの上に重ねて表示」の許可が必要です。すぐに適用されます。</string>
-    <string name="settings_hud_density">HUD のレイアウト</string>
-    <string name="settings_hud_density_compact">コンパクト</string>
-    <string name="settings_hud_density_balanced">標準</string>
-    <string name="settings_hud_density_large">大きく</string>
     <string name="settings_hud_height">HUD の表示位置</string>
     <string name="settings_hud_height_highest">最上部</string>
     <string name="settings_hud_height_high">上</string>

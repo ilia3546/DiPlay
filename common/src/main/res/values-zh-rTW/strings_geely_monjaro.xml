@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_geely_monjaro_a3_support">Geely Monjaro A3 支援</string>
+    <string name="settings_geely_monjaro_a3_connection">連線</string>
+    <string name="settings_geely_monjaro_a3_sound">聲音與方向盤</string>
+    <string name="settings_geely_monjaro_a3_car_dashboard">原車儀表</string>
+    <string name="settings_geely_monjaro_a3_custom_dashboard">自訂儀表板</string>
+    <string name="settings_geely_monjaro_a3_hud">抬頭顯示器（HUD）</string>
     <string name="settings_root_hotspot_details">車輛熱點的準確資訊（實驗性）</string>
     <string name="settings_root_hotspot_details_description">當 Android 隱藏車輛熱點的頻道時，從韌體的熱點設定中讀取頻道，並把熱點的 BSSID 告訴 iPhone。需要 root（Magisk）。下次連線時生效。</string>
     <string name="settings_root_hotspot_start">透過 root 開啟車機熱點（實驗性）</string>
@@ -45,11 +50,10 @@
     <string name="settings_custom_dashboard_change_photo">更換照片</string>
     <string name="settings_custom_dashboard_dimming">背景變暗</string>
     <string name="settings_custom_dashboard_map_width">地圖寬度</string>
-    <string name="settings_custom_dashboard_map_height">地圖高度</string>
-    <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
+    <string name="settings_custom_dashboard_map_width_narrow">窄</string>
+    <string name="settings_custom_dashboard_map_width_medium">中</string>
+    <string name="settings_custom_dashboard_map_width_wide">寬</string>
     <string name="settings_custom_dashboard_map_size_note">卡片立即變化；重新連線後 iPhone 才會依新尺寸傳送地圖。</string>
-    <string name="settings_custom_dashboard_icon_backdrop">駕駛輔助圖示下的襯底</string>
-    <string name="settings_custom_dashboard_icon_backdrop_description">韌體會在儀表板上地圖左側的固定位置繪製駕駛輔助圖示，較寬的地圖會延伸到它下面。霧面襯底將圖示與地圖分開。立即生效。</string>
     <string name="settings_custom_dashboard_maneuver">地圖上顯示下一個轉向</string>
     <string name="settings_custom_dashboard_maneuver_description">CarPlay 導航時，在地圖左上角顯示下一個轉向、距離和道路。立即生效。</string>
     <string name="settings_custom_dashboard_arrival">地圖上顯示抵達資訊</string>
@@ -66,10 +70,6 @@
     <string name="settings_custom_dashboard_bottom_line_description">儀表處於韌體工程模式時，如果其他應用程式清除了顯示原廠轉速、里程、油量、水溫、ECO 和檔位底部列的儀表旗標，DiPlay 會透過行程資料的 QNX 登入將其恢復。只寫入這一個旗標，只在工程模式下，儀表顯示期間最多五次。需要 QNX 密碼。立即生效。</string>
     <string name="settings_hud_maneuvers">在 HUD 上顯示導航（實驗性）</string>
     <string name="settings_hud_maneuvers_description">CarPlay 依路線導航期間，DiPlay 會在抬頭顯示器上繪製下一個操作：帶圓環出口編號的標誌、距離和道路名稱，下方是車道以及剩餘時間和距離。沒有路線時抬頭顯示器保持空白。適用於在抬頭顯示器上顯示 Android 螢幕的韌體。如果安裝了 HUD Renderer 應用程式（org.monjaro.hudrenderer），請先關閉它的輸出，否則兩者會同時繪製。需要「顯示在其他應用程式上層」權限。立即生效。</string>
-    <string name="settings_hud_density">HUD 版面</string>
-    <string name="settings_hud_density_compact">精簡</string>
-    <string name="settings_hud_density_balanced">均衡</string>
-    <string name="settings_hud_density_large">大型</string>
     <string name="settings_hud_height">HUD 列位置</string>
     <string name="settings_hud_height_highest">最上</string>
     <string name="settings_hud_height_high">偏上</string>

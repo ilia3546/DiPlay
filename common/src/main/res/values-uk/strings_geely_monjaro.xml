@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_geely_monjaro_a3_support">Підтримка Geely Monjaro A3</string>
+    <string name="settings_geely_monjaro_a3_connection">Підключення</string>
+    <string name="settings_geely_monjaro_a3_sound">Звук і кермо</string>
+    <string name="settings_geely_monjaro_a3_car_dashboard">Штатна панель приладів</string>
+    <string name="settings_geely_monjaro_a3_custom_dashboard">Власна панель приладів</string>
+    <string name="settings_geely_monjaro_a3_hud">Проєкційний дисплей (HUD)</string>
     <string name="settings_root_hotspot_details">Точні дані точки доступу автомобіля (експериментально)</string>
     <string name="settings_root_hotspot_details_description">Якщо Android приховує канал точки доступу автомобіля, DiPlay читає його з налаштувань точки доступу прошивки й також передає iPhone BSSID точки доступу. Потрібен root (Magisk). Застосовується під час наступного підключення.</string>
     <string name="settings_root_hotspot_start">Вмикати точку доступу автомобіля через root (експериментально)</string>
@@ -45,11 +50,10 @@
     <string name="settings_custom_dashboard_change_photo">Змінити фото</string>
     <string name="settings_custom_dashboard_dimming">Затемнення фону</string>
     <string name="settings_custom_dashboard_map_width">Ширина мапи</string>
-    <string name="settings_custom_dashboard_map_height">Висота мапи</string>
-    <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
+    <string name="settings_custom_dashboard_map_width_narrow">Вузька</string>
+    <string name="settings_custom_dashboard_map_width_medium">Середня</string>
+    <string name="settings_custom_dashboard_map_width_wide">Широка</string>
     <string name="settings_custom_dashboard_map_size_note">Картка змінюється одразу; iPhone надішле мапу нового розміру після перепідключення.</string>
-    <string name="settings_custom_dashboard_icon_backdrop">Підкладка під значком асистента</string>
-    <string name="settings_custom_dashboard_icon_backdrop_description">Прошивка малює значок асистента водіння поверх панелі приладів в одному місці ліворуч від мапи, і широка мапа заходить під нього. Матова підкладка відокремлює значок від мапи. Застосовується одразу.</string>
     <string name="settings_custom_dashboard_maneuver">Наступний маневр на мапі</string>
     <string name="settings_custom_dashboard_maneuver_description">Поки CarPlay веде маршрутом, у лівому верхньому куті мапи показуються наступний поворот, відстань до нього та вулиця. Застосовується одразу.</string>
     <string name="settings_custom_dashboard_arrival">Прибуття на мапі</string>
@@ -66,10 +70,6 @@
     <string name="settings_custom_dashboard_bottom_line_description">Поки панель в інженерному режимі прошивки, DiPlay через вхід у QNX для даних поїздки повертає прапорець панелі, що показує штатні оберти, пробіг, пальне, ОР, ECO і передачу, якщо його скинув хтось інший. Записується лише цей прапорець, лише в інженерному режимі й не більше п\'яти разів, поки показана панель. Потрібен пароль QNX. Застосовується одразу.</string>
     <string name="settings_hud_maneuvers">Навігація на HUD (експериментально)</string>
     <string name="settings_hud_maneuvers_description">Поки CarPlay веде маршрутом, DiPlay малює на проєкційному дисплеї наступний маневр: знак із номером з\'їзду з кільця, відстань і вулицю, а під ними смуги та час і відстань, що залишилися. Без маршруту проєкційний дисплей порожній. Для прошивок, які показують на проєкційному дисплеї дисплей Android. Якщо встановлено застосунок HUD Renderer (org.monjaro.hudrenderer), спочатку вимкніть його виведення, інакше обидва малюватимуть одночасно. Потрібен дозвіл «Показ поверх інших застосунків». Застосовується одразу.</string>
-    <string name="settings_hud_density">Вигляд рядка HUD</string>
-    <string name="settings_hud_density_compact">Компактний</string>
-    <string name="settings_hud_density_balanced">Збалансований</string>
-    <string name="settings_hud_density_large">Великий</string>
     <string name="settings_hud_height">Положення рядка HUD</string>
     <string name="settings_hud_height_highest">Найвище</string>
     <string name="settings_hud_height_high">Вище</string>

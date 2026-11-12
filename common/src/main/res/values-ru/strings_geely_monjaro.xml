@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_geely_monjaro_a3_support">Поддержка Geely Monjaro A3</string>
+    <string name="settings_geely_monjaro_a3_connection">Подключение</string>
+    <string name="settings_geely_monjaro_a3_sound">Звук и руль</string>
+    <string name="settings_geely_monjaro_a3_car_dashboard">Штатная приборная панель</string>
+    <string name="settings_geely_monjaro_a3_custom_dashboard">Своя приборная панель</string>
+    <string name="settings_geely_monjaro_a3_hud">Проекционный дисплей (HUD)</string>
     <string name="settings_root_hotspot_details">Точные данные точки доступа автомобиля (экспериментально)</string>
     <string name="settings_root_hotspot_details_description">Если Android скрывает канал точки доступа автомобиля, DiPlay читает его из настроек точки доступа прошивки и также передаёт iPhone BSSID точки доступа. Нужен root (Magisk). Применяется при следующем подключении.</string>
     <string name="settings_root_hotspot_start">Включать точку доступа автомобиля через root (экспериментально)</string>
@@ -45,11 +50,10 @@
     <string name="settings_custom_dashboard_change_photo">Сменить фото</string>
     <string name="settings_custom_dashboard_dimming">Затемнение фона</string>
     <string name="settings_custom_dashboard_map_width">Ширина карты</string>
-    <string name="settings_custom_dashboard_map_height">Высота карты</string>
-    <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
+    <string name="settings_custom_dashboard_map_width_narrow">Узкая</string>
+    <string name="settings_custom_dashboard_map_width_medium">Средняя</string>
+    <string name="settings_custom_dashboard_map_width_wide">Широкая</string>
     <string name="settings_custom_dashboard_map_size_note">Карточка меняется сразу; iPhone пришлёт карту нового размера после переподключения.</string>
-    <string name="settings_custom_dashboard_icon_backdrop">Подложка под значком ассистента</string>
-    <string name="settings_custom_dashboard_icon_backdrop_description">Прошивка рисует значок ассистента вождения поверх приборки в одном месте слева от карты, и широкая карта заходит под него. Матовая подложка отделяет значок от карты. Применяется сразу.</string>
     <string name="settings_custom_dashboard_maneuver">Следующий манёвр на карте</string>
     <string name="settings_custom_dashboard_maneuver_description">Пока CarPlay ведёт по маршруту, в левом верхнем углу карты показываются следующий поворот, расстояние до него и улица. Применяется сразу.</string>
     <string name="settings_custom_dashboard_arrival">Прибытие на карте</string>
@@ -66,10 +70,6 @@
     <string name="settings_custom_dashboard_bottom_line_description">Пока приборка в инженерном режиме прошивки, DiPlay через вход в QNX для данных поездки возвращает флаг приборки, который показывает штатные обороты, пробег, топливо, ОЖ, ECO и передачу, если его сбросил кто-то другой. Пишется только этот флаг, только в инженерном режиме и не больше пяти раз, пока показана приборка. Нужен пароль QNX. Применяется сразу.</string>
     <string name="settings_hud_maneuvers">Навигация на HUD (экспериментально)</string>
     <string name="settings_hud_maneuvers_description">Пока CarPlay ведёт по маршруту, DiPlay рисует на проекционном дисплее следующий манёвр: знак с номером съезда с кольца, расстояние и улицу, а под ними полосы и оставшиеся время и путь. Без маршрута проекционный дисплей пустой. Для прошивок, которые показывают на проекционном дисплее дисплей Android. Если установлено приложение HUD Renderer (org.monjaro.hudrenderer), сначала выключите его вывод, иначе оба будут рисовать одновременно. Нужно разрешение «Поверх других приложений». Применяется сразу.</string>
-    <string name="settings_hud_density">Вид строки HUD</string>
-    <string name="settings_hud_density_compact">Компактно</string>
-    <string name="settings_hud_density_balanced">Сбалансированно</string>
-    <string name="settings_hud_density_large">Крупно</string>
     <string name="settings_hud_height">Положение строки HUD</string>
     <string name="settings_hud_height_highest">Выше всего</string>
     <string name="settings_hud_height_high">Выше</string>

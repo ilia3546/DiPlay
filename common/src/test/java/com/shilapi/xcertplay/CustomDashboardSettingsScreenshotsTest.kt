@@ -59,8 +59,9 @@ class CustomDashboardSettingsScreenshotsTest {
                 }
                 ReflectionHelpers.callInstanceMethod<Unit>(activity, "allSettingsSections",
                     ReflectionHelpers.ClassParameter.from(LinearLayout::class.java, content))
-                for (title in listOf(R.string.settings_custom_dashboard_background, R.string.settings_custom_dashboard_dimming,
-                    R.string.settings_custom_dashboard_icon_backdrop)) {
+                for (title in listOf(R.string.settings_geely_monjaro_a3_custom_dashboard,
+                    R.string.settings_custom_dashboard_map_width, R.string.settings_custom_dashboard_background,
+                    R.string.settings_custom_dashboard_dimming)) {
                     assertTrue(allViews(content).filterIsInstance<TextView>().any {
                         it.text.startsWith(activity.getString(title))
                     })

@@ -15,12 +15,7 @@ public final class HudDrawing {
         draw(canvas,frame,null,settings);
     }
     public static void draw(HudCanvas canvas,HudFrame frame,HudCall call,HudSettings settings) {
-        float icon,numberFont,unitFont,roadFont,stroke,lane,trip;
-        switch (settings.variant) {
-            case COMPACT:icon=46;numberFont=48;unitFont=21;roadFont=24;stroke=5;lane=34;trip=20;break;
-            case BOLD:icon=66;numberFont=68;unitFont=29;roadFont=32;stroke=7.5f;lane=50;trip=25;break;
-            default:icon=56;numberFont=58;unitFont=25;roadFont=28;stroke=6;lane=42;trip=22;break;
-        }
+        float icon=56,numberFont=58,unitFont=25,roadFont=28,stroke=6,lane=42,trip=22;
         double k=icon/56.0;
         if(call!=null)call(canvas,call,CALL_LEFT,CALL_RIGHT,CALL_Y,28*k,(float)(21*k),(float)(16*k),k);
         if(frame==null)return;

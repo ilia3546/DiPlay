@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_geely_monjaro_a3_support">Geely Monjaro A3 desteği</string>
+    <string name="settings_geely_monjaro_a3_connection">Bağlantı</string>
+    <string name="settings_geely_monjaro_a3_sound">Ses ve direksiyon</string>
+    <string name="settings_geely_monjaro_a3_car_dashboard">Aracın kendi gösterge paneli</string>
+    <string name="settings_geely_monjaro_a3_custom_dashboard">Özel gösterge paneli</string>
+    <string name="settings_geely_monjaro_a3_hud">Ön cam göstergesi (HUD)</string>
     <string name="settings_root_hotspot_details">Araç erişim noktasının kesin bilgileri (deneysel)</string>
     <string name="settings_root_hotspot_details_description">Android araç erişim noktasının kanalını gizlediğinde kanalı ürün yazılımının erişim noktası yapılandırmasından okur ve erişim noktasının BSSID değerini de iPhone’a bildirir. Root (Magisk) gerektirir. Sonraki bağlantıda uygulanır.</string>
     <string name="settings_root_hotspot_start">Araç erişim noktasını root ile aç (deneysel)</string>
@@ -45,11 +50,10 @@
     <string name="settings_custom_dashboard_change_photo">Fotoğrafı değiştir</string>
     <string name="settings_custom_dashboard_dimming">Arka plan karartma</string>
     <string name="settings_custom_dashboard_map_width">Harita genişliği</string>
-    <string name="settings_custom_dashboard_map_height">Harita yüksekliği</string>
-    <string name="settings_custom_dashboard_map_size_value">%1$d px</string>
+    <string name="settings_custom_dashboard_map_width_narrow">Dar</string>
+    <string name="settings_custom_dashboard_map_width_medium">Orta</string>
+    <string name="settings_custom_dashboard_map_width_wide">Geniş</string>
     <string name="settings_custom_dashboard_map_size_note">Kart hemen değişir; iPhone haritayı yeniden bağlandıktan sonra yeni boyutta gönderir.</string>
-    <string name="settings_custom_dashboard_icon_backdrop">Sürüş asistanı simgesinin altında zemin</string>
-    <string name="settings_custom_dashboard_icon_backdrop_description">Yazılım, sürüş asistanı simgesini gösterge panelinin üzerine haritanın solunda sabit bir yere çizer ve geniş bir harita onun altına girer. Buzlu bir zemin simgeyi haritadan ayırır. Hemen uygulanır.</string>
     <string name="settings_custom_dashboard_maneuver">Harita üzerinde sonraki manevra</string>
     <string name="settings_custom_dashboard_maneuver_description">CarPlay sizi yönlendirirken sonraki dönüş, mesafesi ve sokak haritanın sol üst köşesinde görünür. Hemen uygulanır.</string>
     <string name="settings_custom_dashboard_arrival">Harita üzerinde varış</string>
@@ -66,10 +70,6 @@
     <string name="settings_custom_dashboard_bottom_line_description">Gösterge yazılımın mühendislik modundayken DiPlay, yolculuk verilerinin QNX oturumu üzerinden, başka bir uygulama temizlediğinde standart devir, kilometre, yakıt, soğutma sıvısı, ECO ve vites satırını gösteren gösterge bayrağını geri açar. Yalnızca bu bayrağı, yalnızca mühendislik modunda ve gösterge gösterildiği sürece en fazla beş kez yazar. QNX parolası gerekir. Hemen uygulanır.</string>
     <string name="settings_hud_maneuvers">HUD\'da navigasyon (deneysel)</string>
     <string name="settings_hud_maneuvers_description">CarPlay bir rotada yol gösterirken DiPlay sonraki manevrayı head-up ekranda çizer: döner kavşak çıkışıyla birlikte işaret, mesafe ve sokak, altında da şeritler ile kalan süre ve mesafe. Rota yokken head-up ekran boş kalır. Head-up ekranda bir Android ekranı gösteren yazılımlar için. HUD Renderer uygulaması (org.monjaro.hudrenderer) yüklüyse önce onun çıkışını kapatın, yoksa ikisi aynı anda çizer. \"Diğer uygulamaların üzerinde görüntüleme\" izni gerekir. Hemen uygulanır.</string>
-    <string name="settings_hud_density">HUD düzeni</string>
-    <string name="settings_hud_density_compact">Kompakt</string>
-    <string name="settings_hud_density_balanced">Dengeli</string>
-    <string name="settings_hud_density_large">Büyük</string>
     <string name="settings_hud_height">HUD satırının konumu</string>
     <string name="settings_hud_height_highest">En üstte</string>
     <string name="settings_hud_height_high">Üstte</string>

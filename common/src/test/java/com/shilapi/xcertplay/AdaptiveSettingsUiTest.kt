@@ -892,12 +892,11 @@ class AdaptiveSettingsUiTest {
             PendingReconnect.clear()
             ReflectionHelpers.setField(screen, "settingsCategory", SettingsCategory.ADVANCED)
             ReflectionHelpers.callInstanceMethod<Unit>(screen, "render")
-            val density = screen.getString(R.string.settings_hud_density)
             val height = screen.getString(R.string.settings_hud_height)
             val scale = screen.getString(R.string.settings_hud_scale)
             val lanes = screen.getString(R.string.settings_hud_lanes)
             val trip = screen.getString(R.string.settings_hud_trip)
-            assertTrue(texts(screen).none { text -> listOf(density, height, scale, lanes, trip).any { text.text.startsWith(it) } })
+            assertTrue(texts(screen).none { text -> listOf(height, scale, lanes, trip).any { text.text.startsWith(it) } })
             val switch = descendants(screen.window.decorView).filterIsInstance<Switch>()
                 .single { it.contentDescription == screen.getString(R.string.settings_hud_maneuvers) }
             assertFalse(switch.isChecked)
@@ -906,8 +905,6 @@ class AdaptiveSettingsUiTest {
             assertTrue(AirPlayPersistence.loadHudManeuvers(context))
             assertFalse(PendingReconnect.isPending(session))
 
-            assertEquals("$density · ${screen.getString(R.string.settings_hud_density_balanced)}",
-                texts(screen).single { it.text.startsWith(density) }.text.toString())
             assertEquals("$scale · ${screen.getString(R.string.percent_value, 65)}",
                 texts(screen).single { it.text.startsWith(scale) }.text.toString())
             for (title in listOf(lanes, trip)) {
@@ -923,6 +920,91 @@ class AdaptiveSettingsUiTest {
             shadowOf(Looper.getMainLooper()).idle()
             assertEquals(260, AirPlayPersistence.loadHudHeight(context))
             assertFalse(PendingReconnect.isPending(session))
+            assertEquals(0, disconnects)
+            assertSame(session, CarPlayBackgroundSession.snapshot()?.controller)
+        } finally {
+            CarPlayBackgroundSession.clear()
+            PendingReconnect.clear()
+        }
+    }
+
+    @Test fun geelyMonjaroA3CardGroupsItsControlsUnderTitles() {
+        ShadowBuild.setProduct("geely_fx11")
+        ShadowBuild.setModel("KX11-A3-L1")
+        AirPlayPersistence.saveCustomDashboard(context, true)
+        AirPlayPersistence.saveHudManeuvers(context, true)
+        val screen = openSettings()
+        ReflectionHelpers.setField(screen, "settingsCategory", SettingsCategory.ADVANCED)
+        ReflectionHelpers.callInstanceMethod<Unit>(screen, "render")
+        val heading = texts(screen).single { it.text == screen.getString(R.string.settings_geely_monjaro_a3_support) }
+        val card = heading.parent.parent as LinearLayout
+        val shown = descendants(card).filterIsInstance<TextView>().map { it.text.toString() }.toList()
+        val groups = listOf(R.string.settings_geely_monjaro_a3_connection, R.string.settings_geely_monjaro_a3_sound,
+            R.string.settings_geely_monjaro_a3_car_dashboard, R.string.settings_geely_monjaro_a3_custom_dashboard,
+            R.string.settings_geely_monjaro_a3_hud)
+        val order = listOf(
+            groups[0], R.string.settings_root_hotspot_details, R.string.settings_root_hotspot_start,
+            R.string.settings_disconnect_phone_bluetooth, R.string.settings_hotspot_audio_firewall, R.string.settings_request_lost_audio,
+            groups[1], R.string.settings_microphone_input, R.string.settings_pause_carplay_for_car_audio, R.string.settings_wheel_seek,
+            groups[2], R.string.settings_dashboard_music, R.string.settings_dashboard_calls,
+            groups[3], R.string.settings_custom_dashboard, R.string.settings_custom_dashboard_map_width,
+            R.string.settings_custom_dashboard_maneuver, R.string.settings_custom_dashboard_arrival,
+            R.string.settings_custom_dashboard_background, R.string.settings_custom_dashboard_dimming,
+            R.string.settings_custom_dashboard_trip_qnx, R.string.settings_custom_dashboard_bottom_line,
+            R.string.settings_custom_dashboard_wheel_toggle,
+            groups[4], R.string.settings_hud_maneuvers, R.string.settings_hud_height, R.string.settings_hud_scale,
+            R.string.settings_hud_lanes, R.string.settings_hud_trip,
+        ).map(screen::getString)
+        val positions = order.map { title -> shown.indexOfFirst { it == title || it.startsWith(title + " · ") } }
+        assertTrue("$order\n$shown", positions.none { it < 0 })
+        assertEquals(positions.sorted(), positions)
+
+        val titles = groups.map { id -> descendants(card).filterIsInstance<TextView>().single { it.text == screen.getString(id) } }
+        val gap = Math.round(20 * screen.resources.displayMetrics.density)
+        fun bottom(view: View): Int {
+            val own = (view.layoutParams as LinearLayout.LayoutParams).bottomMargin
+            if (view !is LinearLayout || view.orientation != LinearLayout.VERTICAL) return own
+            val last = (view.childCount - 1 downTo 0).map(view::getChildAt).firstOrNull { it.visibility != View.GONE }
+            return own + (last?.let(::bottom) ?: 0)
+        }
+        // The space between groups is the title's top margin plus whatever the row above it leaves under itself.
+        val above = titles.map { title ->
+            val parent = title.parent as LinearLayout
+            val previous = parent.getChildAt(parent.indexOfChild(title) - 1)
+            (title.layoutParams as LinearLayout.LayoutParams).topMargin + bottom(previous)
+        }
+        assertEquals(0, (titles.first().layoutParams as LinearLayout.LayoutParams).topMargin)
+        assertEquals(listOf(gap, gap, gap, gap), above.drop(1))
+        val index = ReflectionHelpers.callInstanceMethod<List<DiPlayActivity.SettingsSearchResult>>(screen, "buildSettingsSearchIndex")
+        assertTrue(index.any { it.title == screen.getString(R.string.settings_custom_dashboard_map_width) })
+    }
+
+    @Test fun customDashboardMapWidthIsAPresetThatAppliesAtTheNextConnection() {
+        ShadowBuild.setProduct("geely_fx11")
+        ShadowBuild.setModel("KX11-A3-L1")
+        AirPlayPersistence.saveCustomDashboard(context, true)
+        val screen = openSettings()
+        val session = mock(CarPlayController::class.java)
+        var disconnects = 0
+        CarPlayBackgroundSession.store(session, mock(AndroidMediaSink::class.java), 800, 480, Any(),
+            CarPlaySessionDisplay(800, 480, Surface.ROTATION_0, false, false, 800, 480)) { disconnects++ }
+        CarPlayBackgroundSession.active = true
+        try {
+            PendingReconnect.clear()
+            ReflectionHelpers.setField(screen, "settingsCategory", SettingsCategory.ADVANCED)
+            ReflectionHelpers.callInstanceMethod<Unit>(screen, "render")
+            val width = screen.getString(R.string.settings_custom_dashboard_map_width)
+            val row = texts(screen).single { it.text.startsWith("$width · ") }
+            assertEquals("$width · ${screen.getString(R.string.settings_custom_dashboard_map_width_narrow)}", row.text.toString())
+            row.performClick()
+            val dialog = ShadowAlertDialog.getLatestAlertDialog()
+            assertEquals(screen.getString(R.string.save), dialog.getButton(AlertDialog.BUTTON_POSITIVE).text.toString())
+            shadowOf(dialog).clickOnItem(2)
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick()
+            shadowOf(Looper.getMainLooper()).idle()
+            assertEquals(MonjaroDashboardLayout.MapGeometry(600, 304), AirPlayPersistence.loadDashboardMap(context))
+            assertEquals("$width · ${screen.getString(R.string.settings_custom_dashboard_map_width_wide)}", row.text.toString())
+            assertTrue(PendingReconnect.isPending(session))
             assertEquals(0, disconnects)
             assertSame(session, CarPlayBackgroundSession.snapshot()?.controller)
         } finally {

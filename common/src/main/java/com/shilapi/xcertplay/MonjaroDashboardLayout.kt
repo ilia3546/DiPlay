@@ -33,9 +33,9 @@ internal object MonjaroDashboardLayout {
     const val TRIP_MINUTES_GAP = 5
 
     /**
-     * The map's size, which the user picks in steps of 8 px so the iPhone streams exactly it. The map itself is
-     * centred on the firmware's car, below its drive mode selector; the card's 1 px border lies around it, as CSS
-     * content-box sizing puts it. The route cards sit in its top corners.
+     * The map's size: one of [mapWidths] wide and [MAP_HEIGHT] high, multiples of 8 px so the iPhone streams exactly
+     * it. The map itself is centred on the firmware's car, below its drive mode selector; the card's 1 px border lies
+     * around it, as CSS content-box sizing puts it. The route cards sit in its top corners.
      */
     data class MapGeometry(val width: Int, val height: Int) {
         val map = Box(left = (WIDTH - width) / 2, top = MAP_CENTRE_Y - height / 2, width = width, height = height)
@@ -57,10 +57,13 @@ internal object MonjaroDashboardLayout {
     }
 
     const val MAP_CENTRE_Y = 440
-    private const val MAP_STEP = 8
-    val mapWidths = (448..800 step MAP_STEP).toList()
-    val mapHeights = (200..480 step MAP_STEP).toList()
-    val defaultMap = MapGeometry(width = 456, height = 304)
+    const val MAP_HEIGHT = 304
+    val mapWidths = listOf(456, 528, 600)
+    val defaultMap = MapGeometry(width = mapWidths.first(), height = MAP_HEIGHT)
+
+    /** The preset closest to [width], the wider one on a tie; a width saved by an older version may be any. */
+    fun nearestMapWidth(width: Int): Int =
+        mapWidths.minWith(compareBy<Int> { kotlin.math.abs(it - width) }.thenByDescending { it })
 
     const val MAP_BORDER = 1
     const val MAP_RADIUS = 28f

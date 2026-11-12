@@ -13,7 +13,7 @@ class DashboardMapStreamTest {
         assertEquals(560, wide.map.left)
         assertEquals(240, wide.map.top)
         assertEquals(wide.map.left + 800 - 15, wide.arrivalCard.left + wide.arrivalCard.width)
-        assertEquals(MonjaroDashboardLayout.mapWidths.all { it % 8 == 0 } && MonjaroDashboardLayout.mapHeights.all { it % 8 == 0 }, true)
+        assertEquals(MonjaroDashboardLayout.mapWidths.all { it % 8 == 0 } && MonjaroDashboardLayout.MAP_HEIGHT % 8 == 0, true)
     }
 
     @Test fun theStreamIsTheMapCardRoundedForTheIphone() {

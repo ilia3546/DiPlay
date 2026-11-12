@@ -229,7 +229,7 @@ class HudDrawingReferenceTest {
     @Test fun theLineKeepsItsBaselinesSpacingAndTextRoles() {
         val frame = frame(300, listOf(LaneGuidanceLane(0, 2, listOf(0), 90)), remainingMeters = 4200, remainingSeconds = 720)
         val r = Recording()
-        HudDrawing.draw(r, frame, HudSettings(HudSettings.Variant.BALANCED, 215, 100, true, true))
+        HudDrawing.draw(r, frame, HudSettings(215, 100, true, true))
         val text = r.ops.filter { it.type == "text" }
         assertEquals("number/unit/instruction and five trip spans", 8, text.size)
         close(text[0].x, 140.0, "number anchor")
@@ -254,20 +254,20 @@ class HudDrawingReferenceTest {
     @Test fun theDistanceNeverShrinks() {
         val big = Recording()
         val frame = frame(meters = 0).copy(number = "100\u202f000\u202f000", unit = "км")
-        HudDrawing.draw(big, frame, HudSettings(HudSettings.Variant.BOLD, 215, 100, false, false))
+        HudDrawing.draw(big, frame, HudSettings(215, 100, false, false))
         val number = big.ops.single { it.text == "100\u202f000\u202f000" }
-        close(number.size, 68.0, "distance never shrinks")
+        close(number.size, 58.0, "distance never shrinks")
     }
 
     @Test fun aTripThatDoesNotFitIsLeftOutAndChangesNothingElse() {
         val eight = (0 until 8).map { LaneGuidanceLane(it, 0, listOf(0), null) }
         val extreme = frame(300, eight, remainingMeters = 100_000_000_000, remainingSeconds = Long.MAX_VALUE)
         val overflow = Recording()
-        HudDrawing.draw(overflow, extreme, HudSettings(HudSettings.Variant.BOLD, 360, 100, true, true))
+        HudDrawing.draw(overflow, extreme, HudSettings(360, 100, true, true))
         assertEquals("primary text retained, trip omitted", 3, overflow.ops.count { it.type == "text" })
         assertEquals("all lanes retained", 8, overflow.ops.count { it.type == "begin" })
         val noTrip = Recording()
-        HudDrawing.draw(noTrip, extreme, HudSettings(HudSettings.Variant.BOLD, 360, 100, true, false))
+        HudDrawing.draw(noTrip, extreme, HudSettings(360, 100, true, false))
         assertEquals(noTrip.ops.size, overflow.ops.size)
         overflow.ops.zip(noTrip.ops).forEach { (actual, expected) ->
             assertEquals(expected.type, actual.type)
