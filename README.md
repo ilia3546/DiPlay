@@ -2,7 +2,103 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md)
 
-> **This is a fork with Geely Monjaro A3 support.** It adds support for the Geely Monjaro A3 (KX11, Desay head unit, Android 11) on top of [upstream DiPlay](https://github.com/shihabal3amri/DiPlay): wireless CarPlay over the car hotspot, the cabin microphones, the CarPlay track on the stock instrument cluster and media widgets, a custom instrument cluster with the CarPlay map, navigation on the head-up display and steering-wheel media keys. Everything added here sits in the **Geely Monjaro A3 Support** settings card, is off by default and shows only on that head unit; some options need root (Magisk). It is not affiliated with Geely or with the upstream author. Report Monjaro issues in this fork, not upstream. The rest of this README is upstream's.
+> **This is a fork of [upstream DiPlay](https://github.com/shihabal3amri/DiPlay) with Geely Monjaro support.** It is not affiliated with Geely or with the upstream author. Report Monjaro issues in this fork, not upstream. The Monjaro part comes first; the rest of this README, below the line, is upstream's.
+
+## DiPlay on the Geely Monjaro
+
+DiPlay runs next to the car's own CarPlay as a separate app and brings wireless CarPlay with the cluster, the head-up display and the steering wheel wired in. Everything Monjaro-specific lives in one settings card, **Settings → Advanced → Geely Monjaro A3 Support**, is **off by default** and shows only on this head unit. With every option off, DiPlay behaves like upstream.
+
+### The car it is built and tested on
+
+| | |
+|---|---|
+| **Car** | Geely Monjaro (KX11), facelifted model with the Android 11 head unit |
+| **Head unit** | Desay SV, Qualcomm SA8155 (`msmnile_gvmq`), Android 11 (API 30) |
+| **Android identifiers** | product `geely_fx11`, model `KX11_A3_L1` |
+| **Firmware** | `KX11A3L1.INT.IC3085.41.SOC.E172.202603031906.R` (E172) |
+| **Cluster and HUD** | drawn by the QNX side of the head unit; the HUD is an 800×480 display |
+| **iPhone** | iOS 27 |
+
+The settings card appears when the product is `geely_fx11` and the model starts with `KX11_A3`. Other Monjaro firmware, the pre-facelift Monjaro (Android 9) and other Geely or Lynk & Co cars are untested.
+
+### What you need
+
+| | Required for | |
+|---|---|---|
+| 🔌 **ADB to the head unit** | everyone | The APK is installed with `adb install -r DiPlay.apk`; a few one-time steps below also run over ADB. Keep a trusted computer for it. |
+| 📶 **iPhone paired over Bluetooth, car hotspot on** | everyone | Wireless CarPlay runs over the car's own hotspot (5 GHz) or [Existing Wi-Fi / Same LAN](docs/EXISTING_WIFI.md). See [Install and connect](docs/INSTALL.md). Wired USB CarPlay does not work on this car: the Android side of the head unit sees no USB devices. |
+| 🪟 **"Draw over other apps"** | custom dashboard, HUD | DiPlay asks for it when you turn either on. Over ADB: `adb shell appops set com.shihab.diplay SYSTEM_ALERT_WINDOW allow`. |
+| 🔓 **Root (Magisk)** | the options marked *root* below | Allow DiPlay in Magisk. Nothing else needs root. |
+| 🔑 **QNX root password** | trip data and the stock bottom line on the custom dashboard | Optional. Stored on the head unit only, never in a settings backup. |
+| 🚫 **Turn off overlapping apps** | custom dashboard, HUD | Turn off the GMC custom dashboard before DiPlay's, and the output of the HUD Renderer app (`org.monjaro.hudrenderer`) before DiPlay's HUD, or both draw at once. |
+
+The car's own CarPlay app stays installed and untouched; run one CarPlay at a time. To remove DiPlay: `adb uninstall com.shihab.diplay` and forget the car in **Settings → General → CarPlay** on the iPhone.
+
+### What works
+
+Out of the box, with no option on:
+
+- Wireless CarPlay over the car hotspot or Existing Wi-Fi, full-screen on the 1920×720 centre display, with touch.
+- Music, calls and Siri through the car's speakers and cabin microphones.
+- Steering-wheel keys: play/pause, next and previous go to CarPlay; a long press of the microphone key opens Siri (see [steering-wheel keys](docs/COMPATIBILITY.md#geely--lynk--co-steering-wheel-keys) if the car's assistant answers instead).
+- With **Report location to iPhone** on, the car's wheel speed and gear go to the iPhone for positioning in tunnels.
+
+In the **Geely Monjaro A3 Support** card, grouped as on screen:
+
+**Connection**
+
+| Option | What it does | Needs |
+|---|---|---|
+| Exact car hotspot details | Reads the hotspot channel that Android hides from the firmware's hotspot configuration and tells the iPhone the hotspot's BSSID. | root |
+| Turn the car hotspot on with root | Turns the saved car hotspot on when DiPlay opens and before a wireless connection. | root |
+| Disconnect iPhone Bluetooth during wireless CarPlay | Once CarPlay runs, drops the iPhone's Bluetooth calls, music and media keys from the head unit, as the car's own CarPlay does. | root |
+| Let CarPlay audio through the car firewall | Lets the iPhone's audio through the firewall that otherwise cuts CarPlay sound after a few seconds on the hotspot. | root |
+| Request lost audio packets again | Asks the iPhone to resend music packets lost on Wi-Fi and holds playback briefly to put them in place. | |
+
+**Sound and steering wheel**
+
+| Option | What it does | Needs |
+|---|---|---|
+| Microphone input | Picks the recorder for calls and Siri: Auto, the voice assistant bus or all cabin microphones mixed, so rear passengers are heard too. | |
+| Pause CarPlay when the car plays its own audio | Pauses the iPhone when the radio or another head-unit app starts playing, and leaves the wheel keys to that source. | |
+| Hold next or previous to fast-forward or rewind | Holding a skip key moves the track 10 s every half second; a short press still skips. | |
+
+**Car's own dashboard**
+
+| Option | What it does | Needs |
+|---|---|---|
+| CarPlay music on the dashboard and media widgets | Track, artist, album and cover in the stock cluster's music widget and the driver and passenger widgets; their buttons control CarPlay. | root only if the head unit refuses |
+| CarPlay calls on the dashboard and HUD | CarPlay calls in the stock call widget, on the HUD and on the custom dashboard. While it rings, previous declines and next answers; during a call, previous mutes and next hangs up. | root only if the head unit refuses |
+
+**Custom dashboard**
+
+| Option | What it does | Needs |
+|---|---|---|
+| Custom dashboard with CarPlay map | Replaces the stock cluster's side widgets with DiPlay's own dashboard: the CarPlay map in the middle, clock, outside temperature, trip and music around it. The firmware keeps drawing the speed, warning lights and bottom line. | overlay, GMC dashboard off |
+| Map width | Narrow, medium or wide map; the iPhone sends the new size after you reconnect. | |
+| Next maneuver / Arrival over the map | The next turn with its distance and street, and the arrival time with the time and distance left, over the map's corners. | |
+| Dashboard background and dimming | Thirteen backgrounds or your own photo, dimmed by 0 to 60 %. | |
+| Trip data from the QNX side | Reads the trip computer from the QNX side of the head unit. | QNX password |
+| Keep the stock bottom line | Brings back the stock RPM, odometer, fuel, coolant, ECO and gear line if something clears it. | QNX password |
+| Hold the dashboard view key to show the car's own dashboard | A 1.5 s hold of the wheel's dashboard view key hides the custom dashboard and gives the cluster back to the car until the next hold; a short press still switches the car's own view. | |
+
+**Head-up display**
+
+| Option | What it does | Needs |
+|---|---|---|
+| Navigation on the HUD | The next maneuver with roundabout exits, its distance and street, then the lanes and the time and distance left, drawn on the HUD while CarPlay guides you. | overlay, HUD Renderer output off |
+| HUD line position and scale | Where the line sits and how large it is. | |
+| Lanes / Time and distance left on the HUD | Show or hide either line. | |
+
+All options are experimental. Each one says in the app whether it applies at once or at the next connection. Unrelated upstream options that help on this car: **Calls at the call's own rate** (WhatsApp calls that kept restarting run at 32 kHz with it on).
+
+### Known limits
+
+- Wired USB CarPlay: not available, see above.
+- CarPlay Ultra is not supported: the iPhone's instrument cluster stream carries only a map.
+- Firmware updates can change any of the above; after one, check the options you use.
+
+---
 
 **CarPlay for compatible BYD Android head units.** Wired and wireless, with the familiar DiAuto interface. Independent app: `com.shihab.diplay`.
 
