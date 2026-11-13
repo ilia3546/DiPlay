@@ -92,6 +92,14 @@ object VideoInCar {
     /** Whether video may play now; owned by the video gate (P only, unless explicitly overridden). */
     @Volatile var allowed = false
 
+    /**
+     * Where video may play now, as the video gate last decided: the driver's own screen, and a second screen the
+     * driver cannot watch. Video is [allowed] while either may show it.
+     */
+    data class VideoScreens(val driverScreen: Boolean = false, val passengerDisplayId: Int? = null)
+
+    @Volatile var screens = VideoScreens()
+
     /** Bits the AirPlay web app's manifest adds to the legacy feature bits (featureList.additionalAirPlayFeatures). */
     private val ADDITIONAL_FEATURE_BITS = listOf(0, 64)
 

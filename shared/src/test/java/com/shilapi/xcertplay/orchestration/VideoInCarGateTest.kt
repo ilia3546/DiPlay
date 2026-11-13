@@ -50,6 +50,7 @@ class VideoInCarGateTest {
     @After
     fun reset() {
         VideoInCar.allowed = false
+        VideoInCar.screens = VideoInCar.VideoScreens()
     }
 
     @Test
@@ -112,5 +113,85 @@ class VideoInCarGateTest {
         assertTrue(stopped.await(3, TimeUnit.SECONDS))
         assertEquals(2, readingThreads.size)
         assertTrue("started and stopped on the gate's own thread", readingThreads[0] === readingThreads[1])
+    }
+
+    @Test
+    fun aScreenAwayFromTheDriverAllowsVideoInAnyGearAndThePlayerLearnsOfEveryReading() {
+        var passenger: Int? = 2
+        val changes = mutableListOf<Boolean>()
+        val screens = mutableListOf<VideoInCar.VideoScreens>()
+        var ticks = 0
+        val gate = VideoInCarGate({ null }, onChanged = { changes += it }, awayFromDriver = { passenger },
+            onScreens = { screens += it }, onTick = { ticks++ })
+
+        gate.update(true)
+        assertEquals(VideoInCar.VideoScreens(driverScreen = true, passengerDisplayId = 2), VideoInCar.screens)
+        gate.update(false)
+        assertEquals(VideoInCar.VideoScreens(driverScreen = false, passengerDisplayId = 2), VideoInCar.screens)
+        assertTrue(VideoInCar.allowed)
+        gate.update(false)
+        passenger = null
+        gate.update(false)
+        assertFalse(VideoInCar.allowed)
+
+        assertEquals(listOf(true, false), changes)
+        assertEquals(listOf(
+            VideoInCar.VideoScreens(true, 2),
+            VideoInCar.VideoScreens(false, 2),
+            VideoInCar.VideoScreens(false, null),
+        ), screens)
+        assertEquals(4, ticks)
+        gate.close()
+    }
+
+    @Test
+    fun aNewGateComparesWithThePublishedScreensAndClosingClearsThem() {
+        val first = VideoInCarGate({ null }, {}, awayFromDriver = { 2 })
+        first.update(true)
+        first.close()
+        assertEquals(VideoInCar.VideoScreens(), VideoInCar.screens)
+        assertFalse(VideoInCar.allowed)
+
+        val published = mutableListOf<VideoInCar.VideoScreens>()
+        val changes = mutableListOf<Boolean>()
+        val next = VideoInCarGate({ null }, onChanged = { changes += it }, awayFromDriver = { 2 }, onScreens = { published += it })
+        next.update(false)
+        assertEquals(listOf(VideoInCar.VideoScreens(false, 2)), published)
+        assertEquals(listOf(true), changes)
+        next.close()
+        next.update(true)
+        assertEquals(VideoInCar.VideoScreens(), VideoInCar.screens)
+        assertFalse(VideoInCar.allowed)
+    }
+
+    @Test
+    fun forcedVideoReadsNeitherTheGearNorTheScreenAndOnlyTheDriverScreenIsAllowed() {
+        var ticks = 0
+        val gate = VideoInCarGate(
+            readParked = { error("Forced video must not read the gear") },
+            onChanged = {},
+            forceVideoInCar = true,
+            awayFromDriver = { error("Forced video must not read the passenger screen") },
+            onTick = { ticks++ },
+        )
+        gate.start()
+        gate.update(false)
+        assertEquals(VideoInCar.VideoScreens(driverScreen = true, passengerDisplayId = null), VideoInCar.screens)
+        assertEquals(2, ticks)
+        gate.close()
+    }
+
+    @Test
+    fun withoutAScreenAwayFromTheDriverOnlyParkAllowsVideo() {
+        val changes = mutableListOf<Boolean>()
+        val published = mutableListOf<VideoInCar.VideoScreens>()
+        val gate = VideoInCarGate({ null }, onChanged = { changes += it }, onScreens = { published += it })
+        gate.update(null)
+        gate.update(false)
+        gate.update(true)
+        gate.update(false)
+        assertEquals(listOf(true, false), changes)
+        assertEquals(listOf(VideoInCar.VideoScreens(true, null), VideoInCar.VideoScreens(false, null)), published)
+        gate.close()
     }
 }

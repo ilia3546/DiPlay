@@ -579,6 +579,11 @@ class CarPlayController(
                 },
                 startReading = listener::startReadingParked,
                 forceVideoInCar = airPlayConfig.forceVideoInCar,
+                awayFromDriver = listener::videoScreenAwayFromDriver,
+                onScreens = { screens ->
+                    debugLog("video in car driverScreen=${screens.driverScreen} passenger=${screens.passengerDisplayId ?: "none"}")
+                },
+                onTick = listener::onVideoGateTick,
             ).also { it.start() }
         }
         if (config.transport == CarPlayTransport.WIRED) {

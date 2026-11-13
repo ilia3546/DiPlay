@@ -16,6 +16,15 @@ interface CarPlayVideoListener {
     /** Starts what [readParked] reads from; the returned function stops it. Called on the reading thread. */
     fun startReadingParked(): () -> Unit = {}
 
+    /**
+     * A display the driver cannot watch where video may play in any gear, or null. Read with [readParked], never
+     * while video support is forced.
+     */
+    fun videoScreenAwayFromDriver(): Int? = null
+
+    /** After every gate reading, once [VideoInCar.screens] and [VideoInCar.allowed] are up to date. Gate thread. */
+    fun onVideoGateTick() {}
+
     /** Video became allowed or not; when not, the player must close. Any thread. */
     fun onVideoAllowedChanged(allowed: Boolean)
 
@@ -30,8 +39,9 @@ interface CarPlayVideoListener {
 }
 
 /**
- * Owns [VideoInCar.allowed]. Normally only P permits video; unknown gear keeps it off.
- * The explicit connection-scoped override skips gear reads altogether. Changes go to [onChanged].
+ * Owns [VideoInCar.allowed] and [VideoInCar.screens]. Normally only P permits video on the driver's screen; unknown
+ * gear keeps it off. A screen the driver cannot watch ([awayFromDriver]) permits video in any gear. The explicit
+ * connection-scoped override skips gear and screen reads altogether. Changes go to [onChanged] and [onScreens].
  */
 internal class VideoInCarGate(
     private val readParked: () -> Boolean?,
@@ -39,6 +49,9 @@ internal class VideoInCarGate(
     private val onObserved: (Boolean?) -> Unit = {},
     private val startReading: () -> () -> Unit = { {} },
     private val forceVideoInCar: Boolean = false,
+    private val awayFromDriver: () -> Int? = { null },
+    private val onScreens: (VideoInCar.VideoScreens) -> Unit = {},
+    private val onTick: () -> Unit = {},
 ) : Closeable {
     @Volatile private var closed = false
     private var observed = false
@@ -72,14 +85,26 @@ internal class VideoInCarGate(
             lastParked = parked
             onObserved(parked)
         }
-        val allowed = forceVideoInCar || parked == true
-        if (allowed == VideoInCar.allowed || closed) return
-        VideoInCar.allowed = allowed
-        onChanged(allowed)
+        if (closed) return
+        val screens = VideoInCar.VideoScreens(
+            driverScreen = forceVideoInCar || parked == true,
+            passengerDisplayId = if (forceVideoInCar) null else runCatching(awayFromDriver).getOrNull(),
+        )
+        if (screens != VideoInCar.screens) {
+            VideoInCar.screens = screens
+            onScreens(screens)
+        }
+        val allowed = screens.driverScreen || screens.passengerDisplayId != null
+        if (allowed != VideoInCar.allowed) {
+            VideoInCar.allowed = allowed
+            onChanged(allowed)
+        }
+        onTick()
     }
 
     override fun close() {
         closed = true
+        VideoInCar.screens = VideoInCar.VideoScreens()
         VideoInCar.allowed = false
     }
 
