@@ -105,7 +105,7 @@ open class CarPlayVideoActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         if (!CarPlayVideo.attachPlayer(this)) {
             CarPlayVideo.onPlayerRejected()
-            finish()
+            leave()
             return
         }
         shownConfiguration = Configuration(resources.configuration)
@@ -430,7 +430,7 @@ open class CarPlayVideoActivity : ComponentActivity() {
 
     private fun returnToCarPlay() {
         if (isFinishing) return
-        val overCarPlay = CarPlayVideo.playerOnScreen
+        val overCarPlay = overCarPlay()
         CarPlayVideo.dismissPlayer(if (prepared) player.currentPosition.toInt() else null)
         // The player may have been opened from the app task; finish alone can expose the start page.
         if (overCarPlay) OwnScreenStart.start(this, CarPlayScreen.intent(this))
@@ -440,7 +440,7 @@ open class CarPlayVideoActivity : ComponentActivity() {
     private fun onPlaybackCompleted() {
         if (isFinishing || CarPlayVideo.activity !== this || loadedUrl != CarPlayVideo.url) return
         CarPlayVideo.diagnostic("event=playback_completed action=return_to_carplay")
-        val overCarPlay = CarPlayVideo.playerOnScreen
+        val overCarPlay = overCarPlay()
         CarPlayVideo.onPlaybackCompleted()
         if (overCarPlay) OwnScreenStart.start(this, CarPlayScreen.intent(this))
         leave()
@@ -448,6 +448,12 @@ open class CarPlayVideoActivity : ComponentActivity() {
 
     /** Closes this player's screen. */
     protected open fun leave() = finish()
+
+    /** Whether CarPlay is under this player, so that closing it shows CarPlay. */
+    protected open fun overCarPlay(): Boolean = true
+
+    /** Placed by [CarPlayVideoPlacement] across screens rather than over CarPlay. */
+    internal open val inOwnTask: Boolean get() = false
 
     private fun updatePlayPause() {
         val playing = CarPlayVideo.playing
@@ -583,9 +589,12 @@ open class CarPlayVideoActivity : ComponentActivity() {
         super.onConfigurationChanged(newConfig)
         val diff = shownConfiguration?.diff(newConfig) ?: 0
         shownConfiguration = Configuration(newConfig)
-        CarPlayVideo.diagnostic("event=player_config_changed diff=0x${Integer.toHexString(diff)} " +
-            "display=${CarPlayVideo.passenger.displayOf(this)}")
-        CarPlayVideo.onPlayerDisplay(this)
+        // Android moves the window to its new display only after this call.
+        window.decorView.post {
+            CarPlayVideo.diagnostic("event=player_config_changed diff=0x${Integer.toHexString(diff)} " +
+                "display=${CarPlayVideo.passenger.displayOf(this)}")
+            CarPlayVideo.onPlayerDisplay(this)
+        }
     }
 
     // Finishing pauses this player before the CarPlay screen resumes, which then checks its window again.

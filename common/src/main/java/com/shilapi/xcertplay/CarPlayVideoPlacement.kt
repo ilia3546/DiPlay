@@ -1,5 +1,6 @@
 package com.shilapi.xcertplay
 
+import android.view.Display
 import com.shilapi.xcertplay.airplay.VideoInCar.VideoScreens
 
 /**
@@ -18,7 +19,7 @@ internal object CarPlayVideoPlacement {
      */
     fun verdict(actual: Int, driverDisplay: Int, screens: VideoScreens, passengerIdentity: Int?,
         passengerAvailable: Boolean, landedOffTarget: Boolean): Verdict = when {
-        actual == passengerIdentity -> if (passengerAvailable) Verdict.PLAY else Verdict.CLOSE
+        actual == passenger(passengerIdentity) -> if (passengerAvailable) Verdict.PLAY else Verdict.CLOSE
         actual != driverDisplay -> Verdict.CLOSE
         screens.driverScreen -> Verdict.PLAY
         screens.passengerDisplayId != null && !landedOffTarget -> Verdict.BLOCK
@@ -27,7 +28,7 @@ internal object CarPlayVideoPlacement {
 
     /** Why [verdict] closed the player, for the diagnostic report. */
     fun closeReason(actual: Int, driverDisplay: Int, passengerIdentity: Int?, landedOffTarget: Boolean): String = when {
-        actual == passengerIdentity -> "passenger_screen_gone"
+        actual == passenger(passengerIdentity) -> "passenger_screen_gone"
         actual != driverDisplay -> "other_display"
         landedOffTarget -> "passenger_launch_refused"
         else -> "not_allowed_here"
@@ -40,7 +41,10 @@ internal object CarPlayVideoPlacement {
     fun move(actual: Int, driverDisplay: Int, screens: VideoScreens, passengerIdentity: Int?): Move? = when {
         actual == driverDisplay && screens.passengerDisplayId != null && screens.passengerDisplayId != driverDisplay ->
             Move.TO_PASSENGER
-        actual == passengerIdentity && actual != driverDisplay && screens.driverScreen -> Move.TO_DRIVER
+        actual == passenger(passengerIdentity) && actual != driverDisplay && screens.driverScreen -> Move.TO_DRIVER
         else -> null
     }
+
+    // The default display is the driver's on every head unit; it is never a screen the driver cannot watch.
+    private fun passenger(identity: Int?): Int? = identity?.takeUnless { it == Display.DEFAULT_DISPLAY }
 }

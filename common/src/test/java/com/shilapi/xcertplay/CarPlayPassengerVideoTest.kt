@@ -1,6 +1,7 @@
 package com.shilapi.xcertplay
 
 import android.app.Activity
+import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -35,11 +36,18 @@ import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.ArgumentMatchers.anyMap
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito.doAnswer
+import org.mockito.Mockito.doReturn
+import org.mockito.Mockito.doThrow
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.never
+import org.mockito.Mockito.times
+import org.mockito.Mockito.verify
 import org.mockito.Mockito.mock
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 import org.robolectric.util.ReflectionHelpers
@@ -179,6 +187,7 @@ class CarPlayPassengerVideoTest {
             assertFalse(name, CarPlayVideo.playing)
             assertEquals(name, false, rates[screen])
             assertFalse(name, names().contains("playing"))
+            if (name in setOf("car", "wheel", "iphone", "item and play")) assertEquals(name, listOf("paused"), names())
             assertTrue(name, CarPlayVideo.blocked)
         }
         assertTrue(diagnostics.any { it.startsWith("event=play_blocked") && it.contains("source=set_rate") })
@@ -260,12 +269,9 @@ class CarPlayPassengerVideoTest {
         val launch = launches.single()
         val first = open(launch, DRIVER)
         drive()
+        // Android destroys and creates the player in one main-thread message.
         CarPlayVideo.detachPlayer(first, changingConfigurations = true, positionMillis = 42_000,
             configuration = first.resources.configuration)
-        tick()
-        assertTrue(CarPlayVideo.blocked)
-        rate()
-        assertFalse(CarPlayVideo.playing)
         val second = open(launch, DRIVER)
         assertSame(second, CarPlayVideo.activity)
         assertTrue(diagnostics.any { it.startsWith("event=player_attached") })
@@ -273,6 +279,8 @@ class CarPlayPassengerVideoTest {
         assertEquals(42_000, CarPlayVideo.startMillis)
         assertTrue(CarPlayVideo.blocked)
         assertEquals(false, rates[second])
+        rate()
+        assertFalse(CarPlayVideo.playing)
         screens.shown[second] = PASSENGER
         tick()
         assertTrue(CarPlayVideo.playing)
@@ -362,15 +370,29 @@ class CarPlayPassengerVideoTest {
         assertFalse(screen.playbackReleased)
     }
 
-    @Test fun anotherRequestForAnOpenPlayerBringsItForwardInsteadOfOpeningAnother() {
+    @Test fun anotherRequestForAnOpenPlayerBringsItsTaskForwardInsteadOfOpeningAnother() {
         play()
-        open(launches.single(), PASSENGER)
+        val screen = open(launches.single(), PASSENGER)
+        val task = appTask(screen.taskId)
+        val other = appTask(screen.taskId + 1)
+        shadowOf(screen.getSystemService(ActivityManager::class.java)).setAppTasks(listOf(other, task))
         launches.clear()
         CarPlayVideo.onVideoUiRequested()
         idle()
+        assertTrue(launches.isEmpty())
+        verify(task).moveToFront()
+        verify(other, never()).moveToFront()
+        assertTrue(diagnostics.any { it.startsWith("event=player_brought_to_front") && it.contains("moved=true") })
+
+        diagnostics.clear()
+        doThrow(IllegalStateException("gone")).`when`(task).moveToFront()
         rate()
         assertTrue(launches.isEmpty())
-        assertTrue(diagnostics.any { it.startsWith("event=player_brought_to_front") })
+        assertTrue(diagnostics.any { it.startsWith("event=player_brought_to_front") && it.contains("moved=false") })
+        diagnostics.clear()
+        shadowOf(screen.getSystemService(ActivityManager::class.java)).setAppTasks(listOf(other))
+        rate()
+        assertTrue(diagnostics.any { it.startsWith("event=player_brought_to_front") && it.contains("moved=false") })
     }
 
     @Test fun onlyAStartOfTheSamePlayerIsAcceptedAndADuplicatePlayerIsRefused() {
@@ -434,6 +456,188 @@ class CarPlayPassengerVideoTest {
         assertTrue(diagnostics.any { it.startsWith("event=video_session_ended driverScreen=false") })
     }
 
+    @Test fun aPlayerOpeningOnTheDriversScreenAfterLeavingPIsBlockedBeforeItLoads() {
+        play()
+        val launch = launches.single()
+        drive()
+        val controller = created(launch, DRIVER)
+        val screen = controller.get()
+        try {
+            assertSame(screen, CarPlayVideo.activity)
+            assertTrue(CarPlayVideo.blocked)
+            assertFalse(CarPlayVideo.playing)
+            val player = ReflectionHelpers.getField<ExoPlayer>(screen, "player")
+            assertFalse(player.playWhenReady)
+            val blockedAt = diagnostics.indexOfFirst { it.startsWith("event=player_blocked") }
+            val loadedAt = diagnostics.indexOfFirst { it.startsWith("event=media_source") }
+            assertTrue("$diagnostics", blockedAt in 0 until loadedAt)
+            assertEquals(View.VISIBLE, cover(screen).visibility)
+            assertEquals(View.INVISIBLE, ReflectionHelpers.getField<View>(screen, "playerView").visibility)
+        } finally {
+            controller.destroy()
+        }
+    }
+
+    @Test fun aPlayerOpeningOnAnotherDisplayClosesBeforeItLoads() {
+        play()
+        val controller = created(launches.single(), 1)
+        val screen = controller.get()
+        assertTrue(screen.playbackReleased)
+        assertTrue(screen.isFinishing)
+        assertTrue(diagnostics.any { it.contains("reason=other_display") })
+        assertFalse(diagnostics.any { it.startsWith("event=media_source") })
+        controller.destroy()
+    }
+
+    @Test fun aPlayerOpeningInPOnTheDriversScreenPlays() {
+        play()
+        val controller = created(launches.single(), DRIVER)
+        try {
+            assertTrue(ReflectionHelpers.getField<ExoPlayer>(controller.get(), "player").playWhenReady)
+            assertTrue(CarPlayVideo.playerOnScreen)
+        } finally {
+            controller.destroy()
+        }
+    }
+
+    @Test fun aRefusedPlayerInItsOwnTaskRemovesThatTask() {
+        play()
+        val launch = launches.single()
+        message(mapOf("type" to "stop"))
+        val controller = Robolectric.buildActivity(OwnTaskCarPlayVideoActivity::class.java, launch.intent).create()
+        assertTrue(controller.get().isFinishing)
+        assertNull(CarPlayVideo.activity)
+        controller.destroy()
+    }
+
+    @Test fun theDisplayIsReadOnceTheMoveHasCompleted() {
+        play()
+        val controller = created(launches.single(), DRIVER).start().resume().visible()
+        val screen = controller.get()
+        try {
+            assertTrue(CarPlayVideo.playerOnScreen)
+            screens.shown[screen] = PASSENGER
+            screen.onConfigurationChanged(android.content.res.Configuration(screen.resources.configuration))
+            assertTrue(CarPlayVideo.playerOnScreen)
+            idle()
+            assertFalse(CarPlayVideo.playerOnScreen)
+            assertTrue(diagnostics.any { it.startsWith("event=player_config_changed diff=0x") && it.endsWith("display=$PASSENGER") })
+        } finally {
+            controller.pause().stop().destroy()
+        }
+    }
+
+    @Test fun closingAPlayerTheFirmwareMovedGoesByItsDisplayNow() {
+        play()
+        val screen = open(launches.single(), DRIVER)
+        assertTrue(CarPlayVideo.playerOnScreen)
+        screens.shown[screen] = PASSENGER
+        descendants(ReflectionHelpers.getField(screen, "controls")).filterIsInstance<TextView>()
+            .single { it.text == screen.getString(R.string.video_back_to_carplay) }.performClick()
+        assertTrue(screen.isFinishing)
+        assertNull(shadowOf(screen).nextStartedActivity)
+    }
+
+    @Test fun mediaKeysStayWithTheVideoAndOtherKeysReachCarPlayOnlyFromAnotherScreen() {
+        play()
+        val controller = created(launches.single(), PASSENGER)
+        val screen = controller.get()
+        val carPlay = mock(CarPlayHostActivity::class.java)
+        ReflectionHelpers.setField(CarPlayScreen, "open", WeakReference(carPlay))
+        try {
+            fun press(code: Int) = android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, code)
+            for (code in listOf(android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, android.view.KeyEvent.KEYCODE_MEDIA_NEXT,
+                android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS, android.view.KeyEvent.KEYCODE_HEADSETHOOK)) {
+                screen.dispatchKeyEvent(press(code))
+            }
+            verify(carPlay, never()).dispatchKeyEvent(anyKey())
+            val select = press(android.view.KeyEvent.KEYCODE_DPAD_CENTER)
+            screen.dispatchKeyEvent(select)
+            verify(carPlay).dispatchKeyEvent(select)
+            screens.shown[screen] = DRIVER
+            screen.dispatchKeyEvent(press(android.view.KeyEvent.KEYCODE_DPAD_LEFT))
+            verify(carPlay, times(1)).dispatchKeyEvent(anyKey())
+        } finally {
+            controller.destroy()
+        }
+    }
+
+    @Test fun aPlayerInItsOwnTaskStaysPlacedByScreensAfterTheOptionIsTurnedOff() {
+        play()
+        val screen = open(launches.single(), DRIVER)
+        screens.enabled = false
+        drive()
+        assertTrue(CarPlayVideo.blocked)
+        assertFalse(CarPlayVideo.playing)
+        assertEquals(false, rates[screen])
+    }
+
+    @Test fun aPlayerOpenedOverCarPlayClosesOutsidePAfterTheOptionIsTurnedOn() {
+        screens.enabled = false
+        play()
+        val screen = Robolectric.buildActivity(CarPlayVideoActivity::class.java, shadowOf(host).nextStartedActivity).get()
+        ReflectionHelpers.setField(screen, "player", mock(ExoPlayer::class.java))
+        ReflectionHelpers.setField(screen, "controls", ReflectionHelpers.callInstanceMethod<View>(screen, "controlBar"))
+        assertTrue(CarPlayVideo.attachPlayer(screen))
+        screens.enabled = true
+        CarPlayVideo.onPlayerDisplay(screen)
+        assertTrue(CarPlayVideo.playerOnScreen)
+        assertEquals(View.GONE, moveButton(screen).visibility)
+        assertTrue(launches.isEmpty())
+        drive()
+        assertTrue(screen.playbackReleased)
+        assertFalse(CarPlayVideo.blocked)
+        assertTrue(diagnostics.any { it.contains("reason=left_park") })
+    }
+
+    @Test fun aNewItemAfterStopIsNotHeldByTheClosingBlockedPlayer() {
+        play()
+        val old = open(launches.single(), DRIVER)
+        drive()
+        assertTrue(CarPlayVideo.blocked)
+        launches.clear()
+        message(mapOf("type" to "stop"))
+        queue("second")
+        rate()
+        assertTrue(CarPlayVideo.playing)
+        assertTrue(old.playbackReleased)
+        CarPlayVideo.detachPlayer(old, false)
+        val launch = launches.single()
+        assertEquals(PASSENGER, launch.display)
+        val next = open(launch, PASSENGER)
+        assertTrue(CarPlayVideo.playing)
+        assertEquals(true, rates[next])
+    }
+
+    @Test fun aMoveOfAnEndedPlaybackDoesNotRefuseTheNextPlayer() {
+        play()
+        val old = open(launches.single(), DRIVER)
+        CarPlayVideo.movePlayer(CarPlayVideoPlacement.Move.TO_PASSENGER)
+        message(mapOf("type" to "stop"))
+        CarPlayVideo.detachPlayer(old, false)
+        launches.clear()
+        queue("second")
+        rate()
+        val next = open(launches.single(), DRIVER)
+        tick()
+        tick()
+        assertEquals(CarPlayVideoPlacement.Move.TO_PASSENGER, CarPlayVideo.playerMove())
+        assertEquals(View.VISIBLE, moveButton(next).visibility)
+        assertFalse(diagnostics.any { it.startsWith("event=player_move_refused") })
+    }
+
+    // Mockito's any() returns null, which a Kotlin parameter that is not nullable refuses.
+    private fun anyKey(): android.view.KeyEvent {
+        any(android.view.KeyEvent::class.java)
+        return android.view.KeyEvent(0, 0)
+    }
+
+    private fun created(launch: Launch, display: Int): ActivityController<OwnTaskCarPlayVideoActivity> {
+        val controller = Robolectric.buildActivity(OwnTaskCarPlayVideoActivity::class.java, launch.intent)
+        screens.shown[controller.get()] = display
+        return controller.create()
+    }
+
     private fun open(launch: Launch, display: Int): CarPlayVideoActivity {
         val screen = Robolectric.buildActivity(OwnTaskCarPlayVideoActivity::class.java, launch.intent).get()
         val engine = mock(ExoPlayer::class.java)
@@ -448,6 +652,10 @@ class CarPlayPassengerVideoTest {
         CarPlayVideo.onPlayerDisplay(screen)
         if (!screen.playbackReleased) screen.applyRate()
         return screen
+    }
+
+    private fun appTask(taskId: Int): ActivityManager.AppTask = mock(ActivityManager.AppTask::class.java).also {
+        doReturn(ActivityManager.RecentTaskInfo().apply { this.taskId = taskId }).`when`(it).taskInfo
     }
 
     private fun park(passenger: Int? = PASSENGER) {

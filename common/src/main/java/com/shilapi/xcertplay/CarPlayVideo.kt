@@ -321,12 +321,17 @@ internal object CarPlayVideo : CarPlayVideoListener {
             if (recreatedFrom == null) blocked = false
             return
         }
-        val context = appContext ?: return
-        if (!passenger.enabled(context)) {
-            // Without the passenger screen option the player keeps upstream's placement: it covers the host.
+        if (!player.inOwnTask) {
+            // A player opened over CarPlay keeps that placement even if the option changed since. The gate may still
+            // allow video outside P for a passenger screen, which this player never moves to.
+            if (!VideoInCar.screens.driverScreen) {
+                pausePlayback("left_park", player.resumePositionMillis())
+                return
+            }
             playerOnScreen = true
             return
         }
+        val context = appContext ?: return
         val actual = passenger.displayOf(player) ?: return
         val driver = hostDisplay()
         val identity = passenger.identity(context)
@@ -387,6 +392,9 @@ internal object CarPlayVideo : CarPlayVideoListener {
     }
 
     private fun hostDisplay(): Int = CarPlayScreen.current()?.let(passenger::displayOf) ?: Display.DEFAULT_DISPLAY
+
+    /** Whether [player] is on the display of the CarPlay screen now. Main thread. */
+    fun onCarPlayDisplay(player: CarPlayVideoActivity): Boolean = passenger.displayOf(player) == hostDisplay()
 
     /** Where the player's move button takes it, or null when it shows none. Main thread. */
     fun playerMove(): CarPlayVideoPlacement.Move? {
@@ -843,7 +851,7 @@ internal object CarPlayVideo : CarPlayVideoListener {
             // Keep the new request until the old Activity has released all player resources.
             if (!attached.playbackReleased && !attached.isFinishing) {
                 pendingOpen = null
-                if (own) bringToFront(attached)
+                if (attached.inOwnTask) bringToFront(attached)
             } else if (pendingOpen == null) deferOpen(streamId, playing)
             return
         }
@@ -944,6 +952,7 @@ internal object CarPlayVideo : CarPlayVideoListener {
             streamId?.let { reply(it, VideoInCar.playbackStateNotification(false, itemUuid)) }
         }
         playing = false
+        blocked = false
         resumeOnPassenger = false
         clearPendingOpen()
         synchronized(urlRequestLock) {
@@ -979,6 +988,7 @@ internal object CarPlayVideo : CarPlayVideoListener {
             itemUuid = null
         }
         playing = false
+        blocked = false
         resumeOnPassenger = false
         streaming = false
         startMillis = 0
@@ -995,6 +1005,8 @@ internal object CarPlayVideo : CarPlayVideoListener {
         playerOpening = false
         launchId = null
         launchTarget = null
+        moveTarget = null
+        moveTicks = 0
         // A player that was asked for but never opened (Android can refuse a start from the background)
         // must not leave the CarPlay screen holding its size changes.
         if (activity == null) onPlayerGone()

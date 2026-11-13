@@ -51,6 +51,13 @@ class CarPlayVideoPlacementTest {
         assertEquals("passenger_screen_gone", CarPlayVideoPlacement.closeReason(passenger, driver, passenger, false))
     }
 
+    @Test fun theDefaultDisplayIsNeverTakenForThePassengerScreen() {
+        assertEquals(Verdict.BLOCK, verdict(driver, driving, identity = driver))
+        assertEquals(Verdict.CLOSE, verdict(driver, VideoScreens(false, null), identity = driver))
+        assertNull(CarPlayVideoPlacement.move(driver, 5, parked, driver))
+        assertEquals("not_allowed_here", CarPlayVideoPlacement.closeReason(driver, driver, driver, false))
+    }
+
     @Test fun anyOtherDisplayClosesThePlayer() {
         for (screens in listOf(parked, driving, VideoScreens(true, null))) {
             assertEquals(Verdict.CLOSE, verdict(1, screens))
