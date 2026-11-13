@@ -62,9 +62,13 @@ class IphoneVideoSettingsScreenshotsTest {
                 val latencyRow = descendants(sections).filterIsInstance<Switch>().single {
                     it.contentDescription == activity.getString(R.string.settings_low_latency_decoder)
                 }.parent as ViewGroup
+                val forceRow = descendants(sections).filterIsInstance<Switch>().single {
+                    it.contentDescription == activity.getString(R.string.settings_force_video_in_car)
+                }.parent as ViewGroup
                 val card = row.parent as ViewGroup
                 assertTrue(latencyRow.parent === card)
-                assertEquals(card.indexOfChild(latencyRow) + 1, card.indexOfChild(row))
+                assertEquals(card.indexOfChild(latencyRow) + 1, card.indexOfChild(forceRow))
+                assertEquals(card.indexOfChild(forceRow) + 1, card.indexOfChild(row))
                 row.setBackgroundColor(DiPlayPalette.DARK.surface)
                 val width = (widthDp * activity.resources.displayMetrics.density).toInt()
                 sections.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
