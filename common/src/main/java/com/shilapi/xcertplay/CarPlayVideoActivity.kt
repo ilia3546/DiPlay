@@ -95,7 +95,7 @@ class CarPlayVideoActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (!CarPlayVideo.attachPlayer(this)) {
-            CarPlayVideo.onPlayerGone()
+            CarPlayVideo.onPlayerRejected()
             finish()
             return
         }

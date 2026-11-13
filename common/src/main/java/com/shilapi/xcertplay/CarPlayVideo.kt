@@ -269,6 +269,11 @@ internal object CarPlayVideo : CarPlayVideoListener {
         playerOnScreen = false
     }
 
+    /** A late or duplicate player start was refused; the hold stays while another player is open or opening. */
+    fun onPlayerRejected() {
+        if (activity == null && !playerOpening) playerOnScreen = false
+    }
+
     /** Back pauses the current item while releasing its player and pending resource loads. */
     fun dismissPlayer(positionMillis: Int?) {
         commandGeneration++
