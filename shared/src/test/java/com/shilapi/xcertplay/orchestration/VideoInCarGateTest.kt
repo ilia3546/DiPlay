@@ -10,6 +10,43 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 class VideoInCarGateTest {
+    @Test
+    fun forcedVideoSkipsGearReadsAndRemainsAllowedForEveryGear() {
+        val changes = mutableListOf<Boolean>()
+        val gate = VideoInCarGate(
+            readParked = { error("Forced video must not read BYD gear") },
+            onChanged = { changes += it },
+            onObserved = { error("Forced video must not report an invented gear") },
+            forceVideoInCar = true,
+        )
+        try {
+            gate.start()
+            assertTrue(VideoInCar.allowed)
+            gate.update(false)
+            gate.update(null)
+            gate.update(true)
+            assertEquals(listOf(true), changes)
+            assertTrue(VideoInCar.allowed)
+        } finally {
+            gate.close()
+        }
+        gate.update(true)
+        assertFalse(VideoInCar.allowed)
+    }
+
+    @Test
+    fun normalGateRestoresGearChecksAfterAForcedConnection() {
+        val forced = VideoInCarGate({ null }, {}, forceVideoInCar = true)
+        forced.start()
+        forced.close()
+        val normal = VideoInCarGate({ null }, {})
+        normal.update(false)
+        assertFalse(VideoInCar.allowed)
+        normal.update(true)
+        assertTrue(VideoInCar.allowed)
+        normal.close()
+    }
+
     @After
     fun reset() {
         VideoInCar.allowed = false
