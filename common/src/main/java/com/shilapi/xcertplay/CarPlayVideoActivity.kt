@@ -83,9 +83,11 @@ class CarPlayVideoActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (!CarPlayVideo.attachPlayer(this)) {
+            CarPlayVideo.onPlayerGone()
             finish()
             return
         }
+        CarPlayVideo.playerOnScreen = true
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() = returnToCarPlay()
@@ -110,13 +112,7 @@ class CarPlayVideoActivity : ComponentActivity() {
 
             override fun onPlayerError(error: PlaybackException) {
                 Log.w(TAG, "player error ${error.errorCodeName}: ${causes(error)}")
-                CarPlayVideo.onPlayerFailed(
-                    when (error.errorCode) {
-                        in 2000..2999 -> VideoInCar.ERROR_NETWORK // IO
-                        in 4000..4999 -> VideoInCar.ERROR_DECODER // decoding
-                        else -> VideoInCar.ERROR_INCOMPATIBLE_ASSET // parsing, DRM, unsupported
-                    },
-                )
+                CarPlayVideo.onPlayerFailed(error.errorCode)
             }
         })
         val view = PlayerView(this).apply {
@@ -420,12 +416,19 @@ class CarPlayVideoActivity : ComponentActivity() {
             "validated=${capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)}"
     }
 
+    // Finishing pauses this player before the CarPlay screen resumes, which then checks its window again.
+    override fun onPause() {
+        if (isFinishing && CarPlayVideo.activity === this) CarPlayVideo.onPlayerGone()
+        super.onPause()
+    }
+
     override fun onDestroy() {
         main.removeCallbacks(hideControls)
         main.removeCallbacks(tick)
         if (CarPlayVideo.activity === this) {
             CarPlayVideo.activity = null
             if (!isChangingConfigurations) {
+                CarPlayVideo.onPlayerGone()
                 CarPlayVideo.onPlayerClosed(if (::player.isInitialized && prepared) player.currentPosition.toInt() else null)
             }
         }
