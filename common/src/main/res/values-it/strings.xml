@@ -1049,4 +1049,6 @@
     <string name="settings_cluster_speedometer_album_color_description">Abbina il colore della cornice dell’album con transizioni fluide. Mantiene l’opacità selezionata.</string>
     <string name="settings_force_video_in_car">Forza il supporto video CarPlay (sperimentale)</string>
     <string name="settings_force_video_in_car_description">Comunica a iPhone il supporto dei video CarPlay e ne consente la riproduzione senza controllare la posizione del cambio né richiedere ADB. Per sicurezza, attiva questa opzione solo quando il veicolo è parcheggiato in sicurezza. Quando è attiva, ha la precedenza sul vincolo del cambio per i video BYD a veicolo parcheggiato. La modifica si applica alla prossima connessione. La riproduzione effettiva dipende da iOS e dall’app video.</string>
+    <string name="settings_video_use_iphone_network">Usa la rete iPhone per il traffico video (sperimentale)</string>
+    <string name="settings_video_use_iphone_network_description">Carica i video in streaming supportati tramite la connessione Internet dell’iPhone e può usare i dati mobili. I video forniti come file singolo continuano a usare la connessione Internet dell’unità di bordo, mentre per riprodurre gli streaming che leggono parti diverse dello stesso file occorre disattivare l’inoltro. Le modifiche si applicano alla prossima apertura di un video.</string>
 </resources>

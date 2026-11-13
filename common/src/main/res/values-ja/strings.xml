@@ -1061,4 +1061,6 @@
     <string name="settings_cluster_speedometer_album_color_description">アルバムの枠の色に滑らかに切り替わります。選択した不透明度は維持されます。</string>
     <string name="settings_force_video_in_car">CarPlay 動画への対応を強制的に通知（実験的機能）</string>
     <string name="settings_force_video_in_car_description">iPhone に CarPlay の動画再生に対応していることを通知し、シフト位置を確認せずに動画再生を許可します。ADB は不要です。安全のため、車両を安全に駐車した状態でのみ有効にしてください。有効な間は、BYD の駐車中動画再生のシフト位置による制限より優先されます。変更は次回の接続時に反映されます。実際に再生できるかどうかは iOS と動画アプリによって異なります。</string>
+    <string name="settings_video_use_iphone_network">動画の通信に iPhone のネットワークを使用（実験的機能）</string>
+    <string name="settings_video_use_iphone_network_description">対応するストリーミング動画を iPhone のインターネット接続で読み込みます。モバイルデータ通信を使用する場合があります。単一のファイルで配信される動画は引き続き車載機のインターネット接続で読み込み、同じファイルの異なる部分を読み込むストリームは中継をオフにすると再生できます。設定の変更は次に開く動画から適用されます。</string>
 </resources>

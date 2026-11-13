@@ -1019,4 +1019,6 @@
     <string name="settings_cluster_speedometer_album_color_description">平滑过渡到专辑边框的颜色，并保留所选的不透明度。</string>
     <string name="settings_force_video_in_car">强制声明支持 CarPlay 视频（实验性）</string>
     <string name="settings_force_video_in_car_description">向 iPhone 声明支持 CarPlay 视频播放，不检查车辆挡位，也不需要 ADB。为了安全，请仅在车辆停稳后开启此选项。开启时优先于 BYD 驻车视频的挡位限制。更改在下次连接时生效，实际播放能力取决于 iOS 和视频 App。</string>
+    <string name="settings_video_use_iphone_network">视频流量使用 iPhone 网络（实验性）</string>
+    <string name="settings_video_use_iphone_network_description">通过 iPhone 的网络加载支持的视频流，可能会使用移动数据。以单个文件提供的视频仍由车机联网加载，需要从同一个文件读取不同片段的视频流则须关闭转发才能正常播放。设置变更会在下次打开视频时生效。</string>
 </resources>
