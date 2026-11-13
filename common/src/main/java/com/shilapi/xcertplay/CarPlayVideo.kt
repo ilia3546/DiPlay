@@ -322,6 +322,11 @@ internal object CarPlayVideo : CarPlayVideoListener {
             return
         }
         val context = appContext ?: return
+        if (!passenger.enabled(context)) {
+            // Without the passenger screen option the player keeps upstream's placement: it covers the host.
+            playerOnScreen = true
+            return
+        }
         val actual = passenger.displayOf(player) ?: return
         val driver = hostDisplay()
         val identity = passenger.identity(context)
