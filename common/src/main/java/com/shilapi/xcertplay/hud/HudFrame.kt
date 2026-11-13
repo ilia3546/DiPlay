@@ -32,6 +32,8 @@ data class HudFrame(
     @JvmField val minutesUnit: String,
     @JvmField val tripNumber: String,
     @JvmField val tripUnit: String,
+    /** Traffic keeps left, so roundabouts go round clockwise. */
+    @JvmField val leftHandTraffic: Boolean = false,
 ) {
     @JvmField val hasTrip: Boolean = tripMinutes.isNotEmpty() || tripNumber.isNotEmpty()
 
@@ -52,8 +54,12 @@ data class HudFrame(
                 minutesUnit = units.minutes,
                 tripNumber = trip?.first.orEmpty(),
                 tripUnit = trip?.second.orEmpty(),
+                leftHandTraffic = glance.drivingSide == LEFT_HAND_DRIVING,
             )
         }
+
+        /** Apple's driving side for traffic that keeps left. */
+        const val LEFT_HAND_DRIVING = 1
 
         /** The roundabout exit Apple's [type] names, 1 to 19, or 0 for none. */
         fun exitNumber(type: Int): Int = if (type in 28..46) type - 27 else 0

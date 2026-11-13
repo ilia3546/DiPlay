@@ -14,7 +14,7 @@ import kotlin.math.abs
 
 /**
  * The designer's reference for the HUD line (`hud/design-reference.json`): every sign's source paths and dots, every
- * lane arrow in its three roles, the numbered roundabout exits, and the layout of one line. Arrows end in filled
+ * lane arrow in its three roles, the roundabout exits, and the layout of one line. Arrows end in filled
  * heads (`fill`), so the same signs read on the dashboard card and at the head-up display's small sizes.
  */
 @RunWith(RobolectricTestRunner::class) // org.json
@@ -143,14 +143,8 @@ class HudDrawingReferenceTest {
             for (exit in 1..19) {
                 val r = Recording()
                 ManeuverIcon.draw(r, HudManeuver.ROUNDABOUT_EXIT, 400.0, 215.0, size.toDouble(), stroke.toDouble(), cyan, exit)
-                assertEquals("ring only with number", 3, r.ops.size)
-                assertEquals("M21 10.5 A9 9 0 1 1 3 10.5 A9 9 0 1 1 21 10.5", r.ops[0].data)
-                assertEquals("M12 22.5 V19.5", r.ops[1].data)
-                val number = r.ops[2]
-                assertEquals(exit.toString(), number.text)
-                assertEquals(700, number.weight)
-                close(number.size, (if (exit >= 10) 10.5 else 12.5) * size / 24, "ring font")
-                close(number.tracking, if (exit >= 10) -.4 * size / 24 else 0.0, "ring tracking")
+                assertTrue("no number", r.ops.none { it.type == "text" })
+                assertEquals("way round over its rim, or three looped arrows", if (exit <= 3) 4 else 6, r.ops.size)
             }
             for (direction in HudLaneDirection.entries) for (role in 0..2) {
                 val r = Recording()

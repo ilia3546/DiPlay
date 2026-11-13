@@ -28,6 +28,7 @@ internal data class DashboardRoute(
     /** The sign the head-up display draws for the same maneuver, so both read alike. */
     val sign: HudManeuver,
     val exitNumber: Int,
+    val leftHandTraffic: Boolean = false,
 ) {
     companion object {
         /** Null without a route, including once the glance lets an instruction expire. */
@@ -40,6 +41,7 @@ internal data class DashboardRoute(
                 glance.remainingMeters,
                 HudFrame.sign(type),
                 HudFrame.exitNumber(type),
+                glance.drivingSide == HudFrame.LEFT_HAND_DRIVING,
             )
         }
     }
@@ -78,7 +80,7 @@ internal class DashboardManeuverCard(context: Context) : LinearLayout(context) {
 
     fun show(route: DashboardRoute) {
         val turn = route.turn
-        glyph.show(route.sign, route.exitNumber)
+        glyph.show(route.sign, route.exitNumber, route.leftHandTraffic)
         distance.text = ClusterTurnCardView.distanceLabel(context, turn.distanceMeters)
         road.text = ClusterTurnCardView.roadLabel(context, turn)
         road.visibility = if (road.text.isEmpty()) GONE else VISIBLE
@@ -108,11 +110,13 @@ internal class DashboardManeuverGlyph(context: Context) : View(context) {
         private set
     var exitNumber = 0
         private set
+    private var leftHandTraffic = false
 
-    fun show(sign: HudManeuver, exitNumber: Int) {
-        if (sign == this.sign && exitNumber == this.exitNumber) return
+    fun show(sign: HudManeuver, exitNumber: Int, leftHandTraffic: Boolean = false) {
+        if (sign == this.sign && exitNumber == this.exitNumber && leftHandTraffic == this.leftHandTraffic) return
         this.sign = sign
         this.exitNumber = exitNumber
+        this.leftHandTraffic = leftHandTraffic
         invalidate()
     }
 
@@ -120,7 +124,7 @@ internal class DashboardManeuverGlyph(context: Context) : View(context) {
         val sign = sign ?: return
         val size = minOf(width, height).toDouble()
         ManeuverIcon.draw(AndroidHudCanvas(canvas), sign, width / 2.0, height / 2.0, size, size * STROKE_PER_SIZE,
-            Color.WHITE, exitNumber)
+            Color.WHITE, exitNumber, leftHandTraffic, L.MANEUVER_ICON)
     }
 
     private companion object {

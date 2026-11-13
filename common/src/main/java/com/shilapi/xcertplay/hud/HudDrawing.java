@@ -22,7 +22,7 @@ public final class HudDrawing {
         if(frame==null)return;
         canvas=new ScaledCanvas(canvas,settings.scalePercent,settings.centerY);
         double left=64,right=736,y=settings.centerY,x0=left+icon+20*k;
-        ManeuverIcon.draw(canvas,frame.kind,left+icon/2,y,icon,stroke,CYAN,frame.exitNumber);
+        ManeuverIcon.draw(canvas,frame.kind,left+icon/2,y,icon,stroke,CYAN,frame.exitNumber,frame.leftHandTraffic,0xff000000);
         float baseline=(float)(y+.355*numberFont);double x=x0;
         canvas.text(frame.number,(float)x,baseline,numberFont,WHITE,true);x+=canvas.measure(frame.number,numberFont,true)+5*k;
         canvas.text(frame.unit,(float)x,baseline,unitFont,MUTED,false);x+=canvas.measure(frame.unit,unitFont,false)+20*k;
