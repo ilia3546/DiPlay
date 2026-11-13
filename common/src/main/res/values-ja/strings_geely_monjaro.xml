@@ -6,6 +6,7 @@
     <string name="settings_geely_monjaro_a3_car_dashboard">純正メーター</string>
     <string name="settings_geely_monjaro_a3_custom_dashboard">カスタムメーター</string>
     <string name="settings_geely_monjaro_a3_hud">ヘッドアップディスプレイ</string>
+    <string name="settings_geely_monjaro_a3_diagnostics">診断</string>
     <string name="settings_root_hotspot_details">車のホットスポットの正確な情報（実験的機能）</string>
     <string name="settings_root_hotspot_details_description">Android が車のホットスポットのチャンネルを公開しない場合、ファームウェアのホットスポット設定から読み取り、ホットスポットの BSSID も iPhone に伝えます。root（Magisk）が必要です。次回の接続から反映されます。</string>
     <string name="settings_root_hotspot_start">root で車のホットスポットをオンにする（実験的機能）</string>
@@ -107,4 +108,6 @@
     <string name="hud_unit_meters">m</string>
     <string name="hud_unit_kilometres">km</string>
     <string name="hud_unit_minutes">分</string>
+    <string name="settings_report_system_log">診断レポートにシステムログを追加（実験的機能）</string>
+    <string name="settings_report_system_log_description">保存する診断レポートの末尾に、ヘッドユニット全体の直近 5 分間のシステムログ（最大 15 MB）を追加します。他のアプリやファームウェアの行を含めるには root（Magisk）が必要です。root がない場合は DiPlay 自身の行だけが追加されます。アドレス、座標、ネットワーク名は伏せられますが、車やその使い方について他の情報が含まれることがあります。保存されたファイルにだけ含まれ、DiPlay のレポート表示や電話で開くレポートには出ません。すぐに反映されます。</string>
 </resources>

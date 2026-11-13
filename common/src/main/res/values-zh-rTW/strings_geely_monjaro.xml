@@ -6,6 +6,7 @@
     <string name="settings_geely_monjaro_a3_car_dashboard">原車儀表</string>
     <string name="settings_geely_monjaro_a3_custom_dashboard">自訂儀表板</string>
     <string name="settings_geely_monjaro_a3_hud">抬頭顯示器（HUD）</string>
+    <string name="settings_geely_monjaro_a3_diagnostics">診斷</string>
     <string name="settings_root_hotspot_details">車輛熱點的準確資訊（實驗性）</string>
     <string name="settings_root_hotspot_details_description">當 Android 隱藏車輛熱點的頻道時，從韌體的熱點設定中讀取頻道，並把熱點的 BSSID 告訴 iPhone。需要 root（Magisk）。下次連線時生效。</string>
     <string name="settings_root_hotspot_start">透過 root 開啟車機熱點（實驗性）</string>
@@ -107,4 +108,6 @@
     <string name="hud_unit_meters">公尺</string>
     <string name="hud_unit_kilometres">公里</string>
     <string name="hud_unit_minutes">分鐘</string>
+    <string name="settings_report_system_log">在診斷報告中加入系統日誌（實驗性）</string>
+    <string name="settings_report_system_log_description">在每份儲存的診斷報告末尾加入整台車機最近 5 分鐘的系統日誌，最多 15 MB。其他應用程式和韌體的日誌行需要 root（Magisk）；沒有 root 時只加入 DiPlay 自身的日誌行。位址、座標和網路名稱會被隱去，但日誌仍可能包含車輛及其使用情況的其他資訊。只有儲存的檔案包含這部分：DiPlay 的報告檢視畫面和手機上的報告都不顯示。立即生效。</string>
 </resources>

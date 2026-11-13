@@ -941,7 +941,7 @@ class AdaptiveSettingsUiTest {
         val shown = descendants(card).filterIsInstance<TextView>().map { it.text.toString() }.toList()
         val groups = listOf(R.string.settings_geely_monjaro_a3_connection, R.string.settings_geely_monjaro_a3_sound,
             R.string.settings_geely_monjaro_a3_car_dashboard, R.string.settings_geely_monjaro_a3_custom_dashboard,
-            R.string.settings_geely_monjaro_a3_hud)
+            R.string.settings_geely_monjaro_a3_hud, R.string.settings_geely_monjaro_a3_diagnostics)
         val order = listOf(
             groups[0], R.string.settings_root_hotspot_details, R.string.settings_root_hotspot_start,
             R.string.settings_disconnect_phone_bluetooth, R.string.settings_hotspot_audio_firewall, R.string.settings_request_lost_audio,
@@ -954,6 +954,7 @@ class AdaptiveSettingsUiTest {
             R.string.settings_custom_dashboard_wheel_toggle,
             groups[4], R.string.settings_hud_maneuvers, R.string.settings_hud_height, R.string.settings_hud_scale,
             R.string.settings_hud_lanes, R.string.settings_hud_trip,
+            groups[5], R.string.settings_report_system_log,
         ).map(screen::getString)
         val positions = order.map { title -> shown.indexOfFirst { it == title || it.startsWith(title + " · ") } }
         assertTrue("$order\n$shown", positions.none { it < 0 })
@@ -974,9 +975,22 @@ class AdaptiveSettingsUiTest {
             (title.layoutParams as LinearLayout.LayoutParams).topMargin + bottom(previous)
         }
         assertEquals(0, (titles.first().layoutParams as LinearLayout.LayoutParams).topMargin)
-        assertEquals(listOf(gap, gap, gap, gap), above.drop(1))
+        assertEquals(listOf(gap, gap, gap, gap, gap), above.drop(1))
         val index = ReflectionHelpers.callInstanceMethod<List<DiPlayActivity.SettingsSearchResult>>(screen, "buildSettingsSearchIndex")
         assertTrue(index.any { it.title == screen.getString(R.string.settings_custom_dashboard_map_width) })
+    }
+
+    @Test @Config(sdk = [25])
+    fun geelyMonjaroA3CardHasNoSystemLogToggleBeforeAndroid8() {
+        ShadowBuild.setProduct("geely_fx11")
+        ShadowBuild.setModel("KX11-A3-L1")
+        val screen = openSettings()
+        ReflectionHelpers.setField(screen, "settingsCategory", SettingsCategory.ADVANCED)
+        ReflectionHelpers.callInstanceMethod<Unit>(screen, "render")
+        val shown = texts(screen).map { it.text.toString() }.toList()
+        assertTrue(shown.contains(screen.getString(R.string.settings_geely_monjaro_a3_hud)))
+        assertFalse(shown.contains(screen.getString(R.string.settings_geely_monjaro_a3_diagnostics)))
+        assertFalse(shown.contains(screen.getString(R.string.settings_report_system_log)))
     }
 
     @Test fun customDashboardMapWidthIsAPresetThatAppliesAtTheNextConnection() {

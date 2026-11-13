@@ -1,11 +1,13 @@
 package com.shilapi.xcertplay
 
+import android.content.Context
 import android.content.Intent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -61,6 +63,38 @@ class DiagnosticReportViewTest {
         println("REPORT_VIEW reportChars=${report.length} viewChars=${shown.length} showMs=$millis")
         assertTrue("view holds ${shown.length} of ${report.length} chars", shown.length <= 250_000)
         assertTrue(shown.endsWith(report.takeLast(1_000)))
+    }
+
+    @Test fun theSystemLogSectionIsOnlyInTheSavedFile() {
+        val sessionLogs = "DiPlay 1.0\n--- diplay.log ---\n12:00:00.000  CarPlay connected\n"
+        val systemLog = SystemLogSnapshot.MARKER + "root) ---\n" +
+            "11-13 10:00:01.000  1234  5678 D FocusControlManager: requestAudioFocus usage=1\n".repeat(30_000)
+        assertEquals(sessionLogs, showReport(sessionLogs + systemLog).first)
+    }
+
+    private fun reportText(withSystemLog: Boolean): String {
+        val screen = activity ?: Robolectric.buildActivity(
+            DiPlayActivity::class.java,
+            Intent(RuntimeEnvironment.getApplication(), DiPlayActivity::class.java).putExtra("page", "settings"),
+        ).setup().get().also { activity = it }
+        return DiPlayActivity::class.java
+            .getDeclaredMethod("diagnosticReportText", Context::class.java, java.lang.Boolean.TYPE)
+            .apply { isAccessible = true }.invoke(screen, screen.applicationContext, withSystemLog) as String
+    }
+
+    @Test fun thePhoneReportNeverReadsTheSystemLog() {
+        AirPlayPersistence.saveReportSystemLog(RuntimeEnvironment.getApplication(), true)
+        val report = reportText(withSystemLog = false)
+        assertTrue(report.startsWith("DiPlay "))
+        assertFalse(report.contains(SystemLogSnapshot.MARKER))
+    }
+
+    @Test @Config(sdk = [25])
+    fun belowAndroid8TheSavedReportHasNoSystemLog() {
+        AirPlayPersistence.saveReportSystemLog(RuntimeEnvironment.getApplication(), true)
+        val report = reportText(withSystemLog = true)
+        assertTrue(report.startsWith("DiPlay "))
+        assertFalse(report.contains(SystemLogSnapshot.MARKER))
     }
 
     @Test fun smallReportIsShownInFull() {

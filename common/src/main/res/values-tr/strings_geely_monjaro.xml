@@ -6,6 +6,7 @@
     <string name="settings_geely_monjaro_a3_car_dashboard">Aracın kendi gösterge paneli</string>
     <string name="settings_geely_monjaro_a3_custom_dashboard">Özel gösterge paneli</string>
     <string name="settings_geely_monjaro_a3_hud">Ön cam göstergesi (HUD)</string>
+    <string name="settings_geely_monjaro_a3_diagnostics">Teşhis</string>
     <string name="settings_root_hotspot_details">Araç erişim noktasının kesin bilgileri (deneysel)</string>
     <string name="settings_root_hotspot_details_description">Android araç erişim noktasının kanalını gizlediğinde kanalı ürün yazılımının erişim noktası yapılandırmasından okur ve erişim noktasının BSSID değerini de iPhone’a bildirir. Root (Magisk) gerektirir. Sonraki bağlantıda uygulanır.</string>
     <string name="settings_root_hotspot_start">Araç erişim noktasını root ile aç (deneysel)</string>
@@ -107,4 +108,6 @@
     <string name="hud_unit_meters">m</string>
     <string name="hud_unit_kilometres">km</string>
     <string name="hud_unit_minutes">dk</string>
+    <string name="settings_report_system_log">Sistem günlüğünü teşhis raporlarına ekle (deneysel)</string>
+    <string name="settings_report_system_log_description">Kaydedilen her teşhis raporunun sonuna tüm ana ünitenin son 5 dakikalık sistem günlüğünü en fazla 15 MB olarak ekler. Diğer uygulamaların ve ürün yazılımının satırları için root (Magisk) gerekir; root olmadan yalnızca DiPlay\'in kendi satırları eklenir. Adresler, koordinatlar ve ağ adları gizlenir, ancak günlük yine de araç ve kullanımı hakkında başka bilgiler içerebilir. Yalnızca kaydedilen dosyadadır: DiPlay\'deki rapor görünümü ve telefondaki rapor bunu göstermez. Hemen uygulanır.</string>
 </resources>

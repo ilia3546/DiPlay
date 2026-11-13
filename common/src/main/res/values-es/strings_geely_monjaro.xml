@@ -6,6 +6,7 @@
     <string name="settings_geely_monjaro_a3_car_dashboard">Cuadro del coche</string>
     <string name="settings_geely_monjaro_a3_custom_dashboard">Panel de instrumentos propio</string>
     <string name="settings_geely_monjaro_a3_hud">Pantalla frontal (HUD)</string>
+    <string name="settings_geely_monjaro_a3_diagnostics">Diagnóstico</string>
     <string name="settings_root_hotspot_details">Datos exactos del punto de acceso del coche (experimental)</string>
     <string name="settings_root_hotspot_details_description">Cuando Android oculta el canal del punto de acceso del coche, lo lee de la configuración del punto de acceso del firmware y además comunica al iPhone el BSSID del punto de acceso. Requiere root (Magisk). Se aplica en la próxima conexión.</string>
     <string name="settings_root_hotspot_start">Activar el punto de acceso del coche con root (experimental)</string>
@@ -107,4 +108,6 @@
     <string name="hud_unit_meters">m</string>
     <string name="hud_unit_kilometres">km</string>
     <string name="hud_unit_minutes">min</string>
+    <string name="settings_report_system_log">Añadir el registro del sistema a los informes de diagnóstico (experimental)</string>
+    <string name="settings_report_system_log_description">Añade al final de cada informe de diagnóstico guardado el registro del sistema de toda la unidad principal de los últimos 5 minutos, hasta 15 MB. Las líneas de otras apps y del firmware requieren root (Magisk); sin root solo se añaden las líneas de DiPlay. Las direcciones, coordenadas y nombres de redes se ocultan, pero el registro aún puede revelar otros datos del coche y de su uso. Solo está en el archivo guardado: ni la vista del informe en DiPlay ni el informe en el teléfono lo muestran. Se aplica al instante.</string>
 </resources>

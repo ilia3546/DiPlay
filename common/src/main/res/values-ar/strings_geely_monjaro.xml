@@ -6,6 +6,7 @@
     <string name="settings_geely_monjaro_a3_car_dashboard">لوحة عدادات السيارة</string>
     <string name="settings_geely_monjaro_a3_custom_dashboard">لوحة عدادات مخصصة</string>
     <string name="settings_geely_monjaro_a3_hud">شاشة العرض الأمامية (HUD)</string>
+    <string name="settings_geely_monjaro_a3_diagnostics">التشخيص</string>
     <string name="settings_root_hotspot_details">بيانات دقيقة لنقطة اتصال السيارة (تجريبي)</string>
     <string name="settings_root_hotspot_details_description">عندما يخفي Android قناة نقطة اتصال السيارة، يقرأها من إعدادات نقطة الاتصال في البرنامج الثابت ويُبلغ iPhone أيضًا بمعرّف BSSID لنقطة الاتصال. يتطلب صلاحيات root (Magisk). يُطبَّق عند الاتصال التالي.</string>
     <string name="settings_root_hotspot_start">تشغيل نقطة اتصال السيارة عبر root (تجريبي)</string>
@@ -107,4 +108,6 @@
     <string name="hud_unit_meters">م</string>
     <string name="hud_unit_kilometres">كم</string>
     <string name="hud_unit_minutes">د</string>
+    <string name="settings_report_system_log">إضافة سجل النظام إلى تقارير التشخيص (تجريبي)</string>
+    <string name="settings_report_system_log_description">يضيف سجل نظام الوحدة الرئيسية بالكامل لآخر 5 دقائق، حتى 15 ميغابايت، إلى نهاية كل تقرير تشخيص محفوظ. تتطلب أسطر التطبيقات الأخرى والبرنامج الثابت صلاحيات root (Magisk)؛ وبدونها تُضاف أسطر DiPlay نفسه فقط. تُخفى العناوين والإحداثيات وأسماء الشبكات، لكن السجل قد يكشف أمورًا أخرى عن السيارة وطريقة استخدامها. يوجد في الملف المحفوظ فقط: لا يعرضه عارض التقرير في DiPlay ولا التقرير على الهاتف. يُطبَّق فورًا.</string>
 </resources>

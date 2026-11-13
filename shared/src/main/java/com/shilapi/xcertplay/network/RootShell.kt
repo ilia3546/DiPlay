@@ -1,6 +1,9 @@
 package com.shilapi.xcertplay.network
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import java.io.OutputStream
 import java.util.concurrent.TimeUnit
 
@@ -45,6 +48,24 @@ object RootShell {
         exec: (List<String>, Long, ByteArray) -> CommandOutput = ::runProcess,
     ): Result = complete { exec(listOf("su", "-c", command), timeoutMillis, stdin) }
 
+    /** Like [run], handing each output line to [onLine] as it arrives; a timeout keeps the lines already handed over. */
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun stream(
+        command: String,
+        timeoutMillis: Long,
+        onLine: (String) -> Unit,
+        exec: (List<String>, Long, (String) -> Unit) -> CommandOutput = ::streamProcess,
+    ): Result = complete { exec(listOf("su", "-c", command), timeoutMillis, onLine) }
+
+    /** Like [stream], for [command] run as this app without su. */
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun streamProcess(command: List<String>, timeoutMillis: Long, onLine: (String) -> Unit): CommandOutput =
+        executeStreaming(start(command), timeoutMillis, onLine)
+
+    // Magisk's su prints only this line and exits non-zero when root is denied to the app.
+    fun denied(exitCode: Int, output: String): Boolean =
+        exitCode != 0 && output.trim().lowercase().removePrefix("su: ") == "permission denied"
+
     private inline fun complete(exec: () -> CommandOutput): Result {
         val output = try {
             exec()
@@ -73,29 +94,57 @@ object RootShell {
 
     private fun start(command: List<String>): Process = ProcessBuilder(command).redirectErrorStream(true).start()
 
-    /** Reads the output while the command runs: a child that fills the pipe would otherwise never exit. */
     internal fun execute(process: Process, timeoutMillis: Long, feed: (OutputStream) -> Unit): CommandOutput {
+        val output = ByteArrayOutputStream()
+        val exitCode = await(process, timeoutMillis, feed, streaming = false) { input ->
+            val chunk = ByteArray(8_192)
+            while (true) {
+                val read = input.read(chunk)
+                if (read < 0) break
+                synchronized(output) { output.write(chunk, 0, read) }
+            }
+        }
+        if (exitCode == TIMED_OUT) return CommandOutput(TIMED_OUT, stdout = "")
+        return CommandOutput(exitCode, synchronized(output) { output.toString(Charsets.UTF_8.name()) })
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    internal fun executeStreaming(process: Process, timeoutMillis: Long, onLine: (String) -> Unit): CommandOutput =
+        CommandOutput(await(process, timeoutMillis, { it.close() }, streaming = true) { input ->
+            input.bufferedReader(Charsets.UTF_8).forEachLine(onLine)
+        }, stdout = "")
+
+    /**
+     * Reads the output while the command runs: a child that fills the pipe would otherwise never exit.
+     * A [streaming] caller has nothing without the reader, so it waits for the reader until the deadline
+     * and, on a timeout, still lets the reader hand over what the pipe holds.
+     */
+    private fun await(
+        process: Process,
+        timeoutMillis: Long,
+        feed: (OutputStream) -> Unit,
+        streaming: Boolean,
+        read: (InputStream) -> Unit,
+    ): Int {
+        val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis)
         try {
-            val output = ByteArrayOutputStream()
-            val reader = Thread({
-                runCatching {
-                    process.inputStream.use { input ->
-                        val chunk = ByteArray(8_192)
-                        while (true) {
-                            val read = input.read(chunk)
-                            if (read < 0) break
-                            synchronized(output) { output.write(chunk, 0, read) }
-                        }
-                    }
-                }
-            }, "root-shell-stdout").apply { isDaemon = true; start() }
+            val reader = Thread({ runCatching { process.inputStream.use(read) } }, "root-shell-stdout")
+                .apply { isDaemon = true; start() }
             feed(process.outputStream)
             if (!process.waitFor(timeoutMillis, TimeUnit.MILLISECONDS)) {
-                return CommandOutput(TIMED_OUT, stdout = "")
+                if (streaming) {
+                    process.destroy()
+                    reader.join(OUTPUT_DRAIN_MILLIS)
+                }
+                return TIMED_OUT
             }
-            // A background child can keep the pipe open after the command exits.
-            reader.join(OUTPUT_DRAIN_MILLIS)
-            return CommandOutput(process.exitValue(), synchronized(output) { output.toString(Charsets.UTF_8.name()) })
+            if (!streaming) {
+                // A background child can keep the pipe open after the command exits.
+                reader.join(OUTPUT_DRAIN_MILLIS)
+                return process.exitValue()
+            }
+            reader.join(TimeUnit.NANOSECONDS.toMillis(deadline - System.nanoTime()).coerceAtLeast(1))
+            return if (reader.isAlive) TIMED_OUT else process.exitValue()
         } finally {
             process.destroy()
         }

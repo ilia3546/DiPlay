@@ -6,6 +6,7 @@
     <string name="settings_geely_monjaro_a3_car_dashboard">Штатна панель приладів</string>
     <string name="settings_geely_monjaro_a3_custom_dashboard">Власна панель приладів</string>
     <string name="settings_geely_monjaro_a3_hud">Проєкційний дисплей (HUD)</string>
+    <string name="settings_geely_monjaro_a3_diagnostics">Діагностика</string>
     <string name="settings_root_hotspot_details">Точні дані точки доступу автомобіля (експериментально)</string>
     <string name="settings_root_hotspot_details_description">Якщо Android приховує канал точки доступу автомобіля, DiPlay читає його з налаштувань точки доступу прошивки й також передає iPhone BSSID точки доступу. Потрібен root (Magisk). Застосовується під час наступного підключення.</string>
     <string name="settings_root_hotspot_start">Вмикати точку доступу автомобіля через root (експериментально)</string>
@@ -107,4 +108,6 @@
     <string name="hud_unit_meters">м</string>
     <string name="hud_unit_kilometres">км</string>
     <string name="hud_unit_minutes">хв</string>
+    <string name="settings_report_system_log">Додавати системний журнал до діагностичних звітів (експериментально)</string>
+    <string name="settings_report_system_log_description">Додає в кінець кожного збереженого діагностичного звіту системний журнал усього головного пристрою за останні 5 хвилин, до 15 МБ. Для рядків інших застосунків і прошивки потрібен root (Magisk); без root додаються лише рядки самого DiPlay. Адреси, координати й назви мереж приховуються, але в журналі все одно можуть бути інші відомості про автомобіль і те, як ним користуються. Він є лише у збереженому файлі: ні перегляд звіту в DiPlay, ні звіт на телефоні його не показують. Застосовується одразу.</string>
 </resources>

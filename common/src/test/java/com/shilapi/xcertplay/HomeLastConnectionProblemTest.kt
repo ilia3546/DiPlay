@@ -70,7 +70,8 @@ class HomeLastConnectionProblemTest {
     private fun reportLines(): List<String> {
         val activity = Robolectric.buildActivity(DiPlayActivity::class.java).get()
         return (ReflectionHelpers.callInstanceMethod<String>(activity, "diagnosticReportText",
-            ReflectionHelpers.ClassParameter.from(Context::class.java, context))).lines()
+            ReflectionHelpers.ClassParameter.from(Context::class.java, context),
+            ReflectionHelpers.ClassParameter.from(java.lang.Boolean.TYPE, false))).lines()
     }
 
     private val time = "[^()（）]*\\d{1,2}:\\d{2}[^()（）]*"

@@ -6,6 +6,7 @@
     <string name="settings_geely_monjaro_a3_car_dashboard">原车仪表</string>
     <string name="settings_geely_monjaro_a3_custom_dashboard">自定义仪表盘</string>
     <string name="settings_geely_monjaro_a3_hud">抬头显示（HUD）</string>
+    <string name="settings_geely_monjaro_a3_diagnostics">诊断</string>
     <string name="settings_root_hotspot_details">车辆热点的准确信息（实验性）</string>
     <string name="settings_root_hotspot_details_description">当 Android 隐藏车辆热点的信道时，从固件的热点配置中读取信道，并把热点的 BSSID 告诉 iPhone。需要 root（Magisk）。下次连接时生效。</string>
     <string name="settings_root_hotspot_start">通过 root 开启车机热点（实验性）</string>
@@ -107,4 +108,6 @@
     <string name="hud_unit_meters">米</string>
     <string name="hud_unit_kilometres">公里</string>
     <string name="hud_unit_minutes">分钟</string>
+    <string name="settings_report_system_log">在诊断报告中加入系统日志（实验性）</string>
+    <string name="settings_report_system_log_description">在每份保存的诊断报告末尾加入整台车机最近 5 分钟的系统日志，最多 15 MB。其他应用和固件的日志行需要 root（Magisk）；没有 root 时只加入 DiPlay 自身的日志行。地址、坐标和网络名称会被隐去，但日志仍可能包含车辆及其使用情况的其他信息。只有保存的文件包含这部分：DiPlay 的报告查看界面和手机上的报告都不显示。立即生效。</string>
 </resources>

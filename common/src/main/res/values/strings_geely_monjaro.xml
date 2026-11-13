@@ -6,6 +6,7 @@
     <string name="settings_geely_monjaro_a3_car_dashboard">Car\'s own dashboard</string>
     <string name="settings_geely_monjaro_a3_custom_dashboard">Custom dashboard</string>
     <string name="settings_geely_monjaro_a3_hud">Head-up display</string>
+    <string name="settings_geely_monjaro_a3_diagnostics">Diagnostics</string>
     <string name="settings_root_hotspot_details">Exact car hotspot details (experimental)</string>
     <string name="settings_root_hotspot_details_description">When Android hides the channel of the car hotspot, reads it from the firmware\'s hotspot configuration and also tells the iPhone the BSSID of the hotspot. Requires root (Magisk). Applies at the next connection.</string>
     <string name="settings_root_hotspot_start">Turn the car hotspot on with root (experimental)</string>
@@ -107,4 +108,6 @@
     <string name="hud_unit_meters">m</string>
     <string name="hud_unit_kilometres">km</string>
     <string name="hud_unit_minutes">min</string>
+    <string name="settings_report_system_log">Add the system log to diagnostic reports (experimental)</string>
+    <string name="settings_report_system_log_description">Adds the system log of the whole head unit for the last 5 minutes, up to 15 MB, to the end of each saved diagnostic report. Lines of other apps and of the firmware need root (Magisk); without root, only DiPlay\'s own lines are added. Addresses, coordinates and network names are masked, but the log may still tell other things about the car and how it is used. Only the saved file has it: the report view in DiPlay and the report on the phone do not. Applies at once.</string>
 </resources>

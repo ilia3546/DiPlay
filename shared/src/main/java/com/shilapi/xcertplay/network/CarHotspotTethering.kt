@@ -158,7 +158,7 @@ object CarHotspotTethering {
         val stopped = { isCancelled() || unavailable.get() != null }
         val rootShell: (String, Int) -> String? = { command, timeout ->
             when (val reply = shell(command, timeout.toLong())) {
-                is RootShell.Result.Completed -> if (rootDenied(reply)) {
+                is RootShell.Result.Completed -> if (RootShell.denied(reply.exitCode, reply.stdout)) {
                     unavailable.compareAndSet(null, "su denied (exit ${reply.exitCode})")
                     null
                 } else reply.stdout
@@ -187,10 +187,6 @@ object CarHotspotTethering {
             else -> Result.FAILED
         }
     }
-
-    // Magisk's su prints only this line and exits non-zero when root is denied to the app.
-    private fun rootDenied(reply: RootShell.Result.Completed): Boolean =
-        reply.exitCode != 0 && reply.stdout.trim().lowercase().removePrefix("su: ") == "permission denied"
 
     /** The shell's own tethering call ([CarHotspotStartMain]), for firmware without a hotspot command. */
     private fun shellTetheringHelper(context: Context): String = CarHotspotStartMain.command(context.applicationInfo.sourceDir)

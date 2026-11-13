@@ -9,6 +9,8 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.io.PipedInputStream
 import java.io.PipedOutputStream
+import java.util.Collections
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import org.junit.Assert.assertEquals
@@ -102,5 +104,95 @@ class RootShellTest {
         val output = RootShell.execute(process, timeoutMillis = 5_000) { it.close() }
         assertEquals(0, output.exitCode)
         assertEquals(payload.length, output.stdout.length)
+    }
+
+    @Test fun streamsLinesThroughSu() {
+        var command: List<String>? = null
+        val lines = mutableListOf<String>()
+        val result = RootShell.stream("logcat -d", 2_000, { lines += it }) { cmd, _, onLine ->
+            command = cmd
+            onLine("one")
+            onLine("two")
+            CommandOutput(0, "")
+        }
+        assertEquals(Result.Completed(0, ""), result)
+        assertEquals(listOf("su", "-c", "logcat -d"), command)
+        assertEquals(listOf("one", "two"), lines)
+    }
+
+    @Test fun aStreamThatCannotStartOrTimesOutIsUnavailable() {
+        assertEquals(Result.Unavailable("su unavailable (IOException)"),
+            RootShell.stream("logcat -d", 2_000, {}) { _, _, _ -> throw IOException("no su") })
+        assertEquals(Result.Unavailable("su timed out"),
+            RootShell.stream("logcat -d", 2_000, {}) { _, _, _ -> CommandOutput(RootShell.TIMED_OUT, "") })
+        try {
+            assertEquals(Result.Unavailable("interrupted"),
+                RootShell.stream("logcat -d", 2_000, {}) { _, _, _ -> throw InterruptedException() })
+            assertTrue(Thread.currentThread().isInterrupted)
+        } finally {
+            Thread.interrupted()
+        }
+    }
+
+    @Test fun onlyMagisksDenialLineCountsAsDenied() {
+        assertTrue(RootShell.denied(1, "Permission denied\n"))
+        assertTrue(RootShell.denied(1, "su: permission denied"))
+        assertFalse(RootShell.denied(0, "Permission denied"))
+        assertFalse(RootShell.denied(1, "logcat: read failure"))
+        assertFalse(RootShell.denied(1, "Permission denied\nother line"))
+    }
+
+    @Test fun aProcessIsStreamedLineByLineWithItsErrorsAndExitCode() {
+        val lines = Collections.synchronizedList(mutableListOf<String>())
+        val output = RootShell.streamProcess(listOf("/bin/sh", "-c", "printf 'one\\ntwo\\n'; echo three >&2; exit 3"), 5_000) {
+            lines += it
+        }
+        assertEquals(3, output.exitCode)
+        assertEquals(setOf("one", "two", "three"), lines.toSet())
+    }
+
+    @Test fun aStreamedProcessOverTheTimeoutIsStoppedAndItsLinesKept() {
+        val lines = Collections.synchronizedList(mutableListOf<String>())
+        val started = System.nanoTime()
+        val output = RootShell.streamProcess(listOf("/bin/sh", "-c", "echo before; exec sleep 30"), 500) { lines += it }
+        assertEquals(RootShell.TIMED_OUT, output.exitCode)
+        assertEquals(listOf("before"), lines.toList())
+        assertTrue((System.nanoTime() - started) / 1_000_000 < 10_000)
+    }
+
+    @Test fun aStreamWaitsForLinesThatArriveAfterTheProcessExited() {
+        // More than the fixed drain time a non-streaming run allows itself.
+        val pipe = PipedOutputStream()
+        val stdout = PipedInputStream(pipe)
+        val writer = thread { Thread.sleep(1_500); pipe.use { it.write("late\n".toByteArray()) } }
+        val lines = Collections.synchronizedList(mutableListOf<String>())
+        val output = RootShell.executeStreaming(fakeProcess(stdout, exited = true), 5_000) { lines += it }
+        writer.join()
+        assertEquals(0, output.exitCode)
+        assertEquals(listOf("late"), lines.toList())
+    }
+
+    @Test fun aStreamThatTimesOutKeepsTheLinesAlreadyRead() {
+        val pipe = PipedOutputStream()
+        val stdout = PipedInputStream(pipe)
+        val closed = CountDownLatch(1)
+        thread { pipe.write("early\n".toByteArray()); pipe.flush(); closed.await(); pipe.close() }
+        val lines = Collections.synchronizedList(mutableListOf<String>())
+        val output = RootShell.executeStreaming(fakeProcess(stdout, exited = false) { closed.countDown() }, 300) { lines += it }
+        assertEquals(RootShell.TIMED_OUT, output.exitCode)
+        assertEquals(listOf("early"), lines.toList())
+    }
+
+    private fun fakeProcess(stdout: InputStream, exited: Boolean, onDestroy: () -> Unit = {}) = object : Process() {
+        override fun getOutputStream(): OutputStream = ByteArrayOutputStream()
+        override fun getInputStream(): InputStream = stdout
+        override fun getErrorStream(): InputStream = ByteArrayInputStream(ByteArray(0))
+        override fun waitFor(): Int = 0
+        override fun waitFor(timeout: Long, unit: TimeUnit): Boolean {
+            if (!exited) Thread.sleep(unit.toMillis(timeout))
+            return exited
+        }
+        override fun exitValue(): Int = if (exited) 0 else throw IllegalThreadStateException()
+        override fun destroy() = onDestroy()
     }
 }

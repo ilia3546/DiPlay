@@ -2363,6 +2363,14 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     MonjaroHud.settingChanged()
                 }
             }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                card.addView(groupTitle(getString(R.string.settings_geely_monjaro_a3_diagnostics)))
+                toggle(card, getString(R.string.settings_report_system_log),
+                    getString(R.string.settings_report_system_log_description),
+                    AirPlayPersistence.loadReportSystemLog(this)) {
+                    AirPlayPersistence.saveReportSystemLog(this, it)
+                }
+            }
         }
         filteredSection(content, SettingsSection.LOCATION,
             getString(R.string.location), R.drawable.ic_dp_navigation) { card ->
@@ -2790,7 +2798,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 page = backupPageHtml(),
                 export = { SettingsBackupCodec.export(this, version()) },
                 import = { SettingsBackupCodec.import(this, it) },
-                report = { diagnosticReportText(applicationContext).toByteArray(Charsets.UTF_8) },
+                report = { diagnosticReportText(applicationContext, withSystemLog = false).toByteArray(Charsets.UTF_8) },
                 codePage = assets.open("settings-code.html").use { it.readBytes() },
             )
             created.onCodeEntryClosed = {
@@ -6201,7 +6209,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         val fileName = reportFileName()
         Thread({
             val result = runCatching {
-                val report = diagnosticReportText(appContext)
+                val report = diagnosticReportText(appContext, withSystemLog = true)
                 val savedReport = if (uri != null) {
                     DiagnosticExportStore.write(appContext.contentResolver, uri, report)
                     DiagnosticExportStore.SavedReport(uri)
@@ -6242,8 +6250,11 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         }, "diplay-export").start()
     }
 
-    /** The text of a diagnostic report. It reads the session logs, so call it off the main thread. */
-    private fun diagnosticReportText(appContext: Context): String = buildString {
+    /**
+     * The text of a diagnostic report. It reads the session logs, so call it off the main thread.
+     * [withSystemLog] can run su and logcat for up to a minute; the phone report server answers under a lock.
+     */
+    private fun diagnosticReportText(appContext: Context, withSystemLog: Boolean): String = buildString {
         appendLine("DiPlay ${version()} · private beta diagnostic report")
         appendLine(LastConnectionProblem.report(appContext))
         appendLine("Android ${Build.VERSION.RELEASE} / API ${Build.VERSION.SDK_INT}")
@@ -6335,6 +6346,9 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 file.useLines { lines -> lines.forEach { line -> DiagnosticRedactor.redact(line)?.let { appendLine(it) } } }
             }
         }
+        if (withSystemLog && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && AirPlayPersistence.loadReportSystemLog(appContext)) {
+            SystemLogSnapshot.appendTo(this, System.currentTimeMillis())
+        }
     }
 
     /**
@@ -6374,7 +6388,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
     private fun showDiagnosticReport(report: String) {
         val body = column().apply { setPadding(dp(24), dp(12), dp(24), dp(12)) }
         body.addView(label(getString(R.string.diagnostic_report_copy_hint), 14, MUTED))
-        body.addView(label(reportTail(report), 13, TEXT).apply {
+        body.addView(label(reportTail(SystemLogSnapshot.withoutSection(report)), 13, TEXT).apply {
             typeface = Typeface.MONOSPACE
             setTextIsSelectable(true)
         })
