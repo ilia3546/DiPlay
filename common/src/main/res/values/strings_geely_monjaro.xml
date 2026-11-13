@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_geely_monjaro_a3_support">Geely Monjaro A3 Support</string>
+    <string name="settings_recommended_settings">Apply recommended settings</string>
+    <string name="settings_recommended_settings_description">Turns on the options tested on this car, including some in Audio, Display, Navigation and Advanced. Shows the list before applying. CarPlay may reconnect.</string>
+    <string name="settings_recommended_settings_changes">These settings will change:</string>
+    <string name="settings_recommended_settings_apply">Apply</string>
+    <string name="settings_recommended_settings_already_applied">The recommended settings are already applied</string>
     <string name="settings_geely_monjaro_a3_connection">Connection</string>
     <string name="settings_geely_monjaro_a3_sound">Sound and steering wheel</string>
     <string name="settings_geely_monjaro_a3_car_dashboard">Car\'s own dashboard</string>

@@ -2156,6 +2156,9 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         }
         if (GeelyHeadUnit.monjaroA3) filteredSection(content, SettingsSection.GEELY_MONJARO_A3,
             getString(R.string.settings_geely_monjaro_a3_support), R.drawable.ic_dp_car) { card ->
+            card.addView(button(getString(R.string.settings_recommended_settings), false) { confirmRecommendedSettings() },
+                matchButton(0, 60))
+            card.addView(label(getString(R.string.settings_recommended_settings_description), 14, MUTED))
             card.addView(groupTitle(getString(R.string.settings_geely_monjaro_a3_connection)))
             toggle(card, getString(R.string.settings_root_hotspot_details),
                 getString(R.string.settings_root_hotspot_details_description),
@@ -2215,22 +2218,18 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             toggle(card, getString(R.string.settings_dashboard_music),
                 getString(R.string.settings_dashboard_music_description),
                 AirPlayPersistence.loadDashboardMusic(this)) {
-                AirPlayPersistence.saveDashboardMusic(this, it)
-                MonjaroDashboardMusic.settingChanged(this)
+                MonjaroA3Settings.setDashboardMusic(this, it)
             }
             toggle(card, getString(R.string.settings_dashboard_calls),
                 getString(R.string.settings_dashboard_calls_description),
                 AirPlayPersistence.loadDashboardCalls(this)) {
-                AirPlayPersistence.saveDashboardCalls(this, it)
-                MonjaroDashboardCall.settingChanged(this)
+                MonjaroA3Settings.setDashboardCalls(this, it)
             }
             card.addView(groupTitle(getString(R.string.settings_geely_monjaro_a3_custom_dashboard)))
             val customDashboard = AirPlayPersistence.loadCustomDashboard(this)
             toggle(card, getString(R.string.settings_custom_dashboard),
                 getString(R.string.settings_custom_dashboard_description), customDashboard) {
-                AirPlayPersistence.saveCustomDashboard(this, it)
-                MonjaroCustomDashboard.settingChanged()
-                DesayWheelKeys.refresh()
+                MonjaroA3Settings.setCustomDashboard(this, it)
                 if (it) {
                     if (!CenterMapOverlay.permitted(this)) openOverlayPermission()
                     markReconnectNeeded()
@@ -2243,22 +2242,19 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     R.string.settings_custom_dashboard_map_width_narrow, R.string.settings_custom_dashboard_map_width_medium,
                     R.string.settings_custom_dashboard_map_width_wide).map(::getString),
                     mapWidths.indexOf(AirPlayPersistence.loadDashboardMap(this).width), reconnects = false) {
-                    AirPlayPersistence.saveDashboardMapWidth(this, mapWidths[it])
-                    MonjaroCustomDashboard.settingChanged()
+                    MonjaroA3Settings.setDashboardMapWidth(this, mapWidths[it])
                     markReconnectNeeded()
                 }
                 card.addView(choiceNote(getString(R.string.settings_custom_dashboard_map_size_note)))
                 toggle(card, getString(R.string.settings_custom_dashboard_maneuver),
                     getString(R.string.settings_custom_dashboard_maneuver_description),
                     AirPlayPersistence.loadDashboardManeuver(this)) {
-                    AirPlayPersistence.saveDashboardManeuver(this, it)
-                    MonjaroCustomDashboard.settingChanged()
+                    MonjaroA3Settings.setDashboardManeuver(this, it)
                 }
                 toggle(card, getString(R.string.settings_custom_dashboard_arrival),
                     getString(R.string.settings_custom_dashboard_arrival_description),
                     AirPlayPersistence.loadDashboardArrival(this)) {
-                    AirPlayPersistence.saveDashboardArrival(this, it)
-                    MonjaroCustomDashboard.settingChanged()
+                    MonjaroA3Settings.setDashboardArrival(this, it)
                 }
                 val pickPhoto = {
                     launchCarButtonImagePicker(
@@ -2293,8 +2289,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     if (backgrounds[it] == DashboardBackground.CUSTOM_PHOTO) {
                         pickPhoto()
                     } else {
-                        AirPlayPersistence.saveDashboardBackground(this, backgrounds[it])
-                        MonjaroCustomDashboard.settingChanged()
+                        MonjaroA3Settings.setDashboardBackground(this, backgrounds[it])
                         render()
                     }
                 }
@@ -2307,8 +2302,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 choice(card, getString(R.string.settings_custom_dashboard_dimming),
                     dimmings.map { getString(R.string.percent_value, it) },
                     dimmings.indexOf(AirPlayPersistence.loadDashboardDimmingPercent(this)).coerceAtLeast(0), reconnects = false) {
-                    AirPlayPersistence.saveDashboardDimmingPercent(this, dimmings[it])
-                    MonjaroCustomDashboard.settingChanged()
+                    MonjaroA3Settings.setDashboardDimmingPercent(this, dimmings[it])
                 }
                 val tripPassword = QnxTripCredentials.load(this) != null
                 card.addView(button(getString(R.string.settings_custom_dashboard_trip_qnx), false) { askQnxTripPassword() },
@@ -2323,17 +2317,14 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 toggle(card, getString(R.string.settings_custom_dashboard_wheel_toggle),
                     getString(R.string.settings_custom_dashboard_wheel_toggle_description),
                     AirPlayPersistence.loadDashboardWheelToggle(this)) {
-                    AirPlayPersistence.saveDashboardWheelToggle(this, it)
-                    DesayWheelKeys.refresh()
-                    if (!it) MonjaroCustomDashboard.wheelToggleTurnedOff()
+                    MonjaroA3Settings.setDashboardWheelToggle(this, it)
                 }
             }
             card.addView(groupTitle(getString(R.string.settings_geely_monjaro_a3_hud)))
             val hudManeuvers = AirPlayPersistence.loadHudManeuvers(this)
             toggle(card, getString(R.string.settings_hud_maneuvers),
                 getString(R.string.settings_hud_maneuvers_description), hudManeuvers) {
-                AirPlayPersistence.saveHudManeuvers(this, it)
-                MonjaroHud.settingChanged()
+                MonjaroA3Settings.setHudManeuvers(this, it)
                 if (it && !CenterMapOverlay.permitted(this)) openOverlayPermission()
                 render()
             }
@@ -2343,24 +2334,20 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     R.string.settings_hud_height_high, R.string.settings_hud_height_middle, R.string.settings_hud_height_low,
                     R.string.settings_hud_height_lowest).map(::getString),
                     heights.indexOf(AirPlayPersistence.loadHudHeight(this)), reconnects = false) {
-                    AirPlayPersistence.saveHudHeight(this, heights[it])
-                    MonjaroHud.settingChanged()
+                    MonjaroA3Settings.setHudHeight(this, heights[it])
                 }
                 val scales = MonjaroA3Options.hudScalePercents
                 choice(card, getString(R.string.settings_hud_scale), scales.map { getString(R.string.percent_value, it) },
                     scales.indexOf(AirPlayPersistence.loadHudScalePercent(this)), reconnects = false) {
-                    AirPlayPersistence.saveHudScalePercent(this, scales[it])
-                    MonjaroHud.settingChanged()
+                    MonjaroA3Settings.setHudScalePercent(this, scales[it])
                 }
                 toggle(card, getString(R.string.settings_hud_lanes), getString(R.string.settings_hud_lanes_description),
                     AirPlayPersistence.loadHudLanes(this)) {
-                    AirPlayPersistence.saveHudLanes(this, it)
-                    MonjaroHud.settingChanged()
+                    MonjaroA3Settings.setHudLanes(this, it)
                 }
                 toggle(card, getString(R.string.settings_hud_trip), getString(R.string.settings_hud_trip_description),
                     AirPlayPersistence.loadHudTrip(this)) {
-                    AirPlayPersistence.saveHudTrip(this, it)
-                    MonjaroHud.settingChanged()
+                    MonjaroA3Settings.setHudTrip(this, it)
                 }
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -4221,6 +4208,38 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 row.onSave = { value -> AirPlayPersistence.saveClusterSpeedometerOpacity(this, value) }
             })
         }
+    }
+
+    private fun recommendedSettingsPlan() = MonjaroRecommendedSettings.plan(this,
+        sessionRunning = CarPlayBackgroundSession.hasSession(),
+        overlayPermitted = CenterMapOverlay.permitted(this),
+        locationPermitted = hasPreciseLocation())
+
+    private fun confirmRecommendedSettings() {
+        val confirmed = recommendedSettingsPlan()
+        if (confirmed.settings.isEmpty()) {
+            toast(getString(R.string.settings_recommended_settings_already_applied))
+            return
+        }
+        appDialogBuilder().setTitle(getString(R.string.settings_recommended_settings))
+            .setMessage(getString(R.string.settings_recommended_settings_changes) + "\n\n" +
+                confirmed.settings.joinToString("\n") { "• " + getString(it.title) })
+            .setPositiveButton(getString(if (confirmed.reconnectNow) R.string.apply_and_reconnect
+                else R.string.settings_recommended_settings_apply)) { _, _ -> applyRecommendedSettings(confirmed.reconnectNow) }
+            .setNegativeButton(getString(R.string.cancel), null)
+            .show()
+    }
+
+    // Whatever changed since the dialog opened, CarPlay reconnects at once only after "Apply and reconnect".
+    private fun applyRecommendedSettings(reconnectConfirmed: Boolean) {
+        val plan = recommendedSettingsPlan()
+        MonjaroRecommendedSettings.apply(this, plan)
+        if (plan.applySystemBars) applyFullscreenMode()
+        if (plan.markReconnect) markReconnectNeeded()
+        if (plan.askOverlay) openOverlayPermission()
+        if (plan.askLocation) onLocationReportingChanged(true)
+        if (reconnectConfirmed && plan.reconnectNow) reconnectIfRunning()
+        render()
     }
 
     private fun askQnxTripPassword() {

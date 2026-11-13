@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_geely_monjaro_a3_support">دعم Geely Monjaro A3</string>
+    <string name="settings_recommended_settings">تطبيق الإعدادات الموصى بها</string>
+    <string name="settings_recommended_settings_description">يشغّل الخيارات التي جُرّبت على هذه السيارة، ومنها بعض خيارات الصوت والشاشة والملاحة والإعدادات المتقدمة. يعرض القائمة قبل التطبيق. قد يعيد CarPlay الاتصال.</string>
+    <string name="settings_recommended_settings_changes">ستتغير هذه الإعدادات:</string>
+    <string name="settings_recommended_settings_apply">تطبيق</string>
+    <string name="settings_recommended_settings_already_applied">الإعدادات الموصى بها مطبّقة بالفعل</string>
     <string name="settings_geely_monjaro_a3_connection">الاتصال</string>
     <string name="settings_geely_monjaro_a3_sound">الصوت والمقود</string>
     <string name="settings_geely_monjaro_a3_car_dashboard">لوحة عدادات السيارة</string>

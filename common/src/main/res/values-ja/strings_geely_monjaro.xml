@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_geely_monjaro_a3_support">Geely Monjaro A3 サポート</string>
+    <string name="settings_recommended_settings">推奨設定を適用</string>
+    <string name="settings_recommended_settings_description">この車で検証済みのオプションをオンにします。音声、画面表示、ナビゲーション、詳細設定の一部も含まれます。適用前に一覧を表示します。CarPlay が再接続することがあります。</string>
+    <string name="settings_recommended_settings_changes">次の設定が変更されます:</string>
+    <string name="settings_recommended_settings_apply">適用</string>
+    <string name="settings_recommended_settings_already_applied">推奨設定はすでに適用されています</string>
     <string name="settings_geely_monjaro_a3_connection">接続</string>
     <string name="settings_geely_monjaro_a3_sound">サウンドとステアリング</string>
     <string name="settings_geely_monjaro_a3_car_dashboard">純正メーター</string>

@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_geely_monjaro_a3_support">Поддержка Geely Monjaro A3</string>
+    <string name="settings_recommended_settings">Применить рекомендуемые настройки</string>
+    <string name="settings_recommended_settings_description">Включает параметры, проверенные на этой машине, в том числе часть настроек в разделах «Звук», «Экран», «Навигация» и «Дополнительно». Перед применением покажет список. CarPlay может переподключиться.</string>
+    <string name="settings_recommended_settings_changes">Изменятся эти настройки:</string>
+    <string name="settings_recommended_settings_apply">Применить</string>
+    <string name="settings_recommended_settings_already_applied">Рекомендуемые настройки уже применены</string>
     <string name="settings_geely_monjaro_a3_connection">Подключение</string>
     <string name="settings_geely_monjaro_a3_sound">Звук и руль</string>
     <string name="settings_geely_monjaro_a3_car_dashboard">Штатная приборная панель</string>

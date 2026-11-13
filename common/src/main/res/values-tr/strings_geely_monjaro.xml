@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_geely_monjaro_a3_support">Geely Monjaro A3 desteği</string>
+    <string name="settings_recommended_settings">Önerilen ayarları uygula</string>
+    <string name="settings_recommended_settings_description">Bu araçta denenen seçenekleri açar; bunların bir kısmı Ses, Ekran, Navigasyon ve Gelişmiş bölümlerindedir. Uygulamadan önce listeyi gösterir. CarPlay yeniden bağlanabilir.</string>
+    <string name="settings_recommended_settings_changes">Şu ayarlar değişecek:</string>
+    <string name="settings_recommended_settings_apply">Uygula</string>
+    <string name="settings_recommended_settings_already_applied">Önerilen ayarlar zaten uygulandı</string>
     <string name="settings_geely_monjaro_a3_connection">Bağlantı</string>
     <string name="settings_geely_monjaro_a3_sound">Ses ve direksiyon</string>
     <string name="settings_geely_monjaro_a3_car_dashboard">Aracın kendi gösterge paneli</string>

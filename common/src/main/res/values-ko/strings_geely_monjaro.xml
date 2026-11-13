@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_geely_monjaro_a3_support">Geely Monjaro A3 지원</string>
+    <string name="settings_recommended_settings">권장 설정 적용</string>
+    <string name="settings_recommended_settings_description">이 차량에서 검증된 옵션을 켭니다. 오디오, 화면, 내비게이션, 고급의 일부 설정도 포함됩니다. 적용하기 전에 목록을 보여 줍니다. CarPlay가 다시 연결될 수 있습니다.</string>
+    <string name="settings_recommended_settings_changes">다음 설정이 변경됩니다:</string>
+    <string name="settings_recommended_settings_apply">적용</string>
+    <string name="settings_recommended_settings_already_applied">권장 설정이 이미 적용되어 있습니다</string>
     <string name="settings_geely_monjaro_a3_connection">연결</string>
     <string name="settings_geely_monjaro_a3_sound">사운드 및 스티어링 휠</string>
     <string name="settings_geely_monjaro_a3_car_dashboard">차량 기본 계기판</string>

@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_geely_monjaro_a3_support">Geely Monjaro A3 支持</string>
+    <string name="settings_recommended_settings">应用推荐设置</string>
+    <string name="settings_recommended_settings_description">开启已在这辆车上验证过的选项，其中包括音频、显示、导航和高级中的部分设置。应用前会显示列表。CarPlay 可能会重新连接。</string>
+    <string name="settings_recommended_settings_changes">以下设置将会更改：</string>
+    <string name="settings_recommended_settings_apply">应用</string>
+    <string name="settings_recommended_settings_already_applied">推荐设置已应用</string>
     <string name="settings_geely_monjaro_a3_connection">连接</string>
     <string name="settings_geely_monjaro_a3_sound">声音与方向盘</string>
     <string name="settings_geely_monjaro_a3_car_dashboard">原车仪表</string>

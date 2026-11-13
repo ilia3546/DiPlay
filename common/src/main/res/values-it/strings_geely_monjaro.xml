@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_geely_monjaro_a3_support">Supporto per Geely Monjaro A3</string>
+    <string name="settings_recommended_settings">Applica le impostazioni consigliate</string>
+    <string name="settings_recommended_settings_description">Attiva le opzioni provate su questa auto, comprese alcune in Audio, Schermo, Navigazione e Avanzate. Mostra l\'elenco prima di applicarle. CarPlay potrebbe riconnettersi.</string>
+    <string name="settings_recommended_settings_changes">Cambieranno queste impostazioni:</string>
+    <string name="settings_recommended_settings_apply">Applica</string>
+    <string name="settings_recommended_settings_already_applied">Le impostazioni consigliate sono già applicate</string>
     <string name="settings_geely_monjaro_a3_connection">Connessione</string>
     <string name="settings_geely_monjaro_a3_sound">Audio e volante</string>
     <string name="settings_geely_monjaro_a3_car_dashboard">Quadro strumenti dell\'auto</string>

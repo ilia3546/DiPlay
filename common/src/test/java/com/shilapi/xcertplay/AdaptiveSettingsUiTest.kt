@@ -943,6 +943,7 @@ class AdaptiveSettingsUiTest {
             R.string.settings_geely_monjaro_a3_car_dashboard, R.string.settings_geely_monjaro_a3_custom_dashboard,
             R.string.settings_geely_monjaro_a3_hud, R.string.settings_geely_monjaro_a3_diagnostics)
         val order = listOf(
+            R.string.settings_recommended_settings, R.string.settings_recommended_settings_description,
             groups[0], R.string.settings_root_hotspot_details, R.string.settings_root_hotspot_start,
             R.string.settings_disconnect_phone_bluetooth, R.string.settings_hotspot_audio_firewall, R.string.settings_request_lost_audio,
             groups[1], R.string.settings_microphone_input, R.string.settings_pause_carplay_for_car_audio, R.string.settings_wheel_seek,
@@ -974,8 +975,7 @@ class AdaptiveSettingsUiTest {
             val previous = parent.getChildAt(parent.indexOfChild(title) - 1)
             (title.layoutParams as LinearLayout.LayoutParams).topMargin + bottom(previous)
         }
-        assertEquals(0, (titles.first().layoutParams as LinearLayout.LayoutParams).topMargin)
-        assertEquals(listOf(gap, gap, gap, gap, gap), above.drop(1))
+        assertEquals(listOf(gap, gap, gap, gap, gap, gap), above)
         val index = ReflectionHelpers.callInstanceMethod<List<DiPlayActivity.SettingsSearchResult>>(screen, "buildSettingsSearchIndex")
         assertTrue(index.any { it.title == screen.getString(R.string.settings_custom_dashboard_map_width) })
     }
