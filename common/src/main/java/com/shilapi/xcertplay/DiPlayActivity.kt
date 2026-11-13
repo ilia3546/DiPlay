@@ -2370,6 +2370,12 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                     AirPlayPersistence.saveReportSystemLog(this, it)
                 }
             }
+            card.addView(groupTitle(getString(R.string.settings_geely_monjaro_a3_passenger_screen)))
+            toggle(card, getString(R.string.settings_passenger_video),
+                getString(R.string.settings_passenger_video_description),
+                AirPlayPersistence.loadPassengerVideo(this)) {
+                AirPlayPersistence.savePassengerVideo(this, it)
+            }
         }
         filteredSection(content, SettingsSection.LOCATION,
             getString(R.string.location), R.drawable.ic_dp_navigation) { card ->

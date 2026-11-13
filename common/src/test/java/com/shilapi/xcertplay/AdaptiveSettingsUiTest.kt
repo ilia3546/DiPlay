@@ -814,7 +814,7 @@ class AdaptiveSettingsUiTest {
             R.string.settings_disconnect_phone_bluetooth, R.string.settings_hotspot_audio_firewall, R.string.settings_request_lost_audio,
             R.string.settings_microphone_input,
             R.string.settings_dashboard_music, R.string.settings_dashboard_calls, R.string.settings_custom_dashboard,
-            R.string.settings_hud_maneuvers)
+            R.string.settings_hud_maneuvers, R.string.settings_passenger_video)
 
         val elsewhere = openSettings()
         val elsewhereIndex = indexedTitles(elsewhere)
