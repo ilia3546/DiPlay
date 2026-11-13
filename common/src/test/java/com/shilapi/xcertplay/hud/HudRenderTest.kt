@@ -38,6 +38,16 @@ class HudRenderTest {
                     LaneGuidanceLane(0, 0, listOf(-90), null), LaneGuidanceLane(1, 0, listOf(0), null),
                     LaneGuidanceLane(2, 2, listOf(0), 90), LaneGuidanceLane(3, 2, listOf(90), null),
                 )), full),
+            Triple("lanes-shared-stem", route.copy(maneuverType = 2, distanceMeters = 850, road = "Ленинский проспект",
+                remainingSeconds = 720, remainingMeters = 9400, lanes = lanes(
+                    LaneGuidanceLane(0, 0, listOf(-180, -90), null), LaneGuidanceLane(1, 0, listOf(-90), null),
+                    LaneGuidanceLane(2, 2, listOf(90), 90),
+                )), full),
+            Triple("lanes-shared-stem-default", route.copy(maneuverType = 2, distanceMeters = 850, road = "Ленинский проспект",
+                remainingSeconds = 720, remainingMeters = 9400, lanes = lanes(
+                    LaneGuidanceLane(0, 2, listOf(-180, -90, 0), -90), LaneGuidanceLane(1, 0, listOf(-45, 0), null),
+                    LaneGuidanceLane(2, 0, listOf(0, 45), null), LaneGuidanceLane(3, 0, listOf(0, 90, 180), null),
+                )), HudSettings(HudSettings.DEFAULT_Y, HudSettings.DEFAULT_SCALE, true, true)),
             Triple("long-label", route.copy(maneuverType = 49, distanceMeters = 800,
                 road = "Третье транспортное кольцо, съезд на Большую Дорогомиловскую улицу", remainingSeconds = 2400,
                 remainingMeters = 27_000), full),

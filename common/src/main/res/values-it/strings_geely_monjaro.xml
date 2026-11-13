@@ -78,7 +78,7 @@
     <string name="settings_hud_height_lowest">Più in basso</string>
     <string name="settings_hud_scale">Scala dell\'HUD</string>
     <string name="settings_hud_lanes">Corsie sull\'HUD</string>
-    <string name="settings_hud_lanes_description">Mostra le corsie del prossimo incrocio quando l\'iPhone le invia, con la corsia consigliata sottolineata.</string>
+    <string name="settings_hud_lanes_description">Mostra le corsie del prossimo incrocio quando l\'iPhone le invia, con la corsia consigliata evidenziata.</string>
     <string name="settings_hud_trip">Tempo e distanza rimanenti sull\'HUD</string>
     <string name="settings_hud_trip_description">Mostra il tempo e la distanza alla destinazione dopo le corsie, solo se ci stanno per intero.</string>
     <string name="custom_dashboard_trip_distance">Distanza</string>

@@ -78,7 +78,7 @@
     <string name="settings_hud_height_lowest">最下</string>
     <string name="settings_hud_scale">HUD 缩放</string>
     <string name="settings_hud_lanes">在 HUD 上显示车道</string>
-    <string name="settings_hud_lanes_description">iPhone 发送车道信息时显示下一个路口的车道，推荐车道带下划线。</string>
+    <string name="settings_hud_lanes_description">iPhone 发送车道信息时显示下一个路口的车道，推荐车道会高亮显示。</string>
     <string name="settings_hud_trip">在 HUD 上显示剩余时间和距离</string>
     <string name="settings_hud_trip_description">在车道之后显示到目的地的剩余时间和距离，仅在能完整显示时显示。</string>
     <string name="custom_dashboard_trip_distance">里程</string>

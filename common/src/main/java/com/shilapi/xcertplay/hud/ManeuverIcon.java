@@ -1,5 +1,7 @@
 package com.shilapi.xcertplay.hud;
 
+import java.util.Collection;
+
 public final class ManeuverIcon {
     private static final class Part {
         final HudPath path;final boolean fill;final double opacity,x,y,radius;
@@ -27,15 +29,6 @@ public final class ManeuverIcon {
     private static final Part[] SHARP_RIGHT={new Part("M8 21.5 V9.5 Q8 7 9.77 8.77 L14.25 13.25",1),Part.fill("M16.61 16.36 Q17.5 16.5 17.36 15.61 L16.65 11.31 Q16.51 10.42 15.87 11.06 L12.06 14.87 Q11.42 15.51 12.31 15.65 Z")};
     private static final Part[] KEEP_RIGHT={new Part("M12 16 C12 12.5 7 12 7 8 V4.5",0.4),new Part("M12 21.5 V16 C12 12.5 17 12 17 8 V6.6",1),Part.fill("M17.53 2.73 Q17 2 16.47 2.73 L13.93 6.27 Q13.4 7 14.3 7 L19.7 7 Q20.6 7 20.07 6.27 Z")};
     private static final Part[] EXIT_RIGHT={new Part("M8 21.5 V3.5",0.4),new Part("M8 21.5 V16 Q8 13.5 9.77 11.73 L14.25 7.25",1),Part.fill("M17.36 4.89 Q17.5 4 16.61 4.14 L12.31 4.85 Q11.42 4.99 12.06 5.63 L15.87 9.44 Q16.51 10.08 16.65 9.19 Z")};
-    private static final Part[] LANE_UTURN_LEFT={new Part("M12 22.5 V9 A4 4 0 0 0 4 9 V15.4",1),Part.fill("M3.47 19.27 Q4 20 4.53 19.27 L7.07 15.73 Q7.6 15 6.7 15 L1.3 15 Q0.4 15 0.93 15.73 Z")};
-    private static final Part[] LANE_SHARP_LEFT={new Part("M12 22.5 V10 Q12 7.5 10.23 9.27 L5.75 13.75",1),Part.fill("M2.64 16.11 Q2.5 17 3.39 16.86 L7.69 16.15 Q8.58 16.01 7.94 15.37 L4.13 11.56 Q3.49 10.92 3.35 11.81 Z")};
-    private static final Part[] LANE_LEFT={new Part("M12 22.5 V16 Q12 12 8 12 H5.6",1),Part.fill("M1.73 11.47 Q1 12 1.73 12.53 L5.27 15.07 Q6 15.6 6 14.7 L6 9.3 Q6 8.4 5.27 8.93 Z")};
-    private static final Part[] LANE_SLIGHT_LEFT={new Part("M12 22.5 V15.5 Q12 13 10.23 11.23 L6.75 7.75",1),Part.fill("M4.39 4.64 Q3.5 4.5 3.64 5.39 L4.35 9.69 Q4.49 10.58 5.13 9.94 L8.94 6.13 Q9.58 5.49 8.69 5.35 Z")};
-    private static final Part[] LANE_STRAIGHT={new Part("M12 22.5 V6.1",1),Part.fill("M11.47 2.23 Q12 1.5 12.53 2.23 L15.07 5.77 Q15.6 6.5 14.7 6.5 L9.3 6.5 Q8.4 6.5 8.93 5.77 Z")};
-    private static final Part[] LANE_SLIGHT_RIGHT={new Part("M12 22.5 V15.5 Q12 13 13.77 11.23 L17.25 7.75",1),Part.fill("M19.61 4.64 Q20.5 4.5 20.36 5.39 L19.65 9.69 Q19.51 10.58 18.87 9.94 L15.06 6.13 Q14.42 5.49 15.31 5.35 Z")};
-    private static final Part[] LANE_RIGHT={new Part("M12 22.5 V16 Q12 12 16 12 H18.4",1),Part.fill("M22.27 11.47 Q23 12 22.27 12.53 L18.73 15.07 Q18 15.6 18 14.7 L18 9.3 Q18 8.4 18.73 8.93 Z")};
-    private static final Part[] LANE_SHARP_RIGHT={new Part("M12 22.5 V10 Q12 7.5 13.77 9.27 L18.25 13.75",1),Part.fill("M21.36 16.11 Q21.5 17 20.61 16.86 L16.31 16.15 Q15.42 16.01 16.06 15.37 L19.87 11.56 Q20.51 10.92 20.65 11.81 Z")};
-    private static final Part[] LANE_UTURN_RIGHT={new Part("M12 22.5 V9 A4 4 0 0 1 20 9 V15.4",1),Part.fill("M20.53 19.27 Q20 20 19.47 19.27 L16.93 15.73 Q16.4 15 17.3 15 L22.7 15 Q23.6 15 23.07 15.73 Z")};
     private static final HudPath EXIT_RING=new HudPath("M21 10.5 A9 9 0 1 1 3 10.5 A9 9 0 1 1 21 10.5");
     private static final HudPath EXIT_STEM=new HudPath("M12 22.5 V19.5");
     private ManeuverIcon() {}
@@ -80,27 +73,20 @@ public final class ManeuverIcon {
             default:return UNKNOWN;
         }
     }
-    public static void lane(HudCanvas canvas,HudLaneDirection direction,double x,double y,double size,double stroke,int color){
-        laneAt(canvas,direction,x-size/2,y-size/2,size,stroke,color);
-    }
-    public static void laneAt(HudCanvas canvas,HudLaneDirection direction,double x,double y,double size,double stroke,int color){
-        Part[] parts;
-        switch(direction){
-            case STRAIGHT:parts=LANE_STRAIGHT;break;
-            case SLIGHT_RIGHT:parts=LANE_SLIGHT_RIGHT;break;
-            case RIGHT:parts=LANE_RIGHT;break;
-            case SHARP_RIGHT:parts=LANE_SHARP_RIGHT;break;
-            case SLIGHT_LEFT:parts=LANE_SLIGHT_LEFT;break;
-            case LEFT:parts=LANE_LEFT;break;
-            case SHARP_LEFT:parts=LANE_SHARP_LEFT;break;
-            case UTURN_LEFT:parts=LANE_UTURN_LEFT;break;
-            case UTURN_RIGHT:parts=LANE_UTURN_RIGHT;break;
-            default:throw new IllegalArgumentException("LANE_DIRECTION");
-        }
+    /** One direction of a lane whose arrows are [lane], as a branch of the lane's composed sign; the stroke is in grid units. */
+    public static void laneAt(HudCanvas canvas,Collection<HudLaneDirection> lane,HudLaneDirection direction,double x,double y,double size,double stroke,int color){
+        HudPath[] branch=LaneGlyph.of(lane)[direction.ordinal()];
+        if(branch==null)throw new IllegalArgumentException("LANE_DIRECTION");
         double scale=size/24;
-        for(Part part:parts){
-            if(part.fill)canvas.fill(part.path,x,y,scale,color);
-            else canvas.path(part.path,x,y,scale,stroke,color,1);
-        }
+        canvas.path(branch[0],x,y,scale,stroke,color,1);
+        canvas.fill(branch[1],x,y,scale,color);
+    }
+    /** A rim of [outline] grid units around one branch of a lane's sign, drawn under the branch to part it from the others. */
+    public static void laneOutlineAt(HudCanvas canvas,Collection<HudLaneDirection> lane,HudLaneDirection direction,double x,double y,double size,double stroke,double outline,int color){
+        HudPath[] branch=LaneGlyph.of(lane)[direction.ordinal()];
+        if(branch==null)throw new IllegalArgumentException("LANE_DIRECTION");
+        double scale=size/24;
+        canvas.path(branch[0],x,y,scale,stroke+2*outline,color,1);
+        canvas.path(branch[1],x,y,scale,2*outline,color,1);
     }
 }

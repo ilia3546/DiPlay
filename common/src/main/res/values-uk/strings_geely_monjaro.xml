@@ -78,7 +78,7 @@
     <string name="settings_hud_height_lowest">Найнижче</string>
     <string name="settings_hud_scale">Масштаб HUD</string>
     <string name="settings_hud_lanes">Смуги на HUD</string>
-    <string name="settings_hud_lanes_description">Показує смуги найближчого перехрестя, якщо iPhone їх надсилає; рекомендовану смугу підкреслено.</string>
+    <string name="settings_hud_lanes_description">Показує смуги найближчого перехрестя, якщо iPhone їх надсилає; рекомендовану смугу виділено кольором.</string>
     <string name="settings_hud_trip">Залишок часу й шляху на HUD</string>
     <string name="settings_hud_trip_description">Показує час і відстань до місця призначення після смуг, лише якщо вони вміщуються повністю.</string>
     <string name="custom_dashboard_trip_distance">Пробіг</string>

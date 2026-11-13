@@ -78,7 +78,7 @@
     <string name="settings_hud_height_lowest">Lo más abajo</string>
     <string name="settings_hud_scale">Escala del HUD</string>
     <string name="settings_hud_lanes">Carriles en el HUD</string>
-    <string name="settings_hud_lanes_description">Muestra los carriles del próximo cruce cuando el iPhone los envía, con el carril recomendado subrayado.</string>
+    <string name="settings_hud_lanes_description">Muestra los carriles del próximo cruce cuando el iPhone los envía, con el carril recomendado resaltado.</string>
     <string name="settings_hud_trip">Tiempo y distancia restantes en el HUD</string>
     <string name="settings_hud_trip_description">Muestra el tiempo y la distancia hasta el destino después de los carriles, solo si caben enteros.</string>
     <string name="custom_dashboard_trip_distance">Distancia</string>

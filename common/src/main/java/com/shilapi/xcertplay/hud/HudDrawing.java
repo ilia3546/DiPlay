@@ -1,14 +1,15 @@
 package com.shilapi.xcertplay.hud;
 
+import java.util.EnumSet;
+
 public final class HudDrawing {
     public static final int WIDTH=800,HEIGHT=480;
     private static final int CYAN=0xff54d5ff,WHITE=0xfff4fbff,MUTED=0xffc8e2ec,INACTIVE=0xff7a97a3,CALL_GREEN=0xff30d158,CALL_MUTED=0xffff9f0a;
     static final int OTHER_LANE_COLOR=0xffaec6d0;
-    static final double OTHER_LANE_OPACITY=1,OTHER_LANE_STROKE=2.8,PREFERRED_LANE_STROKE=3.2;
+    static final double OTHER_LANE_OPACITY=1,OTHER_LANE_STROKE=2.8,PREFERRED_LANE_STROKE=3.2,BRANCHED_LANE_STROKE_SCALE=.8,HIGHLIGHT_OUTLINE=1.2;
     // The firmware speed is fixed in window pixels, digits around x 400..430 and y 331..371, with no regard to the
     // height and scale settings, so the call is placed in window pixels too, right of a three-digit speed.
     static final double CALL_LEFT=510,CALL_RIGHT=780,CALL_Y=351;
-    private static final HudPath LANE_UNDERLINE=new HudPath("M8 26.5 H16");
     private static final HudPath PHONE=new HudPath("M6.6 10.8 A15.1 15.1 0 0 0 13.2 17.4 L15.4 15.2 A1 1 0 0 1 16.4 14.95 C17.5 15.32 18.7 15.52 20 15.52 A1 1 0 0 1 21 16.52 V20 A1 1 0 0 1 20 21 A17 17 0 0 1 3 4 A1 1 0 0 1 4 3 H7.5 A1 1 0 0 1 8.5 4 C8.5 5.25 8.7 6.45 9.07 7.57 A1 1 0 0 1 8.82 8.57 Z");
     private HudDrawing() {}
     public static void draw(HudCanvas canvas,HudFrame frame,HudSettings settings) {
@@ -41,11 +42,16 @@ public final class HudDrawing {
     }
     public static void lane(HudCanvas canvas,HudLane lane,double x,double y,double size){
         HudLaneDirection highlight=lane.preferred ? lane.highlighted : null;
-        double width=lane.preferred ? PREFERRED_LANE_STROKE : OTHER_LANE_STROKE;
+        EnumSet<HudLaneDirection> directions=EnumSet.noneOf(HudLaneDirection.class);
+        directions.addAll(lane.directions);
+        if(highlight!=null)directions.add(highlight);
+        boolean branched=directions.size()>1;
+        double width=(lane.preferred ? PREFERRED_LANE_STROKE : OTHER_LANE_STROKE)*(branched ? BRANCHED_LANE_STROKE_SCALE : 1);
         canvas.beginOpacity(lane.preferred ? 1 : OTHER_LANE_OPACITY);
-        for(HudLaneDirection direction:lane.directions)if(direction!=highlight)ManeuverIcon.laneAt(canvas,direction,x,y,size,width,lane.preferred ? MUTED : OTHER_LANE_COLOR);
-        if(highlight!=null)ManeuverIcon.laneAt(canvas,highlight,x,y,size,width,CYAN);
-        if(lane.preferred)canvas.path(LANE_UNDERLINE,x,y,size/24,2.2,MUTED,1);
+        int color=!lane.preferred ? OTHER_LANE_COLOR : highlight==null ? CYAN : MUTED;
+        for(HudLaneDirection direction:directions)if(direction!=highlight)ManeuverIcon.laneAt(canvas,directions,direction,x,y,size,width,color);
+        if(highlight!=null && branched)ManeuverIcon.laneOutlineAt(canvas,directions,highlight,x,y,size,width,HIGHLIGHT_OUTLINE,0xff000000);
+        if(highlight!=null)ManeuverIcon.laneAt(canvas,directions,highlight,x,y,size,width,CYAN);
         canvas.endOpacity();
     }
     private static void separator(HudCanvas canvas,double x,double top,double bottom,double k,boolean edge){

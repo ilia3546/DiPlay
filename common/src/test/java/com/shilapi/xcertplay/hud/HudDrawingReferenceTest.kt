@@ -130,7 +130,6 @@ class HudDrawingReferenceTest {
         val other = reference.getJSONObject("otherLane")
         val preferred = reference.getJSONObject("preferredLane")
         val cyan = color(reference.getJSONObject("colors").getString("pri"))
-        val muted = color(reference.getJSONObject("colors").getString("sec"))
         val variants = reference.getJSONObject("variants")
         for (variant in variants.keys()) for (factor in floatArrayOf(.5f, .65f, 1f)) {
             val tokens = variants.getJSONObject(variant)
@@ -159,7 +158,7 @@ class HudDrawingReferenceTest {
                 val lane = HudLane(listOf(direction), if (role == 2) direction else null, role != 0)
                 HudDrawing.lane(r, lane, 400.0 - laneSize / 2, 215.0 - laneSize / 2, laneSize.toDouble())
                 val source = lanes.getJSONArray(direction.name.lowercase())
-                assertEquals("lane part count", source.length() + 2 + if (role != 0) 1 else 0, r.ops.size)
+                assertEquals("lane part count, no underline", source.length() + 2, r.ops.size)
                 close(r.ops[0].opacity, if (role == 0) other.getDouble("opacity") else 1.0, "group opacity")
                 for (i in 0 until source.length()) {
                     val op = r.ops[i + 1]
@@ -167,16 +166,10 @@ class HudDrawingReferenceTest {
                     assertEquals("lane source path", (if (part.has("fill")) "fill" else "path") to part.getString("d"), op.type to op.data)
                     close(op.size, (laneSize / 24).toDouble(), "lane scale")
                     if (!part.has("fill")) close(op.width, (if (role == 0) other else preferred).getDouble("stroke"), "lane stroke")
-                    assertEquals("lane role color", when (role) {
-                        2 -> cyan
-                        1 -> muted
-                        else -> color(other.getString("color"))
+                    assertEquals("lane role color: a preferred lane without a highlight is cyan whole", when (role) {
+                        0 -> color(other.getString("color"))
+                        else -> cyan
                     }, op.color)
-                }
-                if (role != 0) {
-                    val underline = r.ops[r.ops.size - 2]
-                    assertEquals("M8 26.5 H16", underline.data)
-                    close(underline.width, 2.2, "underline stroke")
                 }
             }
         }

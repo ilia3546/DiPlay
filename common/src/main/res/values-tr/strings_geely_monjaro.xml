@@ -78,7 +78,7 @@
     <string name="settings_hud_height_lowest">En altta</string>
     <string name="settings_hud_scale">HUD ölçeği</string>
     <string name="settings_hud_lanes">HUD\'da şeritler</string>
-    <string name="settings_hud_lanes_description">iPhone gönderdiğinde sonraki kavşağın şeritlerini gösterir; önerilen şeridin altı çizilir.</string>
+    <string name="settings_hud_lanes_description">iPhone gönderdiğinde sonraki kavşağın şeritlerini gösterir; önerilen şerit vurgulanır.</string>
     <string name="settings_hud_trip">HUD\'da kalan süre ve mesafe</string>
     <string name="settings_hud_trip_description">Varış noktasına kalan süreyi ve mesafeyi şeritlerden sonra, yalnızca tamamı sığarsa gösterir.</string>
     <string name="custom_dashboard_trip_distance">Mesafe</string>

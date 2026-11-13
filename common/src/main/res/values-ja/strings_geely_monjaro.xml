@@ -78,7 +78,7 @@
     <string name="settings_hud_height_lowest">最下部</string>
     <string name="settings_hud_scale">HUD の倍率</string>
     <string name="settings_hud_lanes">HUD に車線を表示</string>
-    <string name="settings_hud_lanes_description">iPhone から送られたときに次の交差点の車線を表示します。推奨車線には下線が付きます。</string>
+    <string name="settings_hud_lanes_description">iPhone から送られたときに次の交差点の車線を表示します。推奨車線は強調表示されます。</string>
     <string name="settings_hud_trip">HUD に残り時間と距離を表示</string>
     <string name="settings_hud_trip_description">目的地までの残り時間と距離を車線の後に表示します。全体が収まる場合のみ表示します。</string>
     <string name="custom_dashboard_trip_distance">走行距離</string>
