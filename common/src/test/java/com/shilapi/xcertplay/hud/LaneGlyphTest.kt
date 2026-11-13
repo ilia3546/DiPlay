@@ -118,13 +118,19 @@ class LaneGlyphTest {
         assertEquals("", failures.joinToString("\n"))
     }
 
-    @Test fun aTurnAndAUTurnToTheSameSideShareTheBendAndTheUTurnDropsBelowTheTurn() {
-        val glyph = LaneGlyph.of(listOf(HudLaneDirection.UTURN_LEFT, HudLaneDirection.LEFT))
-        val turn = glyph[HudLaneDirection.LEFT.ordinal]!!
-        val uturn = glyph[HudLaneDirection.UTURN_LEFT.ordinal]!!
-        val bend = turn[0].data.substringBefore(" H")
-        assertTrue("${uturn[0].data} continues $bend", uturn[0].data.startsWith("$bend "))
-        assertTrue(corners(uturn[1]).minOf { it[1] } > corners(turn[1]).maxOf { it[1] })
+    @Test fun aUTurnHooksOffTheStemBelowATurnToTheSameSide() {
+        for ((turnSide, uturnSide) in listOf(HudLaneDirection.LEFT to HudLaneDirection.UTURN_LEFT, HudLaneDirection.RIGHT to HudLaneDirection.UTURN_RIGHT)) {
+            val both = listOf(HudLaneDirection.UTURN_LEFT, HudLaneDirection.UTURN_RIGHT, turnSide)
+            for (lane in listOf(listOf(uturnSide, turnSide), listOf(uturnSide, turnSide, HudLaneDirection.STRAIGHT), both, both + HudLaneDirection.STRAIGHT)) {
+                val glyph = LaneGlyph.of(lane)
+                val turn = glyph[turnSide.ordinal]!!
+                val uturn = glyph[uturnSide.ordinal]!!
+                val leaves = { branch: Array<HudPath> -> Regex("^M[\\d.]+ 22\\.5 V([\\d.]+) ").find(branch[0].data)!!.groupValues[1].toDouble() }
+                assertEquals("$lane share the stem", turn[0].data.substringBefore(" V"), uturn[0].data.substringBefore(" V"))
+                assertTrue("$lane ${uturn[0].data} leaves below ${turn[0].data}", leaves(uturn) > leaves(turn))
+                assertTrue("$lane", corners(uturn[1]).minOf { it[1] } > corners(turn[1]).maxOf { it[1] })
+            }
+        }
     }
 
     @Test fun aSingleDirectionIsCenteredOnTheGrid() {
