@@ -54,6 +54,7 @@ internal class VideoInCarGate(
     private val onTick: () -> Unit = {},
 ) : Closeable {
     @Volatile private var closed = false
+    private val token = synchronized(lock) { ++owner }
     private var observed = false
     private var lastParked: Boolean? = null
 
@@ -90,25 +91,35 @@ internal class VideoInCarGate(
             driverScreen = forceVideoInCar || parked == true,
             passengerDisplayId = if (forceVideoInCar) null else runCatching(awayFromDriver).getOrNull(),
         )
-        if (screens != VideoInCar.screens) {
-            VideoInCar.screens = screens
-            onScreens(screens)
+        // A reading can outlast close() and the next connection's gate; only the current gate may publish it.
+        synchronized(lock) {
+            if (closed || owner != token) return
+            if (screens != VideoInCar.screens) {
+                VideoInCar.screens = screens
+                onScreens(screens)
+            }
+            val allowed = screens.driverScreen || screens.passengerDisplayId != null
+            if (allowed != VideoInCar.allowed) {
+                VideoInCar.allowed = allowed
+                onChanged(allowed)
+            }
+            onTick()
         }
-        val allowed = screens.driverScreen || screens.passengerDisplayId != null
-        if (allowed != VideoInCar.allowed) {
-            VideoInCar.allowed = allowed
-            onChanged(allowed)
-        }
-        onTick()
     }
 
     override fun close() {
-        closed = true
-        VideoInCar.screens = VideoInCar.VideoScreens()
-        VideoInCar.allowed = false
+        synchronized(lock) {
+            closed = true
+            if (owner != token) return
+            VideoInCar.screens = VideoInCar.VideoScreens()
+            VideoInCar.allowed = false
+        }
     }
 
     private companion object {
         const val POLL_MILLIS = 1_000L
+        private val lock = Any()
+        // The newest gate owns VideoInCar.screens and VideoInCar.allowed. Guarded by lock.
+        private var owner = 0L
     }
 }

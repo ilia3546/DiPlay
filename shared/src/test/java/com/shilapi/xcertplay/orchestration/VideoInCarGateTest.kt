@@ -194,4 +194,42 @@ class VideoInCarGateTest {
         assertEquals(listOf(VideoInCar.VideoScreens(true, null), VideoInCar.VideoScreens(false, null)), published)
         gate.close()
     }
+
+    @Test
+    fun aReadingThatOutlastsCloseAndTheNextGateIsNotPublished() {
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        var oldTicks = 0
+        var oldChanges = 0
+        val old = VideoInCarGate({ true }, onChanged = { oldChanges++ }, onTick = { oldTicks++ }, awayFromDriver = {
+            entered.countDown()
+            release.await(2, TimeUnit.SECONDS)
+            2
+        })
+        val reading = Thread { old.update(true) }.apply { start() }
+        assertTrue(entered.await(2, TimeUnit.SECONDS))
+        old.close()
+        val next = VideoInCarGate({ false }, {}, awayFromDriver = { 2 })
+        next.update(false)
+        release.countDown()
+        reading.join(2_000)
+
+        assertEquals(VideoInCar.VideoScreens(driverScreen = false, passengerDisplayId = 2), VideoInCar.screens)
+        assertTrue(VideoInCar.allowed)
+        assertEquals(0, oldTicks)
+        assertEquals(0, oldChanges)
+        next.close()
+    }
+
+    @Test
+    fun closingAReplacedGateLeavesTheNewGatesScreens() {
+        val old = VideoInCarGate({ true }, {})
+        val next = VideoInCarGate({ true }, {}, awayFromDriver = { 2 })
+        next.update(false)
+        old.close()
+        old.update(true)
+        assertEquals(VideoInCar.VideoScreens(driverScreen = false, passengerDisplayId = 2), VideoInCar.screens)
+        assertTrue(VideoInCar.allowed)
+        next.close()
+    }
 }
