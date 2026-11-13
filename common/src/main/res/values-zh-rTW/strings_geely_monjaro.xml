@@ -115,4 +115,11 @@
     <string name="hud_unit_minutes">分鐘</string>
     <string name="settings_report_system_log">在診斷報告中加入系統日誌（實驗性）</string>
     <string name="settings_report_system_log_description">在每份儲存的診斷報告末尾加入整台車機最近 5 分鐘的系統日誌，最多 15 MB。其他應用程式和韌體的日誌行需要 root（Magisk）；沒有 root 時只加入 DiPlay 自身的日誌行。位址、座標和網路名稱會被隱去，但日誌仍可能包含車輛及其使用情況的其他資訊。只有儲存的檔案包含這部分：DiPlay 的報告檢視畫面和手機上的報告都不顯示。立即生效。</string>
+    <string name="settings_geely_monjaro_a3_passenger_screen">副駕駛螢幕</string>
+    <string name="settings_passenger_video">在副駕駛螢幕播放影片（實驗性）</string>
+    <string name="settings_passenger_video_description">CarPlay 影片可以在副駕駛螢幕播放，行駛中也可以。用播放器中的按鈕，或用韌體在螢幕間移動 App 的三指手勢把它移過去。僅在駕駛看不到副駕駛螢幕時開啟。主螢幕上的影片仍然只在 P 檔播放：不在 P 檔時，主螢幕上的播放器會在遮罩下暫停，直到被移走。需要開啟「停車時播放影片」。開啟「強制宣告支援 CarPlay 影片」時，主螢幕不受 P 檔限制。立即生效。</string>
+    <string name="video_move_to_passenger_screen">移到副駕駛螢幕</string>
+    <string name="video_move_to_main_screen">移到主螢幕</string>
+    <string name="video_close">關閉影片</string>
+    <string name="video_parked_only_on_this_screen">此螢幕僅在車輛處於 P 檔時播放影片。</string>
 </resources>

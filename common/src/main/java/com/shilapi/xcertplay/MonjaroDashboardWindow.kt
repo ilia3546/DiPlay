@@ -99,6 +99,10 @@ internal object MonjaroClusterDisplay :
     const val HEIGHT = 720
 }
 
+/** The passenger screen: physical display 131, 1920x720 with a touch screen of its own. */
+internal object MonjaroPassengerDisplay :
+    PhysicalDisplay(physicalId = 131, width = MonjaroClusterDisplay.WIDTH, height = MonjaroClusterDisplay.HEIGHT)
+
 /**
  * The custom dashboard as an opaque overlay on the cluster display, neither focusable nor touchable. An
  * application overlay outlives DiPlay's activities, as the CarPlay session does.

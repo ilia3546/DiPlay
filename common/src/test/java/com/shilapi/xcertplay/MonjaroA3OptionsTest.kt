@@ -67,6 +67,13 @@ class MonjaroA3OptionsTest {
         assertFalse(MonjaroA3Options.load(context, monjaroA3 = false).dashboardCalls)
     }
 
+    @Test fun passengerVideoIsOffByDefaultAndOffOnAnyOtherHeadUnit() {
+        assertFalse(MonjaroA3Options.load(context, monjaroA3 = true).passengerVideo)
+        AirPlayPersistence.savePassengerVideo(context, true)
+        assertTrue(MonjaroA3Options.load(context, monjaroA3 = true).passengerVideo)
+        assertFalse(MonjaroA3Options.load(context, monjaroA3 = false).passengerVideo)
+    }
+
     @Test fun requestingLostAudioIsOffByDefaultAndOffOnAnyOtherHeadUnit() {
         assertFalse(MonjaroA3Options.load(context, monjaroA3 = true).requestLostAudio)
         AirPlayPersistence.saveRequestLostAudio(context, true)

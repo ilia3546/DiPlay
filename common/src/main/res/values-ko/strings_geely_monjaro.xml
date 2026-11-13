@@ -115,4 +115,11 @@
     <string name="hud_unit_minutes">분</string>
     <string name="settings_report_system_log">진단 보고서에 시스템 로그 추가 (실험 기능)</string>
     <string name="settings_report_system_log_description">저장하는 각 진단 보고서 끝에 헤드 유닛 전체의 최근 5분간 시스템 로그를 최대 15MB까지 추가합니다. 다른 앱과 펌웨어의 줄을 포함하려면 루트(Magisk)가 필요하며, 루트가 없으면 DiPlay 자체의 줄만 추가됩니다. 주소, 좌표, 네트워크 이름은 가려지지만 로그에 차량과 그 사용에 관한 다른 정보가 남아 있을 수 있습니다. 저장된 파일에만 들어 있으며 DiPlay의 보고서 보기와 휴대폰의 보고서에는 표시되지 않습니다. 바로 적용됩니다.</string>
+    <string name="settings_geely_monjaro_a3_passenger_screen">조수석 화면</string>
+    <string name="settings_passenger_video">조수석 화면에서 동영상 재생 (실험 기능)</string>
+    <string name="settings_passenger_video_description">CarPlay 동영상을 주행 중에도 조수석 화면에서 재생할 수 있습니다. 플레이어의 버튼이나 앱을 화면 간에 옮기는 펌웨어의 세 손가락 제스처로 옮기세요. 운전자가 조수석 화면을 볼 수 없는 경우에만 켜세요. 메인 화면에서는 여전히 P에서만 재생되며, P가 아니면 메인 화면의 플레이어는 옮길 때까지 가림막 아래에서 일시 정지됩니다. “주차 중 동영상 재생”이 필요합니다. “CarPlay 동영상 지원 강제 활성화”가 켜져 있으면 메인 화면이 P로 제한되지 않습니다. 즉시 적용됩니다.</string>
+    <string name="video_move_to_passenger_screen">조수석 화면으로 이동</string>
+    <string name="video_move_to_main_screen">메인 화면으로 이동</string>
+    <string name="video_close">동영상 닫기</string>
+    <string name="video_parked_only_on_this_screen">이 화면에서는 차량이 P일 때만 동영상이 재생됩니다.</string>
 </resources>

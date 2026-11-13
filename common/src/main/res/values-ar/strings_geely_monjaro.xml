@@ -115,4 +115,11 @@
     <string name="hud_unit_minutes">د</string>
     <string name="settings_report_system_log">إضافة سجل النظام إلى تقارير التشخيص (تجريبي)</string>
     <string name="settings_report_system_log_description">يضيف سجل نظام الوحدة الرئيسية بالكامل لآخر 5 دقائق، حتى 15 ميغابايت، إلى نهاية كل تقرير تشخيص محفوظ. تتطلب أسطر التطبيقات الأخرى والبرنامج الثابت صلاحيات root (Magisk)؛ وبدونها تُضاف أسطر DiPlay نفسه فقط. تُخفى العناوين والإحداثيات وأسماء الشبكات، لكن السجل قد يكشف أمورًا أخرى عن السيارة وطريقة استخدامها. يوجد في الملف المحفوظ فقط: لا يعرضه عارض التقرير في DiPlay ولا التقرير على الهاتف. يُطبَّق فورًا.</string>
+    <string name="settings_geely_monjaro_a3_passenger_screen">شاشة الراكب</string>
+    <string name="settings_passenger_video">الفيديو على شاشة الراكب (تجريبي)</string>
+    <string name="settings_passenger_video_description">يمكن تشغيل فيديو CarPlay على شاشة الراكب، حتى أثناء القيادة. انقله إليها بالزر في المشغّل أو بإيماءة الأصابع الثلاث في البرنامج الثابت التي تنقل التطبيقات بين الشاشات. فعّله فقط إذا كان السائق لا يستطيع رؤية شاشة الراكب. على الشاشة الرئيسية يبقى تشغيل الفيديو في وضع P فقط: خارج P يتوقف المشغّل هناك مؤقتًا خلف غطاء حتى يُنقل. يتطلب تفعيل «الفيديو أثناء التوقف». عند تفعيل «فرض دعم فيديو CarPlay» لا تقتصر الشاشة الرئيسية على وضع P. يُطبَّق فورًا.</string>
+    <string name="video_move_to_passenger_screen">نقل إلى شاشة الراكب</string>
+    <string name="video_move_to_main_screen">نقل إلى الشاشة الرئيسية</string>
+    <string name="video_close">إغلاق الفيديو</string>
+    <string name="video_parked_only_on_this_screen">على هذه الشاشة يُعرض الفيديو فقط عندما تكون السيارة في وضع P.</string>
 </resources>

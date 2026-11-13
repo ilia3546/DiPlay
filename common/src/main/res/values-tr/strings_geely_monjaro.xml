@@ -115,4 +115,11 @@
     <string name="hud_unit_minutes">dk</string>
     <string name="settings_report_system_log">Sistem günlüğünü teşhis raporlarına ekle (deneysel)</string>
     <string name="settings_report_system_log_description">Kaydedilen her teşhis raporunun sonuna tüm ana ünitenin son 5 dakikalık sistem günlüğünü en fazla 15 MB olarak ekler. Diğer uygulamaların ve ürün yazılımının satırları için root (Magisk) gerekir; root olmadan yalnızca DiPlay\'in kendi satırları eklenir. Adresler, koordinatlar ve ağ adları gizlenir, ancak günlük yine de araç ve kullanımı hakkında başka bilgiler içerebilir. Yalnızca kaydedilen dosyadadır: DiPlay\'deki rapor görünümü ve telefondaki rapor bunu göstermez. Hemen uygulanır.</string>
+    <string name="settings_geely_monjaro_a3_passenger_screen">Yolcu ekranı</string>
+    <string name="settings_passenger_video">Yolcu ekranında video (deneysel)</string>
+    <string name="settings_passenger_video_description">CarPlay videosu sürüş sırasında da yolcu ekranında oynatılabilir. Videoyu oynatıcıdaki düğmeyle ya da uygulamaları ekranlar arasında taşıyan yazılımın üç parmak hareketiyle oraya taşıyın. Yalnızca sürücü yolcu ekranını göremiyorsa açın. Ana ekranda video yine yalnızca P konumunda oynatılır: P dışında oradaki oynatıcı taşınana kadar bir örtünün altında duraklatılır. “Park halindeyken video” açık olmalıdır. “CarPlay video desteğini zorla” açıkken ana ekran P ile sınırlı değildir. Hemen uygulanır.</string>
+    <string name="video_move_to_passenger_screen">Yolcu ekranına taşı</string>
+    <string name="video_move_to_main_screen">Ana ekrana taşı</string>
+    <string name="video_close">Videoyu kapat</string>
+    <string name="video_parked_only_on_this_screen">Bu ekranda video yalnızca araç P konumundayken oynatılır.</string>
 </resources>

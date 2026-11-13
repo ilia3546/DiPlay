@@ -115,4 +115,11 @@
     <string name="hud_unit_minutes">min</string>
     <string name="settings_report_system_log">Add the system log to diagnostic reports (experimental)</string>
     <string name="settings_report_system_log_description">Adds the system log of the whole head unit for the last 5 minutes, up to 15 MB, to the end of each saved diagnostic report. Lines of other apps and of the firmware need root (Magisk); without root, only DiPlay\'s own lines are added. Addresses, coordinates and network names are masked, but the log may still tell other things about the car and how it is used. Only the saved file has it: the report view in DiPlay and the report on the phone do not. Applies at once.</string>
+    <string name="settings_geely_monjaro_a3_passenger_screen">Passenger screen</string>
+    <string name="settings_passenger_video">Video on the passenger screen (experimental)</string>
+    <string name="settings_passenger_video_description">Lets a CarPlay video play on the passenger screen, also while driving. Move it there with the button in the player, or with the firmware’s three-finger gesture that moves apps between screens. Turn on only if the driver cannot see the passenger screen. On the main screen video still plays only in P: outside P the player there pauses under a cover until it moves. Needs “Video while parked”. With “Force CarPlay video support” on, the main screen is not limited to P. Applies at once.</string>
+    <string name="video_move_to_passenger_screen">Move to passenger screen</string>
+    <string name="video_move_to_main_screen">Move to main screen</string>
+    <string name="video_close">Close video</string>
+    <string name="video_parked_only_on_this_screen">On this screen, video plays only while the car is in P.</string>
 </resources>

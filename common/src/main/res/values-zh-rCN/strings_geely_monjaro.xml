@@ -115,4 +115,11 @@
     <string name="hud_unit_minutes">分钟</string>
     <string name="settings_report_system_log">在诊断报告中加入系统日志（实验性）</string>
     <string name="settings_report_system_log_description">在每份保存的诊断报告末尾加入整台车机最近 5 分钟的系统日志，最多 15 MB。其他应用和固件的日志行需要 root（Magisk）；没有 root 时只加入 DiPlay 自身的日志行。地址、坐标和网络名称会被隐去，但日志仍可能包含车辆及其使用情况的其他信息。只有保存的文件包含这部分：DiPlay 的报告查看界面和手机上的报告都不显示。立即生效。</string>
+    <string name="settings_geely_monjaro_a3_passenger_screen">副驾屏</string>
+    <string name="settings_passenger_video">在副驾屏播放视频（实验性）</string>
+    <string name="settings_passenger_video_description">CarPlay 视频可以在副驾屏播放，行驶中也可以。用播放器中的按钮，或用固件在屏幕间移动应用的三指手势把它移过去。仅在驾驶员看不到副驾屏时开启。主屏上的视频仍然只在 P 挡播放：不在 P 挡时，主屏上的播放器会在遮挡层下暂停，直到被移走。需要开启“驻车时播放视频”。开启“强制声明支持 CarPlay 视频”时，主屏不受 P 挡限制。立即生效。</string>
+    <string name="video_move_to_passenger_screen">移到副驾屏</string>
+    <string name="video_move_to_main_screen">移到主屏</string>
+    <string name="video_close">关闭视频</string>
+    <string name="video_parked_only_on_this_screen">此屏幕仅在车辆处于 P 挡时播放视频。</string>
 </resources>

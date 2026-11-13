@@ -115,4 +115,11 @@
     <string name="hud_unit_minutes">min</string>
     <string name="settings_report_system_log">Aggiungi il log di sistema ai report diagnostici (sperimentale)</string>
     <string name="settings_report_system_log_description">Aggiunge alla fine di ogni report diagnostico salvato il log di sistema dell\'intera unità principale degli ultimi 5 minuti, fino a 15 MB. Le righe di altre app e del firmware richiedono root (Magisk); senza root vengono aggiunte solo le righe di DiPlay. Indirizzi, coordinate e nomi di rete vengono mascherati, ma il log può comunque rivelare altro sull\'auto e sul suo uso. È solo nel file salvato: né la visualizzazione del report in DiPlay né il report sul telefono lo mostrano. Si applica subito.</string>
+    <string name="settings_geely_monjaro_a3_passenger_screen">Schermo del passeggero</string>
+    <string name="settings_passenger_video">Video sullo schermo del passeggero (sperimentale)</string>
+    <string name="settings_passenger_video_description">Un video di CarPlay può essere riprodotto sullo schermo del passeggero, anche in marcia. Spostalo lì con il pulsante nel lettore o con il gesto a tre dita del firmware che sposta le app tra gli schermi. Attivalo solo se il conducente non può vedere lo schermo del passeggero. Sullo schermo principale il video si riproduce ancora solo in P: fuori da P il lettore su quello schermo va in pausa sotto una copertura finché non viene spostato. Richiede «Video con l’auto ferma». Con «Forza il supporto video CarPlay» attivo, lo schermo principale non è limitato alla P. Si applica subito.</string>
+    <string name="video_move_to_passenger_screen">Sposta sullo schermo del passeggero</string>
+    <string name="video_move_to_main_screen">Sposta sullo schermo principale</string>
+    <string name="video_close">Chiudi video</string>
+    <string name="video_parked_only_on_this_screen">Su questo schermo il video si riproduce solo con l’auto in P.</string>
 </resources>

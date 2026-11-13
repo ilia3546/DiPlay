@@ -156,6 +156,7 @@ object AirPlayPersistence {
     private const val KEY_DASHBOARD_MANEUVER = "monjaro_dashboard_maneuver"
     private const val KEY_DASHBOARD_BOTTOM_LINE = "monjaro_dashboard_bottom_line"
     private const val KEY_DASHBOARD_ARRIVAL = "monjaro_dashboard_arrival"
+    private const val KEY_PASSENGER_VIDEO = "monjaro_passenger_video"
     private const val KEY_HUD_MANEUVERS = "monjaro_hud_maneuvers"
     private const val KEY_HUD_HEIGHT = "monjaro_hud_height"
     private const val KEY_HUD_SCALE = "monjaro_hud_scale_percent"
@@ -805,6 +806,14 @@ object AirPlayPersistence {
     fun saveHudTrip(context: Context, enabled: Boolean) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putBoolean(KEY_HUD_TRIP, enabled).apply()
+    }
+
+    fun loadPassengerVideo(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_PASSENGER_VIDEO, false)
+
+    fun savePassengerVideo(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putBoolean(KEY_PASSENGER_VIDEO, enabled).apply()
     }
 
     fun saveBtSuspendDuringCarplay(context: Context, enabled: Boolean) {

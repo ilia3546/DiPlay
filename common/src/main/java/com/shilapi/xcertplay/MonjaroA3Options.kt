@@ -29,6 +29,7 @@ internal data class MonjaroA3Options(
     val hudScalePercent: Int = HudSettings.DEFAULT_SCALE,
     val hudLanes: Boolean = true,
     val hudTrip: Boolean = true,
+    val passengerVideo: Boolean = false,
 ) {
     /** The HUD line's drawing settings. */
     val hudSettings: HudSettings get() = HudSettings(hudHeight, hudScalePercent, hudLanes, hudTrip)
@@ -63,6 +64,7 @@ internal data class MonjaroA3Options(
                 hudScalePercent = AirPlayPersistence.loadHudScalePercent(context),
                 hudLanes = AirPlayPersistence.loadHudLanes(context),
                 hudTrip = AirPlayPersistence.loadHudTrip(context),
+                passengerVideo = AirPlayPersistence.loadPassengerVideo(context),
             )
         }
     }

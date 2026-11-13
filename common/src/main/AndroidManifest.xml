@@ -128,6 +128,16 @@
             android:exported="false"
             android:theme="@style/Theme.Xcertplay" />
 
+        <!-- The same player in a task of its own, while video may move to the passenger screen. Displays that differ
+             only in their navigation keys (navigation, and navigationHidden, which Android counts as keyboardHidden)
+             must not recreate the player when it moves between them. -->
+        <activity
+            android:name="com.shilapi.xcertplay.OwnTaskCarPlayVideoActivity"
+            android:configChanges="density|keyboardHidden|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:exported="false"
+            android:taskAffinity="${applicationId}.video"
+            android:theme="@style/Theme.Xcertplay" />
+
         <activity
             android:name="com.shilapi.xcertplay.MainActivity"
             android:exported="false"

@@ -1,12 +1,19 @@
 package com.shilapi.xcertplay
 
+import android.app.ActivityManager
+import android.app.ActivityOptions
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
+import android.os.Build
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
+import android.view.Display
 import android.widget.Toast
+import androidx.lifecycle.Lifecycle
 import com.shilapi.xcertplay.airplay.CarPlayMediaButton
 import com.shilapi.xcertplay.airplay.VideoRequestAdmission
 import com.shilapi.xcertplay.airplay.VideoInCar
@@ -86,10 +93,29 @@ internal object CarPlayVideo : CarPlayVideoListener {
     @Volatile var playerOnScreen = false
         internal set
 
+    internal var passenger: PassengerScreens = PassengerVideoScreen
+    internal var startPlayer: (Context, Intent, Bundle?) -> Unit = { context, intent, options ->
+        context.startActivity(intent, options)
+    }
+
+    /** The player is on the driver's display outside P: paused under an opaque cover until it may play there. */
+    var blocked = false
+        private set
+    // Playback was wanted while blocked; it resumes by itself once the player reaches the passenger screen.
+    private var resumeOnPassenger = false
+    private var launchTarget: Int? = null
+    private var moveTarget: Int? = null
+    private var moveTicks = 0
+    private var passengerLaunchRefused = false
+    private var recreatedFrom: Configuration? = null
+    @Volatile private var leftParkAt: Long? = null
+    @Volatile private var driverScreenBefore = false
+
     fun attach(context: Context, next: CarPlayController) {
         if (controller !== next) {
             endPlayback("controller_changed", notify = false)
             retiredItems.clear()
+            passengerLaunchRefused = false
             playbackEnded = false
             streamId = null
         }
@@ -103,6 +129,8 @@ internal object CarPlayVideo : CarPlayVideoListener {
         val intent = next.intent
         val generation = intent?.getLongExtra(EXTRA_GENERATION, -1L)
         val ticket = intent?.getLongExtra(EXTRA_LAUNCH, -1L)
+        val recreated = recreatedFrom
+        recreatedFrom = null
         val reason = when {
             generation != playbackGeneration || ticket != launchId -> "stale_launch"
             activity != null && activity !== next -> "already_attached"
@@ -120,16 +148,25 @@ internal object CarPlayVideo : CarPlayVideoListener {
         pendingOpen = null
         activity = next
         diagnostic("event=player_attached generation=$generation launch=$ticket")
+        recreated?.let {
+            diagnostic("event=player_recreated configDiff=0x${Integer.toHexString(it.diff(next.resources.configuration))}")
+        }
         return true
     }
 
     /** Called only after the old player's resources have been released. */
-    fun detachPlayer(previous: CarPlayVideoActivity, changingConfigurations: Boolean, positionMillis: Int? = null) {
+    fun detachPlayer(previous: CarPlayVideoActivity, changingConfigurations: Boolean, positionMillis: Int? = null,
+        configuration: Configuration? = null) {
         if (activity !== previous) return
         activity = null
         diagnostic("event=player_detached generation=$playbackGeneration configuration=$changingConfigurations")
-        if (changingConfigurations) return
+        if (changingConfigurations) {
+            positionMillis?.let { startMillis = it }
+            recreatedFrom = configuration
+            return
+        }
         onPlayerGone()
+        evaluatePlacement()
         if (pendingOpen != null && !playbackEnded) show()
         else if (!playbackEnded && url != null &&
             previous.intent?.getLongExtra(EXTRA_GENERATION, -1L) == playbackGeneration) {
@@ -146,6 +183,16 @@ internal object CarPlayVideo : CarPlayVideoListener {
     override fun startReadingParked(): () -> Unit {
         val app = appContext ?: return {}
         return if (EcarxWheelSpeed.present()) EcarxWheelSpeed.follow(app) else ({})
+    }
+
+    override fun videoScreenAwayFromDriver(): Int? = appContext?.let(passenger::available)
+
+    override fun onVideoGateTick() {
+        val driverScreen = VideoInCar.screens.driverScreen
+        if (driverScreen) leftParkAt = null
+        else if (driverScreenBefore) leftParkAt = SystemClock.elapsedRealtime()
+        driverScreenBefore = driverScreen
+        main.post { evaluatePlacement(tick = true) }
     }
 
     override fun usesIphoneNetworkForVideo(): Boolean =
@@ -176,10 +223,11 @@ internal object CarPlayVideo : CarPlayVideoListener {
     }
 
     override fun onVideoAllowedChanged(allowed: Boolean) {
-        if (!allowed) main.post { pausePlayback("left_park", activity?.resumePositionMillis()) }
+        main.post { evaluatePlacement(gateClosed = !allowed) }
     }
 
     override fun onVideoSessionEnded() {
+        diagnostic("event=video_session_ended ${parkReport()}")
         val generation = commandGeneration
         main.post {
             if (generation != commandGeneration) return@post
@@ -230,10 +278,150 @@ internal object CarPlayVideo : CarPlayVideoListener {
     /** Play or pause from the car (wheel or on-screen button); tells the iPhone at once. Main thread. */
     fun setPlaying(next: Boolean) {
         if (next && playbackEnded) return
-        playing = next
+        if (!next) {
+            playing = false
+            resumeOnPassenger = false
+        } else if (!requestPlay("car")) return
         activity?.applyRate()
         streamId?.let { reply(it, VideoInCar.playbackStateNotification(next, itemUuid)) }
     }
+
+    /**
+     * Every start of playback goes through here. A blocked player stays paused and the iPhone is told so; the
+     * playback resumes if the player then moves to the passenger screen. Main thread.
+     */
+    private fun requestPlay(source: String): Boolean {
+        if (!blocked) {
+            playing = true
+            return true
+        }
+        resumeOnPassenger = true
+        streamId?.let { reply(it, VideoInCar.playbackStateNotification(false, itemUuid)) }
+        diagnostic("event=play_blocked generation=$playbackGeneration source=$source")
+        activity?.showBlockedMessage()
+        return false
+    }
+
+    /** The player opened, moved to another display or resumed. Main thread. */
+    fun onPlayerDisplay(player: CarPlayVideoActivity) {
+        if (player === activity) evaluatePlacement()
+    }
+
+    /**
+     * The one place that decides whether the open player plays, is blocked or closes where it is
+     * ([CarPlayVideoPlacement.verdict]). Main thread; repeating it changes nothing.
+     */
+    private fun evaluatePlacement(gateClosed: Boolean = false, tick: Boolean = false) {
+        val player = activity?.takeUnless { it.playbackReleased || it.isFinishing }
+        if (gateClosed || (player != null && !VideoInCar.allowed)) {
+            pausePlayback("left_park", activity?.resumePositionMillis())
+            return
+        }
+        if (player == null) {
+            if (recreatedFrom == null) blocked = false
+            return
+        }
+        val context = appContext ?: return
+        val actual = passenger.displayOf(player) ?: return
+        val driver = hostDisplay()
+        val identity = passenger.identity(context)
+        val available = identity != null && passenger.available(context) == identity
+        val landedOffTarget = launchTarget.let { it != null && it != actual }
+        launchTarget = null
+        moveTarget?.let { target ->
+            if (actual == target) {
+                moveTarget = null
+                diagnostic("event=player_moved generation=$playbackGeneration display=$actual")
+            } else if (tick && ++moveTicks >= 2) {
+                moveTarget = null
+                if (target == identity) passengerLaunchRefused = true
+                diagnostic("event=player_move_refused generation=$playbackGeneration target=$target display=$actual")
+            }
+        }
+        val screens = VideoInCar.screens
+        when (CarPlayVideoPlacement.verdict(actual, driver, screens, identity, available, landedOffTarget)) {
+            CarPlayVideoPlacement.Verdict.PLAY -> {
+                holdHostCanvas(actual, driver)
+                if (blocked) {
+                    blocked = false
+                    player.showBlocked(false)
+                    val resume = resumeOnPassenger && actual == identity
+                    resumeOnPassenger = false
+                    diagnostic("event=player_unblocked generation=$playbackGeneration display=$actual resume=$resume")
+                    if (resume) setPlaying(true)
+                }
+            }
+            CarPlayVideoPlacement.Verdict.BLOCK -> {
+                holdHostCanvas(actual, driver)
+                val wasBlocked = blocked
+                blocked = true
+                player.showBlocked(true)
+                if (playing) {
+                    resumeOnPassenger = true
+                    playing = false
+                    player.applyRate()
+                    streamId?.let { reply(it, VideoInCar.playbackStateNotification(false, itemUuid)) }
+                }
+                if (!wasBlocked) {
+                    diagnostic("event=player_blocked generation=$playbackGeneration display=$actual resume=$resumeOnPassenger ${parkReport()}")
+                }
+            }
+            CarPlayVideoPlacement.Verdict.CLOSE -> {
+                val reason = CarPlayVideoPlacement.closeReason(actual, driver, identity, landedOffTarget)
+                if (reason == "passenger_launch_refused") passengerLaunchRefused = true
+                pausePlayback(reason, player.resumePositionMillis())
+                return
+            }
+        }
+        player.updatePlacementControls()
+    }
+
+    /** The CarPlay screen keeps its canvas only while the player covers it (#1180). */
+    private fun holdHostCanvas(displayId: Int, hostDisplay: Int) {
+        playerOnScreen = displayId == hostDisplay
+    }
+
+    private fun hostDisplay(): Int = CarPlayScreen.current()?.let(passenger::displayOf) ?: Display.DEFAULT_DISPLAY
+
+    /** Where the player's move button takes it, or null when it shows none. Main thread. */
+    fun playerMove(): CarPlayVideoPlacement.Move? {
+        val player = activity?.takeUnless { it.playbackReleased || it.isFinishing } ?: return null
+        val context = appContext ?: return null
+        if (passengerLaunchRefused) return null
+        val actual = passenger.displayOf(player) ?: return null
+        return CarPlayVideoPlacement.move(actual, hostDisplay(), VideoInCar.screens, passenger.identity(context))
+    }
+
+    /** Starts the open player again on the other screen, with its own launch ticket. Main thread. */
+    fun movePlayer(move: CarPlayVideoPlacement.Move) {
+        val player = activity?.takeUnless { it.playbackReleased || it.isFinishing } ?: return
+        val context = appContext ?: return
+        val target = when (move) {
+            CarPlayVideoPlacement.Move.TO_PASSENGER -> VideoInCar.screens.passengerDisplayId
+            CarPlayVideoPlacement.Move.TO_DRIVER -> hostDisplay()
+        } ?: return
+        moveTarget = target
+        moveTicks = 0
+        try {
+            startPlayer(context, Intent(player.intent)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP), launchOn(target))
+            diagnostic("event=player_move generation=$playbackGeneration target=$target")
+        } catch (error: RuntimeException) {
+            moveTarget = null
+            if (move == CarPlayVideoPlacement.Move.TO_PASSENGER) passengerLaunchRefused = true
+            diagnostic("event=activity_start_failed generation=$playbackGeneration target=$target reason=${error.javaClass.simpleName}")
+            player.updatePlacementControls()
+        }
+    }
+
+    private fun launchOn(displayId: Int): Bundle? =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            ActivityOptions.makeBasic().setLaunchDisplayId(displayId).toBundle()
+        } else null
+
+    private fun parkReport(): String =
+        "driverScreen=${VideoInCar.screens.driverScreen} " +
+            "sinceLeftParkMs=${leftParkAt?.let { SystemClock.elapsedRealtime() - it } ?: -1}"
 
     /**
      * The car's player cannot play the item (Media3 [playbackErrorCode]): tell the iPhone as Apple's receiver
@@ -288,8 +476,10 @@ internal object CarPlayVideo : CarPlayVideoListener {
     private fun handle(streamId: Long, message: Map<String, Any?>) {
         val request = message["kind"] == "request"
         val type = message["type"] as? String
-        if (type == "setRate" && ((message["rate"] as? Number)?.toDouble() ?: 0.0) <= 0 &&
-            deferredPlay?.stream == streamId) deferredPlay = null
+        if (type == "setRate" && ((message["rate"] as? Number)?.toDouble() ?: 0.0) <= 0) {
+            diagnostic("event=set_rate rate=0 generation=$playbackGeneration stream=$streamId ${parkReport()}")
+            if (deferredPlay?.stream == streamId) deferredPlay = null
+        }
         if (playbackEnded && type == "setRate") {
             if (((message["rate"] as? Number)?.toDouble() ?: 0.0) > 0 && VideoInCar.allowed) {
                 // A play-first handoff may precede both the item and requestUI. Never open anything
@@ -331,7 +521,7 @@ internal object CarPlayVideo : CarPlayVideoListener {
                 val earlyPlay = deferredPlay
                 if (earlyPlay != null && earlyPlay.generation == playbackGeneration &&
                     earlyPlay.expiresAt >= SystemClock.uptimeMillis() && earlyPlay.stream == streamId) {
-                    playing = true
+                    requestPlay("deferred_play")
                     if (waiting == null) {
                         waiting = earlyPlay
                         pendingOpen = earlyPlay
@@ -355,7 +545,7 @@ internal object CarPlayVideo : CarPlayVideoListener {
                 activity?.takeUnless { it.playbackReleased || it.isFinishing }?.load()
                 if (waiting != null && waiting.expiresAt < SystemClock.uptimeMillis()) pendingOpen = null
                 else if (waiting != null && (waiting.stream == null || waiting.stream == streamId)) {
-                    waiting.play?.let { playing = it }
+                    waiting.play?.let { if (it) requestPlay("open_resumed") else playing = false }
                     activity?.takeUnless { it.playbackReleased || it.isFinishing }?.applyRate()
                     diagnostic("event=open_resumed stream=$streamId")
                     show()
@@ -369,7 +559,7 @@ internal object CarPlayVideo : CarPlayVideoListener {
                     return
                 }
                 if (nextPlaying && !VideoInCar.allowed) return
-                playing = nextPlaying
+                if (nextPlaying) requestPlay("set_rate") else playing = false
                 if (!playing && (pendingOpen?.stream == null || pendingOpen?.stream == streamId)) pendingOpen = null
                 // The iPhone starts the item at once, as Apple's receiver plays it straight
                 // away, so open the player now instead of waiting for Now Playing's video button.
@@ -400,7 +590,7 @@ internal object CarPlayVideo : CarPlayVideoListener {
                     type == "removePlayQueueItem" && target == null -> "missing_item"
                     else -> null
                 }
-                diagnostic("event=stop_command generation=$playbackGeneration command=$type targeted=${target != null} applies=${reason == null} opening=$playerOpening attached=${activity != null} reason=${reason ?: "current_playback"}")
+                diagnostic("event=stop_command generation=$playbackGeneration command=$type targeted=${target != null} applies=${reason == null} opening=$playerOpening attached=${activity != null} reason=${reason ?: "current_playback"} ${parkReport()}")
                 if (reason == null) stop()
             }
             "setProperty" -> Unit
@@ -642,14 +832,25 @@ internal object CarPlayVideo : CarPlayVideoListener {
             pendingOpen = null
             return
         }
+        val own = passenger.enabled(context)
         val attached = activity
         if (attached != null) {
             // Keep the new request until the old Activity has released all player resources.
-            if (!attached.playbackReleased && !attached.isFinishing) pendingOpen = null
-            else if (pendingOpen == null) deferOpen(streamId, playing)
+            if (!attached.playbackReleased && !attached.isFinishing) {
+                pendingOpen = null
+                if (own) bringToFront(attached)
+            } else if (pendingOpen == null) deferOpen(streamId, playing)
             return
         }
         if (playerOpening) return
+        val target = if (own) CarPlayVideoPlacement.newPlayerTarget(hostDisplay(), VideoInCar.screens) ?: return else null
+        if (target != null && target != hostDisplay() && passengerLaunchRefused) {
+            pendingOpen = null
+            onPlayerGone()
+            diagnostic("event=open_skipped generation=$playbackGeneration reason=passenger_launch_unavailable")
+            Toast.makeText(context, R.string.video_parked_only_on_this_screen, Toast.LENGTH_LONG).show()
+            return
+        }
         if (pendingOpen == null) deferOpen(streamId, playing)
         val request = pendingOpen ?: return
         if (request.attempts >= 2) {
@@ -664,19 +865,21 @@ internal object CarPlayVideo : CarPlayVideoListener {
         val generation = playbackGeneration
         launchId = ticket
         diagnostic("event=opening generation=$generation launch=$ticket stream=${streamId ?: -1}")
-        val intent = Intent(context, CarPlayVideoActivity::class.java)
-            .putExtra(EXTRA_GENERATION, generation).putExtra(EXTRA_LAUNCH, ticket)
-        // Before the player starts: it hides the bars as it opens, and the host's window grows then.
-        playerOnScreen = true
-        val host = CarPlayScreen.current()
-        val started = if (host != null) OwnScreenStart.start(host, intent) {
-            diagnostic("event=activity_start_refused generation=$generation launch=$ticket detail=$it")
-        } else try {
-            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            true
-        } catch (error: RuntimeException) {
-            diagnostic("event=activity_start_failed generation=$generation launch=$ticket reason=${error.javaClass.simpleName}")
-            false
+        val started = if (target != null) openOwnTask(context, generation, ticket, target) else {
+            val intent = Intent(context, CarPlayVideoActivity::class.java)
+                .putExtra(EXTRA_GENERATION, generation).putExtra(EXTRA_LAUNCH, ticket)
+            // Before the player starts: it hides the bars as it opens, and the host's window grows then.
+            playerOnScreen = true
+            val host = CarPlayScreen.current()
+            if (host != null) OwnScreenStart.start(host, intent) {
+                diagnostic("event=activity_start_refused generation=$generation launch=$ticket detail=$it")
+            } else try {
+                context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                true
+            } catch (error: RuntimeException) {
+                diagnostic("event=activity_start_failed generation=$generation launch=$ticket reason=${error.javaClass.simpleName}")
+                false
+            }
         }
         if (!started) {
             playerOpening = false
@@ -696,12 +899,47 @@ internal object CarPlayVideo : CarPlayVideoListener {
         }.also { main.postDelayed(it, 5_000) }
     }
 
+    /**
+     * [OwnTaskCarPlayVideoActivity] in a task of its own, so that the firmware's move between screens takes only the
+     * player. Each launch ticket gets a new task.
+     */
+    private fun openOwnTask(context: Context, generation: Long, ticket: Long, target: Int): Boolean {
+        val host = hostDisplay()
+        val intent = Intent(context, OwnTaskCarPlayVideoActivity::class.java)
+            .putExtra(EXTRA_GENERATION, generation).putExtra(EXTRA_LAUNCH, ticket)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+        playerOnScreen = target == host
+        launchTarget = target
+        diagnostic("event=player_target generation=$generation launch=$ticket display=$target host=$host")
+        return try {
+            startPlayer(context, intent, if (target == host) null else launchOn(target))
+            true
+        } catch (error: RuntimeException) {
+            launchTarget = null
+            if (target != host) passengerLaunchRefused = true
+            diagnostic("event=activity_start_failed generation=$generation launch=$ticket reason=${error.javaClass.simpleName}")
+            false
+        }
+    }
+
+    private fun bringToFront(player: CarPlayVideoActivity) {
+        if (player.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return
+        val tasks = runCatching { player.getSystemService(ActivityManager::class.java)?.appTasks }.getOrNull().orEmpty()
+        val task = tasks.firstOrNull { runCatching { taskId(it.taskInfo) == player.taskId }.getOrDefault(false) }
+        val moved = task != null && runCatching { task.moveToFront() }.isSuccess
+        diagnostic("event=player_brought_to_front generation=$playbackGeneration moved=$moved")
+    }
+
+    private fun taskId(info: ActivityManager.RecentTaskInfo?): Int? =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) info?.taskId else @Suppress("DEPRECATION") info?.id
+
     private fun pausePlayback(reason: String, positionMillis: Int?) {
         positionMillis?.let { startMillis = it }
         if (playing && url != null) {
             streamId?.let { reply(it, VideoInCar.playbackStateNotification(false, itemUuid)) }
         }
         playing = false
+        resumeOnPassenger = false
         clearPendingOpen()
         synchronized(urlRequestLock) {
             playbackGeneration++
@@ -736,6 +974,7 @@ internal object CarPlayVideo : CarPlayVideoListener {
             itemUuid = null
         }
         playing = false
+        resumeOnPassenger = false
         streaming = false
         startMillis = 0
         pendingSeekMillis = null
@@ -750,6 +989,7 @@ internal object CarPlayVideo : CarPlayVideoListener {
         openingTimeout = null
         playerOpening = false
         launchId = null
+        launchTarget = null
         // A player that was asked for but never opened (Android can refuse a start from the background)
         // must not leave the CarPlay screen holding its size changes.
         if (activity == null) onPlayerGone()

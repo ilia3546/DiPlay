@@ -115,4 +115,11 @@
     <string name="hud_unit_minutes">分</string>
     <string name="settings_report_system_log">診断レポートにシステムログを追加（実験的機能）</string>
     <string name="settings_report_system_log_description">保存する診断レポートの末尾に、ヘッドユニット全体の直近 5 分間のシステムログ（最大 15 MB）を追加します。他のアプリやファームウェアの行を含めるには root（Magisk）が必要です。root がない場合は DiPlay 自身の行だけが追加されます。アドレス、座標、ネットワーク名は伏せられますが、車やその使い方について他の情報が含まれることがあります。保存されたファイルにだけ含まれ、DiPlay のレポート表示や電話で開くレポートには出ません。すぐに反映されます。</string>
+    <string name="settings_geely_monjaro_a3_passenger_screen">助手席スクリーン</string>
+    <string name="settings_passenger_video">助手席スクリーンで動画を再生（実験的機能）</string>
+    <string name="settings_passenger_video_description">CarPlay の動画を助手席スクリーンで、走行中も再生できます。プレーヤーのボタン、またはアプリを画面間で移動するファームウェアの3本指ジェスチャーで移動します。運転者から助手席スクリーンが見えない場合にのみオンにしてください。メイン画面では引き続き P のときだけ再生され、P 以外ではメイン画面のプレーヤーが移動されるまで覆いの下で一時停止します。「駐車中の動画再生」が必要です。「CarPlay 動画への対応を強制的に通知」がオンのときは、メイン画面は P に限定されません。すぐに適用されます。</string>
+    <string name="video_move_to_passenger_screen">助手席スクリーンへ移動</string>
+    <string name="video_move_to_main_screen">メイン画面へ移動</string>
+    <string name="video_close">動画を閉じる</string>
+    <string name="video_parked_only_on_this_screen">この画面では、車が P のときだけ動画を再生できます。</string>
 </resources>

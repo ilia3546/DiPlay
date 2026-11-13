@@ -115,4 +115,11 @@
     <string name="hud_unit_minutes">min</string>
     <string name="settings_report_system_log">Añadir el registro del sistema a los informes de diagnóstico (experimental)</string>
     <string name="settings_report_system_log_description">Añade al final de cada informe de diagnóstico guardado el registro del sistema de toda la unidad principal de los últimos 5 minutos, hasta 15 MB. Las líneas de otras apps y del firmware requieren root (Magisk); sin root solo se añaden las líneas de DiPlay. Las direcciones, coordenadas y nombres de redes se ocultan, pero el registro aún puede revelar otros datos del coche y de su uso. Solo está en el archivo guardado: ni la vista del informe en DiPlay ni el informe en el teléfono lo muestran. Se aplica al instante.</string>
+    <string name="settings_geely_monjaro_a3_passenger_screen">Pantalla del pasajero</string>
+    <string name="settings_passenger_video">Vídeo en la pantalla del pasajero (experimental)</string>
+    <string name="settings_passenger_video_description">Un vídeo de CarPlay puede reproducirse en la pantalla del pasajero, también en marcha. Muévelo allí con el botón del reproductor o con el gesto de tres dedos del firmware que mueve las apps entre pantallas. Actívalo solo si el conductor no puede ver la pantalla del pasajero. En la pantalla principal el vídeo sigue reproduciéndose solo en P: fuera de P el reproductor de esa pantalla se pausa bajo una capa opaca hasta que se mueva. Requiere «Vídeo con el coche aparcado». Con «Forzar compatibilidad con vídeo de CarPlay» activado, la pantalla principal no se limita a P. Se aplica al instante.</string>
+    <string name="video_move_to_passenger_screen">Mover a la pantalla del pasajero</string>
+    <string name="video_move_to_main_screen">Mover a la pantalla principal</string>
+    <string name="video_close">Cerrar vídeo</string>
+    <string name="video_parked_only_on_this_screen">En esta pantalla, el vídeo solo se reproduce con el coche en P.</string>
 </resources>
