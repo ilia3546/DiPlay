@@ -17,6 +17,18 @@ internal object OwnScreenStart {
 
     fun start(activity: Activity, intent: Intent, log: (String) -> Unit = { Log.w(TAG, it) }): Boolean {
         val screen = intent.component?.className?.substringAfterLast('.') ?: "screen"
+        val display = if (CarPlayVideo.playerOnOtherDisplay(activity)) CarPlayVideo.passenger.displayOf(activity) else null
+        val command = display?.let { RootActivityStart.command(intent, it) }
+        if (command != null) {
+            RootActivityStart.startAsync(command, { started, millis ->
+                CarPlayVideo.diagnostic("event=screen_root_start screen=$screen display=$display started=$started ms=$millis")
+            }) { startFromApp(activity, intent, screen, log) }
+            return true
+        }
+        return startFromApp(activity, intent, screen, log)
+    }
+
+    private fun startFromApp(activity: Activity, intent: Intent, screen: String, log: (String) -> Unit): Boolean {
         try {
             activity.startActivity(intent)
             return true

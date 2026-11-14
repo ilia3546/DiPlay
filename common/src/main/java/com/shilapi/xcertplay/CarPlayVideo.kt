@@ -71,6 +71,8 @@ internal object CarPlayVideo : CarPlayVideoListener {
     @Volatile private var commandGeneration = 0L
     internal const val EXTRA_GENERATION = "video_generation"
     internal const val EXTRA_LAUNCH = "video_launch"
+    // ActivityOptions.setLaunchDisplayId stores the display under this key.
+    private const val LAUNCH_DISPLAY_ID = "android.activity.launchDisplayId"
     private var nextLaunch = 0L
     private var launchId: Long? = null
     private var playerOpening = false
@@ -95,7 +97,29 @@ internal object CarPlayVideo : CarPlayVideoListener {
 
     internal var passenger: PassengerScreens = PassengerVideoScreen
     internal var startPlayer: (Context, Intent, Bundle?) -> Unit = { context, intent, options ->
-        context.startActivity(intent, options)
+        val display = options?.getInt(LAUNCH_DISPLAY_ID, -1) ?: -1
+        val command = if (display >= 0) RootActivityStart.command(intent, display) else null
+        if (command == null) context.startActivity(intent, options)
+        else RootActivityStart.startAsync(command, { started, millis ->
+            diagnostic("event=player_root_start display=$display started=$started ms=$millis")
+        }) {
+            // The caller's catch never sees this failure: it shows only in the diagnostic report.
+            try {
+                context.startActivity(intent, options)
+            } catch (error: RuntimeException) {
+                diagnostic("event=activity_start_failed display=$display reason=${error.javaClass.simpleName}")
+            }
+        }
+    }
+
+    /**
+     * Whether the player in its own task is on another display than [screen]: opening a DiPlay screen there from
+     * the app makes some firmware close the player. Main thread.
+     */
+    fun playerOnOtherDisplay(screen: android.app.Activity): Boolean {
+        val player = activity?.takeUnless { it.playbackReleased || it.isFinishing || !it.inOwnTask } ?: return false
+        val here = passenger.displayOf(screen) ?: return false
+        return passenger.displayOf(player).let { it != null && it != here }
     }
 
     /** The player is on the driver's display outside P: paused under an opaque cover until it may play there. */
