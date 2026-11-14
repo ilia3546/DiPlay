@@ -55,6 +55,11 @@ class DiPlaySessionService : Service() {
         return START_NOT_STICKY
     }
     override fun onTaskRemoved(rootIntent: Intent?) {
+        // Closing a film removes the player's own task; seen on Desay firmware, where it reached here and disconnected.
+        if (!endsSession(rootIntent)) {
+            CarPlayVideo.diagnostic("event=player_task_removed")
+            return
+        }
         // BYD's recents force-stops the package ~10 ms after removing the task: end guidance first.
         com.shilapi.xcertplay.hud.BydNavigationOutputs.endNow()
         CarPlayBackgroundSession.stop()
@@ -63,5 +68,8 @@ class DiPlaySessionService : Service() {
     companion object {
         const val ACTION_STOP = "com.shihab.diplay.DISCONNECT"
         private const val CHANNEL = "diplay_connection"
+
+        internal fun endsSession(removedTaskRoot: Intent?): Boolean =
+            removedTaskRoot?.component?.className != OwnTaskCarPlayVideoActivity::class.java.name
     }
 }
