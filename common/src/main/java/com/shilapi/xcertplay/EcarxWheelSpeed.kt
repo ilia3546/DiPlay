@@ -71,8 +71,8 @@ internal object EcarxWheelSpeed : VehicleSpeedSource {
     private var failureLogged = false
 
     /**
-     * No position for the iPhone: the Monjaro's head unit has no GPS receiver, and an Android network
-     * fix would only mislead it. With this, only `$PASCD` is sent, beside the iPhone's own GPS.
+     * No position for the iPhone: an Android network fix would only mislead it. With this, only `$PASCD`
+     * is sent, beside the iPhone's own GPS. Some head units have a satellite receiver; a separate option sends its position.
      */
     object NoPosition : Iap2LocationProvider {
         override fun start(): Boolean = false

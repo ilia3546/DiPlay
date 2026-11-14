@@ -66,6 +66,24 @@ class Iap2LocationClientTest {
     }
 
     @Test
+    fun ggaCarriesTheSatellitesUsedOrEightWhenUnknown() {
+        fun satellites(used: Int?) = NmeaLocationEncoder.encode(
+            CarPlayLocationFix(
+                latitudeDegrees = 48.1173,
+                longitudeDegrees = 11.5166667,
+                timestampMillis = Instant.parse("2026-03-23T12:35:19Z").toEpochMilli(),
+                satellitesUsed = used,
+            ),
+        ).split("\r\n").single { it.startsWith("\$GPGGA") }.substringBefore('*').split(',')[7]
+
+        assertEquals("08", satellites(null))
+        assertEquals("23", satellites(23))
+        assertEquals("03", satellites(3))
+        assertEquals("99", satellites(120))
+        assertEquals("00", satellites(-1))
+    }
+
+    @Test
     fun identificationAdvertisesLocationMessagesAndComponentOnlyWhenEnabled() {
         val base = wiredIdentification(locationInformationEnabled = false)
         val enabled = wiredIdentification(locationInformationEnabled = true)

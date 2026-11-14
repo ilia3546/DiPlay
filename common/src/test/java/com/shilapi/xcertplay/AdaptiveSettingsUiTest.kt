@@ -812,7 +812,7 @@ class AdaptiveSettingsUiTest {
             ReflectionHelpers.callInstanceMethod<List<DiPlayActivity.SettingsSearchResult>>(screen, "buildSettingsSearchIndex")
         val options = listOf(R.string.settings_geely_monjaro_a3_support, R.string.settings_root_hotspot_details,
             R.string.settings_disconnect_phone_bluetooth, R.string.settings_hotspot_audio_firewall, R.string.settings_request_lost_audio,
-            R.string.settings_microphone_input,
+            R.string.settings_microphone_input, R.string.settings_head_unit_gps_to_iphone,
             R.string.settings_dashboard_music, R.string.settings_dashboard_calls, R.string.settings_custom_dashboard,
             R.string.settings_hud_maneuvers, R.string.settings_passenger_video)
 
@@ -940,22 +940,24 @@ class AdaptiveSettingsUiTest {
         val card = heading.parent.parent as LinearLayout
         val shown = descendants(card).filterIsInstance<TextView>().map { it.text.toString() }.toList()
         val groups = listOf(R.string.settings_geely_monjaro_a3_connection, R.string.settings_geely_monjaro_a3_sound,
-            R.string.settings_geely_monjaro_a3_car_dashboard, R.string.settings_geely_monjaro_a3_custom_dashboard,
-            R.string.settings_geely_monjaro_a3_hud, R.string.settings_geely_monjaro_a3_diagnostics)
+            R.string.settings_geely_monjaro_a3_location, R.string.settings_geely_monjaro_a3_car_dashboard,
+            R.string.settings_geely_monjaro_a3_custom_dashboard, R.string.settings_geely_monjaro_a3_hud,
+            R.string.settings_geely_monjaro_a3_diagnostics)
         val order = listOf(
             R.string.settings_recommended_settings, R.string.settings_recommended_settings_description,
             groups[0], R.string.settings_root_hotspot_details, R.string.settings_root_hotspot_start,
             R.string.settings_disconnect_phone_bluetooth, R.string.settings_hotspot_audio_firewall, R.string.settings_request_lost_audio,
             groups[1], R.string.settings_microphone_input, R.string.settings_pause_carplay_for_car_audio, R.string.settings_wheel_seek,
-            groups[2], R.string.settings_dashboard_music, R.string.settings_dashboard_calls,
-            groups[3], R.string.settings_custom_dashboard, R.string.settings_custom_dashboard_map_width,
+            groups[2], R.string.settings_head_unit_gps_to_iphone,
+            groups[3], R.string.settings_dashboard_music, R.string.settings_dashboard_calls,
+            groups[4], R.string.settings_custom_dashboard, R.string.settings_custom_dashboard_map_width,
             R.string.settings_custom_dashboard_maneuver, R.string.settings_custom_dashboard_arrival,
             R.string.settings_custom_dashboard_background, R.string.settings_custom_dashboard_dimming,
             R.string.settings_custom_dashboard_trip_qnx, R.string.settings_custom_dashboard_bottom_line,
             R.string.settings_custom_dashboard_wheel_toggle,
-            groups[4], R.string.settings_hud_maneuvers, R.string.settings_hud_height, R.string.settings_hud_scale,
+            groups[5], R.string.settings_hud_maneuvers, R.string.settings_hud_height, R.string.settings_hud_scale,
             R.string.settings_hud_lanes, R.string.settings_hud_trip,
-            groups[5], R.string.settings_report_system_log,
+            groups[6], R.string.settings_report_system_log,
         ).map(screen::getString)
         val positions = order.map { title -> shown.indexOfFirst { it == title || it.startsWith(title + " · ") } }
         assertTrue("$order\n$shown", positions.none { it < 0 })
@@ -975,7 +977,7 @@ class AdaptiveSettingsUiTest {
             val previous = parent.getChildAt(parent.indexOfChild(title) - 1)
             (title.layoutParams as LinearLayout.LayoutParams).topMargin + bottom(previous)
         }
-        assertEquals(listOf(gap, gap, gap, gap, gap, gap), above)
+        assertEquals(List(groups.size) { gap }, above)
         val index = ReflectionHelpers.callInstanceMethod<List<DiPlayActivity.SettingsSearchResult>>(screen, "buildSettingsSearchIndex")
         assertTrue(index.any { it.title == screen.getString(R.string.settings_custom_dashboard_map_width) })
     }

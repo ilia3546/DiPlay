@@ -20,6 +20,7 @@ data class CarPlayLocationFix(
     val speedMetersPerSecond: Double? = null,
     val accuracyMeters: Double? = null,
     val timestampMillis: Long? = null,
+    val satellitesUsed: Int? = null,
 ) {
     init {
         require(latitudeDegrees.isFinite() && latitudeDegrees in -90.0..90.0) {
@@ -74,8 +75,9 @@ object NmeaLocationEncoder {
             ?.let { format("%.1f", it) }
             ?: "0.0"
 
+        val satellites = fix.satellitesUsed?.let { format("%02d", it.coerceIn(0, 99)) } ?: "08"
         val ggaBody = "GPGGA,$time,${latitude.value},${latitude.hemisphere}," +
-            "${longitude.value},${longitude.hemisphere},1,08,${format("%.1f", hdop)}," +
+            "${longitude.value},${longitude.hemisphere},1,$satellites,${format("%.1f", hdop)}," +
             "$altitude,M,0.0,M,,"
         val speedKnots = fix.speedMetersPerSecond
             ?.takeIf { it.isFinite() && it >= 0 }

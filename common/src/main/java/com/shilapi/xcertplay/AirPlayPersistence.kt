@@ -148,6 +148,7 @@ object AirPlayPersistence {
     private const val KEY_PAUSE_CARPLAY_FOR_CAR_AUDIO = "monjaro_pause_carplay_for_car_audio"
     private const val KEY_REPORT_SYSTEM_LOG = "monjaro_report_system_log"
     private const val KEY_WHEEL_SEEK = "monjaro_wheel_seek"
+    private const val KEY_HEAD_UNIT_GPS_TO_IPHONE = "monjaro_head_unit_gps"
     private const val KEY_CUSTOM_DASHBOARD = "monjaro_custom_dashboard"
     private const val KEY_DASHBOARD_WHEEL_TOGGLE = "monjaro_dashboard_wheel_toggle"
     private const val KEY_DASHBOARD_BACKGROUND = "monjaro_dashboard_background"
@@ -689,6 +690,14 @@ object AirPlayPersistence {
     fun saveWheelSeek(context: Context, enabled: Boolean) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putBoolean(KEY_WHEEL_SEEK, enabled).apply()
+    }
+
+    fun loadHeadUnitGpsToIphone(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_HEAD_UNIT_GPS_TO_IPHONE, false)
+
+    fun saveHeadUnitGpsToIphone(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putBoolean(KEY_HEAD_UNIT_GPS_TO_IPHONE, enabled).apply()
     }
 
     fun loadDashboardWheelToggle(context: Context): Boolean =

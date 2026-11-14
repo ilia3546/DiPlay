@@ -180,10 +180,17 @@ class Iap2ProtocolTest {
     }
 
     @Test
-    fun formatterEscapesLineBreaksInNmeaStrings() {
-        val frame = Iap2ControlMessages.locationInformation("\$GPGGA,1\r\n")
-        val formatted = Iap2FrameFormatter.format(Iap2TraceDirection.TX, "wired", frame)
+    fun formatterShowsOnlyTheSentenceTypesOfLocationInformation() {
+        val nmea = "\$GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,545.4,M,46.9,M,,*47\r\n" +
+            "\$GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W*6A\r\n" +
+            "\$PASCD,1.000,C,D,0,1,0.00,1.500*00\r\n"
+        val frame = Iap2ControlMessages.locationInformation(nmea)
+        val formatted = Iap2FrameFormatter.format(Iap2TraceDirection.TX, "wireless-tunnel", frame)
 
-        assertTrue(formatted.contains("\\r\\n"))
+        assertTrue(formatted, formatted.startsWith("IAP2 TX [wireless-tunnel] 0xfffb LocationInformation"))
+        assertTrue(formatted, "  [0] NMEA: <redacted 3 sentences: GPGGA,GPRMC,PASCD, ${nmea.length} chars>" in formatted)
+        assertFalse(formatted, "4807" in formatted)
+        assertFalse(formatted, "01131" in formatted)
+        assertFalse(formatted, "raw-body" in formatted)
     }
 }

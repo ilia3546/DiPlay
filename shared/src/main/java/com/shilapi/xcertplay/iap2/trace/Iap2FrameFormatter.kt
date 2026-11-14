@@ -25,6 +25,7 @@ object Iap2FrameFormatter {
     private const val MAX_PARAMETERS = 80
     private const val MAX_STRING_CHARS = 240
     private const val MAX_HEX_BYTES = 24
+    private val NMEA_TYPE = Regex("[A-Z]{3,6}")
 
     fun format(
         direction: Iap2TraceDirection,
@@ -38,9 +39,12 @@ object Iap2FrameFormatter {
         } catch (_: Iap2ProtocolException) {
             null
         }
+        val location = frame.messageId == Iap2Endpoints.LOCATION_INFORMATION.id
         val lines = ArrayList<String>()
         if (parameters == null) {
             lines += "  body=malformed TLV"
+        } else if (location) {
+            appendRedactedNmea(parameters, lines)
         } else {
             appendParameters(
                 parameters = parameters,
@@ -49,7 +53,7 @@ object Iap2FrameFormatter {
                 lines = lines,
             )
         }
-        lines += "  raw-body=${hexPreview(frame.payload)}"
+        if (!location) lines += "  raw-body=${hexPreview(frame.payload)}"
 
         val endpointText = endpoint?.let { " ${it.name}" }.orEmpty()
         return buildString {
@@ -110,6 +114,16 @@ object Iap2FrameFormatter {
         }
         if (parameters.size > MAX_PARAMETERS) {
             lines += "${indent(depth)}... ${parameters.size - MAX_PARAMETERS} more parameters"
+        }
+    }
+
+    private fun appendRedactedNmea(parameters: Iap2ParameterList, lines: MutableList<String>) {
+        parameters.asList().take(MAX_PARAMETERS).forEach { parameter ->
+            val text = parameter.payload.decodeToString().trimEnd('\u0000')
+            val types = text.split('\r', '\n', '$')
+                .filter { it.isNotBlank() }
+                .map { sentence -> sentence.substringBefore(',').substringBefore('*').takeIf(NMEA_TYPE::matches) ?: "?" }
+            lines += "  [${parameter.id}] NMEA: <redacted ${types.size} sentences: ${types.joinToString(",")}, ${text.length} chars>"
         }
     }
 

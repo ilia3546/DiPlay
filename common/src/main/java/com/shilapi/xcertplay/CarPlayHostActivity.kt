@@ -96,6 +96,7 @@ import com.shilapi.xcertplay.airplay.CarPlayMediaEngine
 import com.shilapi.xcertplay.airplay.SafeAreaRect
 import com.shilapi.xcertplay.host.R
 import com.shilapi.xcertplay.location.AndroidCarPlayLocationProvider
+import com.shilapi.xcertplay.location.HeadUnitGnssLocationProvider
 import com.shilapi.xcertplay.media.AndroidMediaSink
 import com.shilapi.xcertplay.media.CarPlayTouchMapper
 import com.shilapi.xcertplay.media.CarPlayVideoLayout
@@ -5674,7 +5675,8 @@ open class CarPlayHostActivity : ComponentActivity() {
         // Settings → Connection can change the target while this screen stays open (#696).
         mfiTarget = AirPlayPersistence.loadMfiTarget(this)
         runCatching { DiPlayBootstrap.ensure(this, mfiTarget) }
-        val config = createRuntimeConfig()
+        val monjaroA3 = MonjaroA3Options.load(this)
+        val config = createRuntimeConfig(monjaroA3)
         val effectiveSize = if (isMultiWindowActive() && !AirPlayPersistence.loadAdaptPipResolution(this) &&
             maximumDetectedWidthPixels >= size.width && maximumDetectedHeightPixels >= size.height &&
             (maximumDetectedWidthPixels > size.width || maximumDetectedHeightPixels > size.height)) {
@@ -5683,14 +5685,20 @@ open class CarPlayHostActivity : ComponentActivity() {
             size
         }
         val airPlayConfig = createAirPlayConfig(effectiveSize)
+        var headUnitGps = false
         val locationProvider: Iap2LocationProvider? =
             when {
                 !config.locationReportingEnabled -> null
                 config.identification.vehicleSpeedEnabled &&
                     !com.shilapi.xcertplay.hud.BydOutputSettings.wheelSpeedToIphoneActive(this) ->
-                    // ECARX: the head unit has no GPS of its own, so only the wheel speed goes to the iPhone.
+                    // ECARX: the wheel speed goes to the iPhone, with a position only from the head unit's own receiver.
                     VehicleSpeedLocationProvider(
-                        EcarxWheelSpeed.NoPosition,
+                        if (monjaroA3.headUnitGpsToIphone) {
+                            headUnitGps = true
+                            HeadUnitGnssLocationProvider(applicationContext, log = ::appendLog)
+                        } else {
+                            EcarxWheelSpeed.NoPosition
+                        },
                         EcarxWheelSpeed.attach(applicationContext),
                         log = ::appendLog,
                     )
@@ -5711,7 +5719,8 @@ open class CarPlayHostActivity : ComponentActivity() {
                 "decoder=${if (airPlayConfig.hevc && hevcSoftwareDecoderEnabled) "software" else "hardware"} " +
                 "microphone=${airPlayConfig.microphone} " +
                 "location=${if (config.locationReportingEnabled) "enabled" else "disabled"}" +
-                "${if (config.identification.vehicleSpeedEnabled) "+wheel-speed" else ""} " +
+                "${if (config.identification.vehicleSpeedEnabled) "+wheel-speed" else ""}" +
+                "${if (headUnitGps) "+head-unit-gps" else ""} " +
                 "mfi=${mfiTargetLabel(config.mfiTarget)}" +
                 if (config.transport == CarPlayTransport.WIRED) " usbCharging=${config.availableCurrentMilliAmps}mA" else "",
         )

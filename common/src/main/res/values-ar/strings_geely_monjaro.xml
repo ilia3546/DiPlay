@@ -12,6 +12,7 @@
     <string name="settings_geely_monjaro_a3_custom_dashboard">لوحة عدادات مخصصة</string>
     <string name="settings_geely_monjaro_a3_hud">شاشة العرض الأمامية (HUD)</string>
     <string name="settings_geely_monjaro_a3_diagnostics">التشخيص</string>
+    <string name="settings_geely_monjaro_a3_location">الموقع</string>
     <string name="settings_root_hotspot_details">بيانات دقيقة لنقطة اتصال السيارة (تجريبي)</string>
     <string name="settings_root_hotspot_details_description">عندما يخفي Android قناة نقطة اتصال السيارة، يقرأها من إعدادات نقطة الاتصال في البرنامج الثابت ويُبلغ iPhone أيضًا بمعرّف BSSID لنقطة الاتصال. يتطلب صلاحيات root (Magisk). يُطبَّق عند الاتصال التالي.</string>
     <string name="settings_root_hotspot_start">تشغيل نقطة اتصال السيارة عبر root (تجريبي)</string>
@@ -36,6 +37,8 @@
     <string name="settings_pause_carplay_for_car_audio_description">عندما يبدأ الراديو أو تطبيق آخر في الوحدة الرئيسية بالتشغيل، يوقف DiPlay جهاز iPhone مؤقتًا بدلًا من تشغيل الاثنين معًا. للبرامج الثابتة التي تأخذ مشغلاتها تركيز الصوت في Android لكنها تترك صوت DiPlay يعمل. للعودة، شغّل الموسيقى في CarPlay مرة أخرى. حتى ذلك الحين، تتحكم أزرار الوسائط على المقود في مصدر السيارة. يُطبّق فورًا.</string>
     <string name="settings_wheel_seek">اضغط مطولًا على التالي أو السابق في المقود للتقديم أو الإرجاع (تجريبي)</string>
     <string name="settings_wheel_seek_description">ما دام زر التالي أو السابق في المقود مضغوطًا، يتقدم مقطع CarPlay أو يرجع 10 ثوانٍ كل نصف ثانية. الضغطة القصيرة ما زالت تنتقل بين المقاطع. للبرامج الثابتة التي تُبلغ التطبيقات بالضغط المطوّل على زر المقود دون تغيير المقطع. لا يعمل مع البث المباشر والراديو، وأثناء مكالمة CarPlay، وعندما تكون أزرار المقود لمصدر السيارة أو لمشغل الفيديو فيها، ومع صوت CarPlay عبر بلوتوث السيارة. يُطبَّق عند الاتصال التالي.</string>
+    <string name="settings_head_unit_gps_to_iphone">إرسال موقع GPS الخاص بالوحدة الرئيسية إلى iPhone (تجريبي)</string>
+    <string name="settings_head_unit_gps_to_iphone_description">مع سرعة العجلات، يرسل إلى iPhone الموقع من مستقبل الأقمار الصناعية الخاص بالوحدة الرئيسية، بالدقة التي يبلغ عنها المستقبل. لا يُرسَل موقع قديم أو غير دقيق (أقمار قليلة أو خطأ يزيد على 50 م). يواصل iPhone استخدام GPS الخاص به، ويساعده موقع السيارة حيث تكون إشارته ضعيفة. للبرامج الثابتة التي تحتوي وحدتها الرئيسية على مستقبل أقمار صناعية. يتطلب \"إرسال الموقع إلى iPhone\". يُطبَّق عند الاتصال التالي.</string>
     <string name="settings_custom_dashboard">لوحة عدادات مخصصة مع خريطة CarPlay (تجريبي)</string>
     <string name="settings_custom_dashboard_description">أثناء اتصال CarPlay يرسم DiPlay لوحة عدادات خاصة به: خريطة CarPlay في الوسط وحولها الساعة ودرجة الحرارة الخارجية والرحلة والموسيقى بدلاً من الأدوات الجانبية للوحة الأصلية. يواصل البرنامج الثابت رسم السرعة ومصابيح التحذير والسطر السفلي فوقها. للبرامج الثابتة التي تعرض شاشة لوحة العدادات في Android في وضع الهندسة. أوقف لوحة العدادات المخصصة من GMC أولاً. مع خريطة لوحة العدادات على الشاشة الوسطى يحتاج CarPlay إلى مفكك ترميز فيديو إضافي. يتطلب إذن \"الظهور فوق التطبيقات الأخرى\". يُطبَّق التشغيل عند الاتصال التالي، والإيقاف فوراً.</string>
     <string name="settings_custom_dashboard_background">خلفية لوحة العدادات</string>

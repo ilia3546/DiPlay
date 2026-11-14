@@ -12,6 +12,7 @@
     <string name="settings_geely_monjaro_a3_custom_dashboard">사용자 계기판</string>
     <string name="settings_geely_monjaro_a3_hud">헤드업 디스플레이</string>
     <string name="settings_geely_monjaro_a3_diagnostics">진단</string>
+    <string name="settings_geely_monjaro_a3_location">위치</string>
     <string name="settings_root_hotspot_details">차량 핫스팟 정확한 정보 (실험 기능)</string>
     <string name="settings_root_hotspot_details_description">Android가 차량 핫스팟의 채널을 숨기면 펌웨어의 핫스팟 설정에서 채널을 읽고, 핫스팟의 BSSID도 iPhone에 알려 줍니다. 루트(Magisk)가 필요합니다. 다음 연결부터 적용됩니다.</string>
     <string name="settings_root_hotspot_start">root로 차량 핫스팟 켜기 (실험 기능)</string>
@@ -36,6 +37,8 @@
     <string name="settings_pause_carplay_for_car_audio_description">라디오나 헤드 유닛의 다른 앱이 재생을 시작하면 DiPlay가 두 소리가 동시에 나지 않도록 iPhone을 일시정지합니다. 플레이어가 Android 오디오 포커스를 가져가도 DiPlay 오디오가 계속 재생되는 펌웨어용입니다. 되돌리려면 CarPlay에서 음악을 다시 재생하세요. 그때까지 스티어링 휠 미디어 버튼은 차량 소스를 제어합니다. 즉시 적용됩니다.</string>
     <string name="settings_wheel_seek">스티어링 휠의 다음/이전을 길게 눌러 빨리 감기/되감기 (실험 기능)</string>
     <string name="settings_wheel_seek_description">스티어링 휠의 다음 또는 이전 키를 누르고 있는 동안 CarPlay 트랙을 0.5초마다 10초씩 앞이나 뒤로 이동합니다. 짧게 누르면 지금처럼 트랙이 바뀝니다. 트랙을 바꾸지 않고 스티어링 휠 키를 길게 누른 것을 앱에 알리는 펌웨어용입니다. 라이브 스트림과 라디오, CarPlay 통화 중, 스티어링 휠 키가 차량 소스나 동영상 플레이어에 있을 때, CarPlay 오디오가 차량 블루투스로 나올 때는 동작하지 않습니다. 다음 연결부터 적용됩니다.</string>
+    <string name="settings_head_unit_gps_to_iphone">헤드 유닛의 GPS 위치를 iPhone에 전송 (실험 기능)</string>
+    <string name="settings_head_unit_gps_to_iphone_description">바퀴 속도와 함께 헤드 유닛 자체 위성 수신기의 위치를 수신기가 보고하는 정확도로 iPhone에 전송합니다. 오래되었거나 부정확한 위치(위성이 적거나 오차가 50m를 넘는 경우)는 전송하지 않습니다. iPhone은 계속 자체 GPS를 사용하며, 신호가 약한 곳에서는 차량의 위치가 도움이 됩니다. 헤드 유닛에 위성 수신기가 있는 펌웨어용입니다. \'위치를 iPhone에 전송\'이 켜져 있어야 합니다. 다음 연결부터 적용됩니다.</string>
     <string name="settings_custom_dashboard">CarPlay 지도가 있는 사용자 계기판 (실험 기능)</string>
     <string name="settings_custom_dashboard_description">CarPlay가 연결된 동안 DiPlay가 계기판에 자체 화면을 그립니다. 가운데에 CarPlay 지도를, 그 주변에 순정 계기판의 양쪽 위젯 대신 시계, 외부 온도, 주행 정보, 음악을 표시합니다. 속도, 경고등, 하단 줄은 펌웨어가 계속 그 위에 그립니다. 엔지니어링 모드에서 Android 계기판 디스플레이를 보여 주는 펌웨어용입니다. 먼저 GMC 사용자 계기판을 끄세요. 센터 화면의 계기판 지도와 함께 사용하면 CarPlay에 비디오 디코더가 하나 더 필요합니다. \'다른 앱 위에 표시\' 권한이 필요합니다. 켜면 다음 연결부터, 끄면 바로 적용됩니다.</string>
     <string name="settings_custom_dashboard_background">계기판 배경</string>

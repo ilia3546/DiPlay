@@ -2226,6 +2226,13 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
                 AirPlayPersistence.saveWheelSeek(this, it)
                 markReconnectNeeded()
             }
+            card.addView(groupTitle(getString(R.string.settings_geely_monjaro_a3_location)))
+            toggle(card, getString(R.string.settings_head_unit_gps_to_iphone),
+                getString(R.string.settings_head_unit_gps_to_iphone_description),
+                AirPlayPersistence.loadHeadUnitGpsToIphone(this)) {
+                AirPlayPersistence.saveHeadUnitGpsToIphone(this, it)
+                markReconnectNeeded()
+            }
             card.addView(groupTitle(getString(R.string.settings_geely_monjaro_a3_car_dashboard)))
             toggle(card, getString(R.string.settings_dashboard_music),
                 getString(R.string.settings_dashboard_music_description),

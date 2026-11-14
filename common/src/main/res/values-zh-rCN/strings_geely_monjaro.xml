@@ -12,6 +12,7 @@
     <string name="settings_geely_monjaro_a3_custom_dashboard">自定义仪表盘</string>
     <string name="settings_geely_monjaro_a3_hud">抬头显示（HUD）</string>
     <string name="settings_geely_monjaro_a3_diagnostics">诊断</string>
+    <string name="settings_geely_monjaro_a3_location">位置</string>
     <string name="settings_root_hotspot_details">车辆热点的准确信息（实验性）</string>
     <string name="settings_root_hotspot_details_description">当 Android 隐藏车辆热点的信道时，从固件的热点配置中读取信道，并把热点的 BSSID 告诉 iPhone。需要 root（Magisk）。下次连接时生效。</string>
     <string name="settings_root_hotspot_start">通过 root 开启车机热点（实验性）</string>
@@ -36,6 +37,8 @@
     <string name="settings_pause_carplay_for_car_audio_description">当收音机或车机的其他应用开始播放时，DiPlay 会暂停 iPhone，避免两者同时发声。适用于播放器会获取 Android 音频焦点、但 DiPlay 的声音仍继续播放的固件。要切换回来，请在 CarPlay 中重新播放音乐。在此之前，方向盘媒体按键控制车机音源。立即生效。</string>
     <string name="settings_wheel_seek">长按方向盘上一曲/下一曲快进或快退（实验性）</string>
     <string name="settings_wheel_seek_description">按住方向盘的下一曲或上一曲键时，CarPlay 曲目每半秒前进或后退 10 秒。短按仍会切换曲目。适用于会把方向盘按键长按告知应用、但不切换曲目的固件。直播和电台、CarPlay 通话期间、方向盘按键归车机音源或视频播放器时，以及 CarPlay 音频走车机蓝牙时不起作用。下次连接时生效。</string>
+    <string name="settings_head_unit_gps_to_iphone">将车机 GPS 位置发送到 iPhone（实验性）</string>
+    <string name="settings_head_unit_gps_to_iphone_description">在发送车轮速度的同时，将车机自带卫星接收机的位置及接收机报告的精度发送到 iPhone。过时或不准确的位置（卫星太少或误差超过 50 米）不会发送。iPhone 仍使用自己的 GPS，在其信号较弱的地方，车辆位置可以起到辅助作用。适用于车机带有卫星接收机的固件。需要开启“向 iPhone 报告位置”。下次连接时生效。</string>
     <string name="settings_custom_dashboard">带 CarPlay 地图的自定义仪表盘（实验性）</string>
     <string name="settings_custom_dashboard_description">CarPlay 连接期间，DiPlay 在仪表盘上绘制自己的界面：中间是 CarPlay 地图，周围以时钟、车外温度、行程和音乐取代原厂仪表盘两侧的组件。车速、警告灯和底部信息栏仍由固件绘制在上层。适用于在工程模式下显示 Android 仪表盘屏幕的固件。请先关闭 GMC 自定义仪表盘。与中控屏上的仪表盘地图同时使用时，CarPlay 需要多一个视频解码器。需要“显示在其他应用上层”权限。开启后在下次连接时生效，关闭后立即生效。</string>
     <string name="settings_custom_dashboard_background">仪表盘背景</string>
