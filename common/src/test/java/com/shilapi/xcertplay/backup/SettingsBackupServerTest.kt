@@ -2,6 +2,7 @@ package com.shilapi.xcertplay.backup
 
 import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
+import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URL
 import java.util.concurrent.atomic.AtomicReference
@@ -402,15 +403,27 @@ class SettingsBackupServerTest {
     // Connections end on their own threads while stop() walks the ones still open.
     @Test
     fun stopDoesNotFailWhileConnectionsAreEnding() {
+        var opened = 0
         repeat(1000) {
             val busy = SettingsBackupServer(page = ByteArray(0), export = { ByteArray(0) },
                 import = { SettingsImportOutcome(0, 0, invalid = false) })
             val started = busy.start()!!
             // Closed with a reset: 3,000 closes in TIME_WAIT would use up the ephemeral ports for the tests after it.
-            val sockets = List(3) { Socket("127.0.0.1", started.port).apply { setSoLinger(true, 0) } }
-            sockets.forEach { it.close() }
+            // Under this flood macOS now and then loses a loopback SYN and connect() times out; that connection is
+            // left out, as it is stop() that is under test, not the connect.
+            val sockets = List(3) {
+                runCatching {
+                    Socket().apply {
+                        setSoLinger(true, 0)
+                        connect(InetSocketAddress("127.0.0.1", started.port), 1_000)
+                    }
+                }.getOrNull()
+            }
+            opened += sockets.count { it != null }
+            sockets.forEach { it?.close() }
             busy.stop()
         }
+        assertTrue("only $opened of 3000 connections opened", opened >= 2_900)
     }
 
     // Without an answer the browser shows a connection that opened and then gave nothing.
