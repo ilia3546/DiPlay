@@ -1,7 +1,6 @@
 package com.shilapi.xcertplay.hud;
 
 import android.graphics.Canvas;
-import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
@@ -22,7 +21,7 @@ public final class AndroidHudCanvas implements HudCanvas {
         font(size,weight,tracking);paint.setColor(color);paint.setStyle(Paint.Style.FILL);canvas.drawText(value,x,baseline,paint);
     }
     private void stroke(float width,int color){
-        paint.setPathEffect(null);paint.setColor(color);paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(width);paint.setStrokeCap(Paint.Cap.ROUND);paint.setStrokeJoin(Paint.Join.ROUND);
+        paint.setColor(color);paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(width);paint.setStrokeCap(Paint.Cap.ROUND);paint.setStrokeJoin(Paint.Join.ROUND);
     }
     @Override public void line(float[] points,float width,int color) {
         stroke(width,color);Path path=new Path();path.moveTo(points[0],points[1]);for(int i=2;i<points.length;i+=2)path.lineTo(points[i],points[i+1]);canvas.drawPath(path,paint);
@@ -48,10 +47,6 @@ public final class AndroidHudCanvas implements HudCanvas {
     @Override public void fill(HudPath source,double x,double y,double scale,int color){
         Path path=android(source);paint.setColor(color);paint.setStyle(Paint.Style.FILL);
         canvas.save();canvas.translate((float)x,(float)y);canvas.scale((float)scale,(float)scale);canvas.drawPath(path,paint);canvas.restore();
-    }
-    @Override public void rule(double x,double top,double bottom,double width,int color,double opacity,double dash,double gap){
-        stroke((float)width,color);paint.setStrokeCap(Paint.Cap.BUTT);paint.setAlpha((int)Math.round(((color>>>24)&255)*opacity));
-        paint.setPathEffect(dash>0 ? new DashPathEffect(new float[]{(float)dash,(float)gap},0) : null);canvas.drawLine((float)x,(float)top,(float)x,(float)bottom,paint);paint.setPathEffect(null);
     }
     @Override public void dot(double cx,double cy,double radius,double x,double y,double scale,int color){paint.setColor(color);paint.setStyle(Paint.Style.FILL);canvas.save();canvas.translate((float)x,(float)y);canvas.scale((float)scale,(float)scale);canvas.drawCircle((float)cx,(float)cy,(float)radius,paint);canvas.restore();}
     @Override public void beginOpacity(double opacity){Paint layer=new Paint();layer.setAlpha((int)Math.round(255*opacity));canvas.saveLayer(null,layer);}

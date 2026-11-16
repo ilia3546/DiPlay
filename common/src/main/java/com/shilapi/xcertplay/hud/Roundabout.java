@@ -7,9 +7,13 @@ package com.shilapi.xcertplay.hud;
  */
 final class Roundabout {
     static final double RIM=1.2;
-    /** The ring sits a little low and small, so each exit's head clears it by more than the rim. */
-    private static final double CENTER=12,RING_Y=12.5,RADIUS=5,SIDE_REACH=11.6,AHEAD_REACH=11.5,HEAD=4.4,HALF=3.2,OVERLAP=.4;
-    static final HudPath RING=new HudPath("M17 12.5 A5 5 0 1 1 7 12.5 A5 5 0 1 1 17 12.5");
+    /**
+     * The ring sits low and small, so each exit's head clears it by more than the rim and the exit ahead shows a stem
+     * between the ring and its head, which stays at the top of the grid.
+     */
+    private static final double CENTER=12,RING_Y=14,RADIUS=5,SIDE_REACH=11.6,AHEAD_TIP_Y=1,HEAD=4.4,HALF=3.2,OVERLAP=.4;
+    static final HudPath RING=new HudPath("M"+LaneGlyph.f(CENTER+RADIUS)+" "+LaneGlyph.f(RING_Y)+" A5 5 0 1 1 "+LaneGlyph.f(CENTER-RADIUS)+" "+LaneGlyph.f(RING_Y)
+        +" A5 5 0 1 1 "+LaneGlyph.f(CENTER+RADIUS)+" "+LaneGlyph.f(RING_Y));
     private static final HudPath[][] WAY=new HudPath[6][],LOOP=new HudPath[2][];
     static {
         for(int side=0;side<2;side++){
@@ -29,7 +33,7 @@ final class Roundabout {
         double[][] out={{k,0},{0,-1},{-k,0}};
         StringBuilder data=new StringBuilder("M12 22.5 V").append(LaneGlyph.f(RING_Y+RADIUS));
         for(int i=0;i<exit;i++)data.append(" A").append(LaneGlyph.f(RADIUS)).append(' ').append(LaneGlyph.f(RADIUS)).append(" 0 0 ").append(sweep).append(' ').append(LaneGlyph.f(quarter[i][0])).append(' ').append(LaneGlyph.f(quarter[i][1]));
-        double ux=out[exit-1][0],uy=out[exit-1][1],reach=exit==2 ? AHEAD_REACH : SIDE_REACH,tipX=CENTER+ux*reach,tipY=RING_Y+uy*reach;
+        double ux=out[exit-1][0],uy=out[exit-1][1],reach=exit==2 ? RING_Y-AHEAD_TIP_Y : SIDE_REACH,tipX=CENTER+ux*reach,tipY=RING_Y+uy*reach;
         data.append(" L").append(LaneGlyph.f(tipX-ux*(HEAD-OVERLAP))).append(' ').append(LaneGlyph.f(tipY-uy*(HEAD-OVERLAP)));
         return new HudPath[]{new HudPath(data.toString()),LaneGlyph.head(tipX,tipY,ux,uy,HEAD,HALF)};
     }

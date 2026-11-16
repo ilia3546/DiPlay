@@ -4,18 +4,24 @@ import com.shilapi.xcertplay.DashboardCallText
 import com.shilapi.xcertplay.DashboardFormat
 import java.util.Locale
 
-/** The call on the head-up display, as [HudDrawing] draws it: [text] by a green phone, then [mutedLabel] unless empty. */
+/**
+ * The call on the head-up display, as [HudDrawing] draws it by a green phone: [name] over [status], or [status] alone
+ * when there is no name. Until the call connects ([phase]) a ring goes round the phone; once it has, [muted] adds a
+ * crossed-out microphone after the time.
+ */
 data class HudCall(
-    @JvmField val text: String,
-    @JvmField val mutedLabel: String,
+    @JvmField val name: String,
+    @JvmField val status: String,
+    @JvmField val phase: CarPlayCallCard.Phase,
+    @JvmField val muted: Boolean = false,
 ) {
     companion object {
         /**
          * The call in [calls] at [nowMillis], wall-clock time like the call's connect time; null without a call, when
          * the calls option does not act ([callsActive]), or unless the custom dashboard holds engineering mode
          * ([engineeringMode]), the only case in which firmware does not show its own call widget. [callsActive] and
-         * [words] are only read for a call. A ringing call shows the caller, a dialed one the callee, a connected
-         * one its time and, once the iPhone confirmed it, the microphone being off.
+         * [words] are only read for a call. The name is the other party's name, else their number; the status says
+         * whether the call rings or is being dialed, or runs its time once connected.
          */
         fun of(
             calls: CarPlayCallSnapshot,
@@ -27,15 +33,14 @@ data class HudCall(
         ): HudCall? {
             val card = calls.card ?: return null
             if (!engineeringMode || !callsActive()) return null
-            val caller = card.name.ifBlank { card.number }
-            val text = when (card.phase) {
-                CarPlayCallCard.Phase.RINGING -> caller.ifBlank { words().incoming }
-                CarPlayCallCard.Phase.DIALING -> caller.ifBlank { words().calling }
+            val name = listOf(card.name, card.number).firstOrNull { it.isNotBlank() }?.trim().orEmpty()
+            val status = when (card.phase) {
+                CarPlayCallCard.Phase.RINGING -> words().incoming
+                CarPlayCallCard.Phase.DIALING -> words().calling
                 CarPlayCallCard.Phase.ACTIVE ->
                     DashboardFormat.callDuration(DashboardCallText.talkSeconds(card, nowMillis), locale)
             }
-            val muted = card.phase != CarPlayCallCard.Phase.RINGING && calls.muted == true
-            return HudCall(text, if (muted) words().muted else "")
+            return HudCall(name, status, card.phase, card.phase == CarPlayCallCard.Phase.ACTIVE && calls.muted == true)
         }
     }
 }

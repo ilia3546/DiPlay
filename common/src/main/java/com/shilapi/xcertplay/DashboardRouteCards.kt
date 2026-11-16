@@ -123,13 +123,8 @@ internal class DashboardManeuverGlyph(context: Context) : View(context) {
     override fun onDraw(canvas: Canvas) {
         val sign = sign ?: return
         val size = minOf(width, height).toDouble()
-        ManeuverIcon.draw(AndroidHudCanvas(canvas), sign, width / 2.0, height / 2.0, size, size * STROKE_PER_SIZE,
+        ManeuverIcon.draw(AndroidHudCanvas(canvas), sign, width / 2.0, height / 2.0, size, size * ManeuverIcon.STROKE / 24,
             Color.WHITE, exitNumber, leftHandTraffic, L.MANEUVER_ICON)
-    }
-
-    private companion object {
-        /** The head-up display's balanced sign: a 6 px stroke on a 56 px sign. */
-        const val STROKE_PER_SIZE = 6.0 / 56
     }
 }
 

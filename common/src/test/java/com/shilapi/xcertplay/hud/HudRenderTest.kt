@@ -70,16 +70,23 @@ class HudRenderTest {
                 LaneGuidanceLane(0, 0, listOf(-90), null), LaneGuidanceLane(1, 0, listOf(0), null),
                 LaneGuidanceLane(2, 2, listOf(0), 90), LaneGuidanceLane(3, 2, listOf(90), null),
             )), HudUnits.of(RuntimeEnvironment.getApplication()))!!
-        val ringing = HudCall("Анна Петрова", "")
-        val talkingMuted = HudCall("00:05", words.muted)
-        val long = HudCall("Константин Константинопольский, ООО «Международные грузоперевозки»", words.muted)
+        val ringing = HudCall("Анна Петрова", words.incoming, CarPlayCallCard.Phase.RINGING)
+        val talkingMuted = HudCall("Анна Петрова", "00:05", CarPlayCallCard.Phase.ACTIVE, muted = true)
+        val long = HudCall("Константин Константинопольский, ООО «Международные грузоперевозки»", "12:34",
+            CarPlayCallCard.Phase.ACTIVE, muted = true)
         val examples = listOf(
             Triple("call-ringing", null to ringing, full),
-            Triple("call-incoming-default", null to HudCall(words.incoming, ""),
+            Triple("call-ringing-number", null to HudCall("+7 900 123-45-67", words.incoming, CarPlayCallCard.Phase.RINGING), full),
+            Triple("call-incoming-default", null to HudCall("", words.incoming, CarPlayCallCard.Phase.RINGING),
                 HudSettings(HudSettings.DEFAULT_Y, HudSettings.DEFAULT_SCALE, true, true)),
+            Triple("call-dialing", null to HudCall("Мама", words.calling, CarPlayCallCard.Phase.DIALING), full),
+            Triple("call-dialing-no-name", null to HudCall("", words.calling, CarPlayCallCard.Phase.DIALING), full),
+            Triple("call-talking", null to HudCall("Анна Петрова", "00:05", CarPlayCallCard.Phase.ACTIVE), full),
             Triple("call-talking-muted", null to talkingMuted, full),
+            Triple("call-talking-hour-no-name", null to HudCall("", "1:02:03", CarPlayCallCard.Phase.ACTIVE, muted = true), full),
             Triple("call-long-name", null to long, full),
             Triple("call-route", turn to talkingMuted, full),
+            Triple("call-route-ringing", turn to ringing, full),
             Triple("call-route-long-name", turn to long, full),
             Triple("call-route-small", turn to talkingMuted, HudSettings(260, 50, true, true)),
         )

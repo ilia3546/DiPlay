@@ -25,12 +25,12 @@ class RoundaboutTest {
         val right = tip(Roundabout.of(1, false)[1])
         val ahead = tip(Roundabout.of(2, false)[1])
         val left = tip(Roundabout.of(3, false)[1])
-        assertTrue(right.toList().toString(), right[0] > 20 && right[1] == 12.5)
-        assertTrue(ahead.toList().toString(), ahead[0] == 12.0 && ahead[1] < 4)
-        assertTrue(left.toList().toString(), left[0] < 4 && left[1] == 12.5)
+        assertTrue(right.toList().toString(), right[0] > 20 && right[1] == 14.0)
+        assertTrue(ahead.toList().toString(), ahead[0] == 12.0 && ahead[1] == 1.0)
+        assertTrue(left.toList().toString(), left[0] < 4 && left[1] == 14.0)
         for (exit in 1..3) {
             val way = Roundabout.of(exit, false)[0].data
-            assertTrue(way, way.startsWith("M12 22.5 V17.5 A5 5 0 0 0 17 12.5"))
+            assertTrue(way, way.startsWith("M12 22.5 V19 A5 5 0 0 0 17 14"))
             assertEquals("a quarter turn per exit: $way", exit, Regex(" A").findAll(way).count())
         }
     }
@@ -49,11 +49,12 @@ class RoundaboutTest {
         return corners
     }
 
-    @Test fun anExitHeadClearsTheRingByMoreThanItsRimAtTheBoldestStroke() {
-        val halfStroke = 24.0 * 6 / 56 / 2
+    @Test fun anExitHeadWithItsGrownRimClearsTheRingByMoreThanTheRim() {
+        val halfStroke = ManeuverIcon.STROKE / 2
+        val headRim = (ManeuverIcon.STROKE - 24.0 * 6 / 56) / 2
         for (clockwise in listOf(false, true)) for (exit in 1..3) for (corner in corners(Roundabout.of(exit, clockwise)[1])) {
-            val gap = Math.hypot(corner[0] - 12, corner[1] - 12.5) - 5 - halfStroke
-            assertTrue("exit $exit clockwise $clockwise ${corner.toList()} only $gap from the ring", gap > Roundabout.RIM + .2)
+            val gap = Math.hypot(corner[0] - 12, corner[1] - 14) - 5 - halfStroke - headRim
+            assertTrue("exit $exit clockwise $clockwise ${corner.toList()} only $gap from the ring", gap > Roundabout.RIM)
         }
     }
 
@@ -91,7 +92,6 @@ class RoundaboutTest {
         override fun text(value: String, x: Float, baseline: Float, size: Float, color: Int, weight: Int, tracking: Float) = throw UnsupportedOperationException()
         override fun line(points: FloatArray, width: Float, color: Int) = throw UnsupportedOperationException()
         override fun circle(x: Float, y: Float, radius: Float, width: Float, color: Int) = throw UnsupportedOperationException()
-        override fun rule(x: Double, top: Double, bottom: Double, width: Double, color: Int, opacity: Double, dash: Double, gap: Double) = throw UnsupportedOperationException()
         override fun dot(cx: Double, cy: Double, radius: Double, x: Double, y: Double, scale: Double, color: Int) {
             body.append(String.format(Locale.US, "<circle cx=\"%.3f\" cy=\"%.3f\" r=\"%.3f\" fill=\"%s\" fill-opacity=\"%.3f\"/>\n",
                 x + cx * scale, y + cy * scale, radius * scale, rgb(color), alpha(color)))
@@ -151,11 +151,11 @@ class RoundaboutTest {
     @Test fun theCatalogueIsWrittenAsSvgPages() {
         val directory = File("build/reports/maneuver-icons").apply { mkdirs() }
         directory.listFiles()?.forEach { it.delete() }
-        val hud = page("HUD: знак манёвра 56 px, линия 6 px, голубой на чёрном; кольцо бледное, путь с чёрной обводкой", 0xff000000.toInt()) { svg, sign, x, y ->
-            ManeuverIcon.draw(svg, sign.kind, x, y, 64.0, 64.0 * 6 / 56, 0xff54d5ff.toInt(), sign.exit, sign.clockwise, 0xff000000.toInt())
+        val hud = page("HUD: знак манёвра 56 px, линия 2,9 из 24, голубой на чёрном; кольцо бледное, путь с чёрной обводкой", 0xff000000.toInt()) { svg, sign, x, y ->
+            ManeuverIcon.draw(svg, sign.kind, x, y, 64.0, 64.0 * ManeuverIcon.STROKE / 24, 0xff54d5ff.toInt(), sign.exit, sign.clockwise, 0xff000000.toInt())
         }
         val dashboard = page("Приборка: карточка манёвра, белый на синей плитке; кольцо полупрозрачное, обводка цветом плитки", 0xff2f7bff.toInt()) { svg, sign, x, y ->
-            ManeuverIcon.draw(svg, sign.kind, x, y, 64.0, 64.0 * 6 / 56, 0xffffffff.toInt(), sign.exit, sign.clockwise, 0xff2f7bff.toInt())
+            ManeuverIcon.draw(svg, sign.kind, x, y, 64.0, 64.0 * ManeuverIcon.STROKE / 24, 0xffffffff.toInt(), sign.exit, sign.clockwise, 0xff2f7bff.toInt())
         }
         File(directory, "page-01.svg").writeText(hud)
         File(directory, "page-02.svg").writeText(dashboard)

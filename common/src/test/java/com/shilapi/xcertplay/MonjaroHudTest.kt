@@ -1,6 +1,8 @@
 package com.shilapi.xcertplay
 
 import com.shilapi.xcertplay.glance.CarPlayGlance
+import com.shilapi.xcertplay.hud.CarPlayCallCard.Phase.ACTIVE
+import com.shilapi.xcertplay.hud.CarPlayCallCard.Phase.RINGING
 import com.shilapi.xcertplay.hud.HudCall
 import com.shilapi.xcertplay.hud.HudFrame
 import com.shilapi.xcertplay.hud.HudManeuver
@@ -232,10 +234,10 @@ class HudStateTest {
     @Test fun aCallBringsTheWindowWithTheLineOffAndTakesItAwayWhenItEnds() {
         options = MonjaroA3Options(hudManeuvers = false)
         glanceIs(turn)
-        callIs(HudCall("Анна", ""))
+        callIs(HudCall("Анна", "Входящий вызов", RINGING))
         assertEquals(listOf("watch", "show"), events)
         assertNull("the line stays off", drawn.single().first)
-        assertEquals(HudCall("Анна", ""), drawnCalls.single())
+        assertEquals(HudCall("Анна", "Входящий вызов", RINGING), drawnCalls.single())
 
         callIs(null)
         assertEquals(listOf("watch", "show", "unwatch", "hide"), events)
@@ -245,19 +247,19 @@ class HudStateTest {
 
     @Test fun theCallTimeRunsEverySecond() {
         options = MonjaroA3Options(hudManeuvers = false)
-        callIs(HudCall("00:05", ""))
-        call = HudCall("00:06", "")
+        callIs(HudCall("Анна", "00:05", ACTIVE))
+        call = HudCall("Анна", "00:06", ACTIVE)
         tick()
-        assertEquals(listOf(HudCall("00:05", ""), HudCall("00:06", "")), drawnCalls)
+        assertEquals(listOf(HudCall("Анна", "00:05", ACTIVE), HudCall("Анна", "00:06", ACTIVE)), drawnCalls)
         assertEquals(1, timers.size)
     }
 
     @Test fun aCallJoinsTheLineInTheSameWindow() {
         glanceIs(turn)
-        callIs(HudCall("Анна", ""))
+        callIs(HudCall("Анна", "Входящий вызов", RINGING))
         assertEquals(listOf("watch", "show"), events)
         assertEquals(HudManeuver.RIGHT, drawn.last().first?.kind)
-        assertEquals(HudCall("Анна", ""), drawnCalls.last())
+        assertEquals(HudCall("Анна", "Входящий вызов", RINGING), drawnCalls.last())
 
         callIs(null)
         assertEquals(listOf("watch", "show"), events)
@@ -283,10 +285,10 @@ class HudStateTest {
         assertEquals("the session is not live yet", emptyList<String>(), events)
         assertEquals(1, timers.size)
 
-        call = HudCall("00:42", "")
+        call = HudCall("Анна", "00:42", ACTIVE)
         tick()
         assertEquals(listOf("watch", "show"), events)
-        assertEquals(HudCall("00:42", ""), drawnCalls.single())
+        assertEquals(HudCall("Анна", "00:42", ACTIVE), drawnCalls.single())
 
         calling = false
         call = null
@@ -298,13 +300,13 @@ class HudStateTest {
     @Test fun aWindowBroughtBackByTheDisplayDrawsTheCallAsItIsNow() {
         options = MonjaroA3Options(hudManeuvers = false)
         calling = true
-        callIs(HudCall("00:05", ""))
+        callIs(HudCall("Анна", "00:05", ACTIVE))
         available = false
         watcher!!()
-        call = HudCall("00:09", "")
+        call = HudCall("Анна", "00:09", ACTIVE)
         available = true
         watcher!!()
         assertEquals(listOf("watch", "show", "hide", "show"), events)
-        assertEquals(HudCall("00:09", ""), drawnCalls.last())
+        assertEquals(HudCall("Анна", "00:09", ACTIVE), drawnCalls.last())
     }
 }

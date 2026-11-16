@@ -51,7 +51,9 @@ class HudDrawingReferenceTest {
             }
         }
         override fun line(points: FloatArray, width: Float, color: Int) = throw AssertionError("unexpected line")
-        override fun circle(x: Float, y: Float, radius: Float, width: Float, color: Int) = throw AssertionError("unexpected circle")
+        override fun circle(x: Float, y: Float, radius: Float, width: Float, color: Int) {
+            op("circle").also { it.x = x; it.y = y; it.size = radius; it.width = width; it.color = color }
+        }
         override fun path(path: HudPath, x: Double, y: Double, scale: Double, width: Double, color: Int, opacity: Double) {
             op("path").also {
                 it.data = path.data; it.x = x.toFloat(); it.y = y.toFloat(); it.size = scale.toFloat()
@@ -61,12 +63,6 @@ class HudDrawingReferenceTest {
         override fun fill(path: HudPath, x: Double, y: Double, scale: Double, color: Int) {
             op("fill").also {
                 it.data = path.data; it.x = x.toFloat(); it.y = y.toFloat(); it.size = scale.toFloat(); it.color = color
-            }
-        }
-        override fun rule(x: Double, top: Double, bottom: Double, width: Double, color: Int, opacity: Double, dash: Double, gap: Double) {
-            op("rule").also {
-                it.x = x.toFloat(); it.y = top.toFloat(); it.size = bottom.toFloat(); it.width = width.toFloat()
-                it.color = color; it.opacity = opacity.toFloat(); it.tracking = dash.toFloat()
             }
         }
         override fun dot(cx: Double, cy: Double, radius: Double, x: Double, y: Double, scale: Double, color: Int) {
@@ -87,17 +83,23 @@ class HudDrawingReferenceTest {
 
     private fun color(hex: String) = (0xff000000 or hex.removePrefix("#").toLong(16)).toInt()
 
+    /** Heads and dots were drawn for a 6 px line on a 56 px sign and grow by as much as the line has. */
     private fun parts(actual: Recording, expected: JSONArray, size: Float, stroke: Float, color: Int) {
-        assertEquals("part count", expected.length(), actual.ops.size)
         val scale = size / 24
+        val grow = stroke / scale - 24.0 * 6 / 56
+        var at = 0
         for (i in 0 until expected.length()) {
             val part = expected.getJSONObject(i)
-            val op = actual.ops[i]
+            val op = actual.ops[at++]
             if (part.has("fill")) {
                 assertEquals("filled head", "fill" to part.getString("d"), op.type to op.data)
                 close(op.x, 400.0 - size / 2, "icon left")
                 close(op.y, 215.0 - size / 2, "icon top")
                 close(op.size, scale.toDouble(), "source grid scale")
+                val rim = actual.ops[at++]
+                assertEquals("head rim", "path" to part.getString("d"), rim.type to rim.data)
+                close(rim.width, grow, "head rim grows as the line")
+                assertEquals("head rim color", color, rim.color)
             } else if (part.has("d")) {
                 assertEquals("source path", "path" to part.getString("d"), op.type to op.data)
                 close(op.x, 400.0 - size / 2, "icon left")
@@ -110,10 +112,11 @@ class HudDrawingReferenceTest {
                 assertEquals("filled dot", "dot", op.type)
                 close(op.x, 400 - size / 2 + dot.getDouble(0) * scale, "dot x")
                 close(op.y, 215 - size / 2 + dot.getDouble(1) * scale, "dot y")
-                close(op.size, dot.getDouble(2) * scale, "dot radius")
+                close(op.size, (dot.getDouble(2) + grow / 2) * scale, "dot radius grows as the line")
             }
             assertEquals("source color", color, op.color)
         }
+        assertEquals("part count", at, actual.ops.size)
     }
 
     @Test fun theSignsAndLanesAreTheReferenceNamesInItsOrder() {
@@ -134,7 +137,7 @@ class HudDrawingReferenceTest {
         for (variant in variants.keys()) for (factor in floatArrayOf(.5f, .65f, 1f)) {
             val tokens = variants.getJSONObject(variant)
             val size = tokens.getDouble("icon").toFloat() * factor
-            val stroke = tokens.getDouble("stroke").toFloat() * factor
+            val stroke = (size * ManeuverIcon.STROKE / 24).toFloat()
             for (kind in HudManeuver.entries) {
                 val r = Recording()
                 ManeuverIcon.draw(r, kind, 400.0, 215.0, size.toDouble(), stroke.toDouble(), cyan, 0)
@@ -144,7 +147,7 @@ class HudDrawingReferenceTest {
                 val r = Recording()
                 ManeuverIcon.draw(r, HudManeuver.ROUNDABOUT_EXIT, 400.0, 215.0, size.toDouble(), stroke.toDouble(), cyan, exit)
                 assertTrue("no number", r.ops.none { it.type == "text" })
-                assertEquals("way round over its rim, or three looped arrows", if (exit <= 3) 4 else 6, r.ops.size)
+                assertEquals("way round over its rim, or three looped arrows, each head with its rim", if (exit <= 3) 5 else 9, r.ops.size)
             }
             for (direction in HudLaneDirection.entries) for (role in 0..2) {
                 val r = Recording()
@@ -152,10 +155,11 @@ class HudDrawingReferenceTest {
                 val lane = HudLane(listOf(direction), if (role == 2) direction else null, role != 0)
                 HudDrawing.lane(r, lane, 400.0 - laneSize / 2, 215.0 - laneSize / 2, laneSize.toDouble())
                 val source = lanes.getJSONArray(direction.name.lowercase())
-                assertEquals("lane part count, no underline", source.length() + 2, r.ops.size)
-                close(r.ops[0].opacity, if (role == 0) other.getDouble("opacity") else 1.0, "group opacity")
+                val light = role == 0
+                assertEquals("lane part count, no underline", source.length() + if (light) 2 else 0, r.ops.size)
+                if (light) close(r.ops[0].opacity, other.getDouble("opacity"), "light parts in one group")
                 for (i in 0 until source.length()) {
-                    val op = r.ops[i + 1]
+                    val op = r.ops[i + if (light) 1 else 0]
                     val part = source.getJSONObject(i)
                     assertEquals("lane source path", (if (part.has("fill")) "fill" else "path") to part.getString("d"), op.type to op.data)
                     close(op.size, (laneSize / 24).toDouble(), "lane scale")
@@ -224,10 +228,58 @@ class HudDrawingReferenceTest {
         close(text[1].y, text[0].y.toDouble(), "unit shared baseline")
         close(text[2].y, text[0].y.toDouble(), "instruction shared baseline")
         assertEquals(listOf(500, 400, 400), text.take(3).map { it.weight })
-        close(text[3].x, 217.0, "trip follows lane on same row")
+        close(text[3].x, 214.0, "trip follows lane on same row")
         close(text[3].y, 283.81, "trip baseline")
         assertEquals(listOf("12", "\u00a0мин", "\u00a0\u00a0·\u00a0\u00a0", "4,2", "\u00a0км"), text.drop(3).map { it.text })
         assertEquals(listOf(0xfff4fbff.toInt(), 0xffc8e2ec.toInt(), 0xfff4fbff.toInt()), listOf(text[3].color, text[4].color, text[6].color))
+    }
+
+    @Test fun lanesStartRightOfTheNumberAtAFixedPitchAndTheTripFollowsTheLast() {
+        val three = (0 until 3).map { LaneGuidanceLane(it, 0, listOf(0), null) }
+        val r = Recording()
+        HudDrawing.draw(r, frame(300, three, remainingMeters = 4200, remainingSeconds = 720), HudSettings(215, 100, true, true))
+        val lefts = r.ops.withIndex().filter { (_, op) -> op.type == "begin" }.map { (i, _) -> r.ops[i + 1].x }
+        assertEquals(3, lefts.size)
+        lefts.forEachIndexed { i, x -> close(x, 148.0 + 48 * i, "lane $i left") }
+        assertTrue("no separators", r.ops.none { it.type == "line" })
+        close(r.ops.first { it.type == "text" && it.text == "12" }.x, 148.0 + 48 * 2 + 42 + 24, "trip after the last lane")
+    }
+
+    private fun calls(call: HudCall) = Recording().also { HudDrawing.draw(it, null, call, HudSettings(215, 100, true, true)) }.ops
+
+    @Test fun aCallNotYetConnectedShowsWhoOverItsStatusInsideARing() {
+        val ops = calls(HudCall("Анна Петрова", "Входящий вызов", CarPlayCallCard.Phase.RINGING))
+        val ring = ops.single { it.type == "circle" }
+        close(ring.x, 526.0, "ring x"); close(ring.y, 351.0, "ring y"); close(ring.size, 20.0, "ring radius")
+        assertEquals(0x8c30d158.toInt(), ring.color)
+        val (name, status) = ops.filter { it.type == "text" }
+        close(name.x, 554.0, "text x"); close(name.y, 349.775, "name baseline"); close(name.size, 22.0, "name size")
+        assertEquals(500, name.weight)
+        close(status.x, 554.0, "status x"); close(status.y, 367.845, "status baseline"); close(status.size, 17.0, "status size")
+        assertEquals(listOf(400, 0xff30d158.toInt()), listOf(status.weight, status.color))
+        val dialing = calls(HudCall("Мама", "Вызов…", CarPlayCallCard.Phase.DIALING)).filter { it.type == "text" }
+        assertEquals(0xffc8e2ec.toInt(), dialing[1].color)
+    }
+
+    @Test fun aConnectedCallHasNoRingAndItsMutedMicrophoneFollowsTheTime() {
+        val ops = calls(HudCall("Анна Петрова", "00:05", CarPlayCallCard.Phase.ACTIVE, muted = true))
+        assertTrue(ops.none { it.type == "circle" })
+        val time = ops.filter { it.type == "text" }[1]
+        assertEquals(listOf(500, 0xfff4fbff.toInt()), listOf(time.weight, time.color))
+        val mic = ops.filter { it.type == "path" && it.color == 0xffff9f0a.toInt() }
+        assertEquals(2, mic.size)
+        mic.forEach {
+            close(it.x, 554.0 + 5 * 8.5 + 12, "microphone after the time")
+            close(it.y, 367.845 - .71 * 17 / 2 - 8, "microphone on the capitals of the time")
+            close(it.size, 16.0 / 24, "microphone 16 px")
+        }
+    }
+
+    @Test fun aCallWithoutANameShowsItsStatusAloneOnTheCentre() {
+        val ops = calls(HudCall("", "Входящий вызов", CarPlayCallCard.Phase.RINGING))
+        val line = ops.single { it.type == "text" }
+        close(line.y, 351 + .71 * 22 / 2, "single line baseline")
+        assertEquals(listOf(22f, 500f), listOf(line.size, line.weight.toFloat()))
     }
 
     @Test fun aLabelIsCutWithAnEllipsisAndHiddenBelowOneEm() {

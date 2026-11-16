@@ -12,6 +12,9 @@ public final class ManeuverIcon {
     }
     /** The opacity of a sign's other ways, the road not taken. */
     private static final double MUTED=.4;
+    /** The line of a sign in grid units; its heads and dots were drawn for [DRAWN_STROKE] and grow by the difference. */
+    public static final double STROKE=2.9;
+    private static final double DRAWN_STROKE=6.0/56*24;
     private static final Part[] UNKNOWN={new Part("M12 3 L21 12 L12 21 L3 12 Z",1),new Part(12.0,12.0,1.9)};
     private static final Part[] NO_TURN={new Part("M12 21 V17.5",1),new Part("M12 13.75 V10.25",1),new Part("M12 6.5 V3",1)};
     private static final Part[] STRAIGHT={new Part("M12 21.5 V6.6",1),Part.fill("M11.47 2.73 Q12 2 12.53 2.73 L15.07 6.27 Q15.6 7 14.7 7 L9.3 7 Q8.4 7 8.93 6.27 Z")};
@@ -44,21 +47,26 @@ public final class ManeuverIcon {
         draw(canvas,kind.name(),x-size/2,y-size/2,size,stroke,color,exit,clockwise,rim);
     }
     private static void draw(HudCanvas canvas,String kind,double x,double y,double size,double stroke,int color,int exit,boolean clockwise,int rim){
-        double scale=size/24,width=stroke/scale;
+        double scale=size/24,width=stroke/scale,grow=width-DRAWN_STROKE>1e-6 ? width-DRAWN_STROKE : 0;
         if(kind.equals("ROUNDABOUT_EXIT") && exit>0){
             HudPath[] sign=Roundabout.of(exit,clockwise);
             if(sign.length==2){
                 canvas.path(Roundabout.RING,x,y,scale,width,color,MUTED);
                 canvas.path(sign[0],x,y,scale,width+2*Roundabout.RIM,rim,1);
             }
-            for(int i=0;i<sign.length;i+=2){canvas.path(sign[i],x,y,scale,width,color,1);canvas.fill(sign[i+1],x,y,scale,color);}
+            for(int i=0;i<sign.length;i+=2){canvas.path(sign[i],x,y,scale,width,color,1);head(canvas,sign[i+1],x,y,scale,grow,color);}
             return;
         }
         for(Part part:parts(kind)){
-            if(part.fill)canvas.fill(part.path,x,y,scale,color);
-            else if(part.path!=null)canvas.path(part.path,x,y,scale,stroke/scale,color,part.opacity);
-            else canvas.dot(part.x,part.y,part.radius,x,y,scale,color);
+            if(part.fill)head(canvas,part.path,x,y,scale,grow,color);
+            else if(part.path!=null)canvas.path(part.path,x,y,scale,width,color,part.opacity);
+            else canvas.dot(part.x,part.y,part.radius+grow/2,x,y,scale,color);
         }
+    }
+    /** A filled head with a rim of its own colour [grow] units wide, so it keeps its proportion to a thicker line. */
+    private static void head(HudCanvas canvas,HudPath head,double x,double y,double scale,double grow,int color){
+        canvas.fill(head,x,y,scale,color);
+        if(grow>0)canvas.path(head,x,y,scale,grow,color,1);
     }
     private static Part[] parts(String kind){
         switch(kind){

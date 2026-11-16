@@ -7,13 +7,12 @@
   },
   "otherLane": {
     "color": "#AEC6D0",
-    "opacity": 1,
+    "opacity": 0.8,
     "stroke": 2.8
   },
   "variants": {
     "COMPACT": {
       "icon": 46,
-      "stroke": 5,
       "dist": 48,
       "unit": 21,
       "text": 24,
@@ -22,7 +21,6 @@
     },
     "BALANCED": {
       "icon": 56,
-      "stroke": 6,
       "dist": 58,
       "unit": 25,
       "text": 28,
@@ -31,7 +29,6 @@
     },
     "BOLD": {
       "icon": 66,
-      "stroke": 7.5,
       "dist": 68,
       "unit": 29,
       "text": 32,

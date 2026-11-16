@@ -188,7 +188,6 @@ class LaneGlyphTest {
         override fun text(value: String, x: Float, baseline: Float, size: Float, color: Int, weight: Int, tracking: Float) = throw UnsupportedOperationException()
         override fun line(points: FloatArray, width: Float, color: Int) = throw UnsupportedOperationException()
         override fun circle(x: Float, y: Float, radius: Float, width: Float, color: Int) = throw UnsupportedOperationException()
-        override fun rule(x: Double, top: Double, bottom: Double, width: Double, color: Int, opacity: Double, dash: Double, gap: Double) = throw UnsupportedOperationException()
         override fun dot(cx: Double, cy: Double, radius: Double, x: Double, y: Double, scale: Double, color: Int) = throw UnsupportedOperationException()
         override fun path(path: HudPath, x: Double, y: Double, scale: Double, width: Double, color: Int, opacity: Double) {
             body.append(String.format(Locale.US, "<path transform=\"translate(%.3f %.3f) scale(%.4f)\" d=\"%s\" fill=\"none\" stroke=\"%s\" stroke-width=\"%.3f\" stroke-opacity=\"%.3f\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n",

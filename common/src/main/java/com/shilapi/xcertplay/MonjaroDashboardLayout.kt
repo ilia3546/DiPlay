@@ -143,9 +143,9 @@ internal object MonjaroDashboardLayout {
     const val MANEUVER_PADDING_VERTICAL = 10
     const val MANEUVER_RADIUS = 20f
     const val MANEUVER_GAP = 10
-    const val MANEUVER_ICON_SIZE = 50
-    const val MANEUVER_ICON_RADIUS = 12f
-    const val MANEUVER_GLYPH_SIZE = 30
+    const val MANEUVER_ICON_SIZE = 58
+    const val MANEUVER_ICON_RADIUS = 14f
+    const val MANEUVER_GLYPH_SIZE = 40
     const val MANEUVER_DISTANCE_TEXT = 26f
     const val MANEUVER_ROAD_TEXT = 16f
     const val MANEUVER_ROAD_GAP = 2
